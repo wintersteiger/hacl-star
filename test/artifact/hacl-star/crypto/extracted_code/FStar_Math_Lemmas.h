@@ -10,7 +10,7 @@
 #include "FStar_List_Tot.h"
 #include "FStar_Classical.h"
 #include "FStar_ListProperties.h"
-#include "FStar_SeqProperties.h"
+#include "FStar_Seq_Properties.h"
 #include "kremlib.h"
 
 void FStar_Math_Lemmas_euclidean_div_axiom(Prims_nat a, Prims_pos b);

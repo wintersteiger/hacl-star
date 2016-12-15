@@ -4,7 +4,7 @@ FSTAR=$(FSTAR_HOME)/bin/fstar.exe
 OPTIONS=--lax --admit_fsi FStar.Set --codegen OCaml --use_native_int
 
 # F*'s native libraries
-FSTAR_LIB=FStar.Classical.fst FStar.FunctionalExtensionality.fst FStar.Set.fsi seq.fsi FStar.Seq.fst FStar.SeqProperties.fst FStar.Heap.fst FStar.ST.fst FStar.All.fst FStar.Array.fst FStar.Ghost.fst
+FSTAR_LIB=FStar.Classical.fst FStar.FunctionalExtensionality.fst FStar.Set.fsi seq.fsi FStar.Seq.Base.fst FStar.Seq.Properties.fst FStar.Seq.fst FStar.Heap.fst FStar.ST.fst FStar.All.fst FStar.Array.fst FStar.Ghost.fst
 
 # Field and Curve specifications
 MATH=$(addprefix ../math_interfaces/, definitions.fst field.fst curve.fst)
@@ -23,7 +23,7 @@ P256_ODIR=./p256
 P256_OPTIONS=--odir $(P256_ODIR)
 
 # OCaml build variables
-CURVE_OCAML=$(addprefix $(FSTAR_HOME)/lib/ml/, native_int/prims.ml FStar_Set.ml FStar_ST.ml FStar_All.ml) FStar_FunctionalExtensionality.ml FStar_Seq.ml Parameters.ml IntLib.ml UInt.mli UInt.ml Bigint.ml Eval.ml Modulo.ml Fsum.ml FsumWide.ml Fdifference.ml Fscalar.ml Fproduct.ml Bignum.ml
+CURVE_OCAML=$(addprefix $(FSTAR_HOME)/lib/ml/, native_int/prims.ml FStar_Set.ml FStar_ST.ml FStar_All.ml) FStar_FunctionalExtensionality.ml FStar_Seq_Base.ml Parameters.ml IntLib.ml UInt.mli UInt.ml Bigint.ml Eval.ml Modulo.ml Fsum.ml FsumWide.ml Fdifference.ml Fscalar.ml Fproduct.ml Bignum.ml
 OCAML=ocamlfind ocamlopt -package batteries -package stdint -linkpkg -g -thread
 DEBUG=ocamlfind ocamlc -package batteries -package stdint -linkpkg -g -thread
 OCAML_INCLUDE_PATHS=$(addprefix -I , $(FSTAR_HOME)/lib/ml/native_int $(FSTAR_HOME)/lib/ml)

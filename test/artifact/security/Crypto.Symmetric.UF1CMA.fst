@@ -295,7 +295,7 @@ val update:
     acc_inv st a h1 /\ 
     (mac_log ==> (
       let v = Buffer.as_seq h1 w in
-      HS.sel h1 (alog a) == SeqProperties.cons v (HS.sel h0 (alog a))))))
+      HS.sel h1 (alog a) == Seq.cons v (HS.sel h0 (alog a))))))
 
 let update #i st acc w =
   assume false; 

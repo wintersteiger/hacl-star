@@ -493,7 +493,7 @@
         "typing_Crypto.Symmetric.PRF.State.mac_rgn",
         "typing_Crypto.Symmetric.PRF.find_mac",
         "typing_Crypto.Symmetric.PRF.smac",
-        "typing_FStar.HyperStack.MkRef.mm", "typing_FStar.Seq.seq",
+        "typing_FStar.HyperStack.MkRef.mm", "typing_FStar.Seq.Base.seq",
         "typing_Flag.prf"
       ],
       0
@@ -654,7 +654,7 @@
       0,
       0,
       [
-        "@query", "assumption_FStar.Seq.seq_haseq",
+        "@query", "assumption_FStar.Seq.Base.seq_haseq",
         "assumption_FStar.UInt8.t__haseq", "assumption_Prims.HasEq_int",
         "equation_Crypto.Symmetric.Bytes.bytes",
         "equation_Crypto.Symmetric.MAC.taglen",
@@ -674,7 +674,7 @@
       0,
       0,
       [
-        "@query", "assumption_FStar.Seq.seq_haseq",
+        "@query", "assumption_FStar.Seq.Base.seq_haseq",
         "assumption_FStar.UInt8.t__haseq",
         "equation_Crypto.Symmetric.Bytes.bytes",
         "equation_Crypto.Symmetric.Bytes.lbytes",

@@ -34,8 +34,8 @@ val text_to_PS_text: t:text -> Tot (t':PS.text{
 let rec text_to_PS_text t =
   if Seq.length t = 0 then Seq.createEmpty
   else
-    SeqProperties.cons (SeqProperties.head t)
-                       (text_to_PS_text (SeqProperties.tail t))
+    Seq.cons (Seq.head t)
+                       (text_to_PS_text (Seq.tail t))
 
 (** Field element *)
 let elem i = (* dependent; used only ideally *)
