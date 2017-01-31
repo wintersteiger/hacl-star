@@ -77,12 +77,9 @@ extract-c:
 	$(KREMLIN_HOME)/krml -tmpdir x25519-c -verbose \
 		-I ../bignum -I ../lib/kremlin \
 		$(X25519_FILES) Hacl.Test.X25519.fst \
-		-drop FStar -drop Hacl.Spec -drop Prims -drop Hacl.Cast -drop Hacl.UInt8 -drop Hacl.UInt32 -drop Hacl.UInt64 \
-		-drop Hacl.UInt128  -drop Hacl.Bignum.Constants -drop Hacl.Bignum.Parameters -drop Hacl.Bignum.Limb -drop Hacl.Bignum.Wide \
-		-bundle EC=Hacl.* \
+		-drop Prims -drop FStar -bundle EC=Hacl.* \
 		$(KREMLIN_HOME)/kremlib/testlib.c -add-include '"testlib.h"' \
-		-ccopt -Wno-error=pointer-sign -ccopt -Wno-error=incompatible-pointer-types \
-                -ccopt -Wno-error=format= -no-prefix Hacl.Test.X25519 -ldopt -flto -ccopt -march=native -o x25519.exe
+                -no-prefix Hacl.Test.X25519 -ldopt -flto -ccopt -march=native -o x25519.exe
 	./x25519.exe
 
 
