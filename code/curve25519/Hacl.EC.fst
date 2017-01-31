@@ -19,6 +19,7 @@ module H8 = Hacl.UInt8
 
 #reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 100"
 
+[@"substitute"]
 inline_for_extraction val crypto_scalarmult__:
   mypublic:uint8_p{length mypublic = 32} ->
   secret:uint8_p{length secret = 32} ->
@@ -62,6 +63,7 @@ inline_for_extraction let crypto_scalarmult__ mypublic scalar basepoint q =
   ()
 
 
+[@"substitute"]
 inline_for_extraction val crypto_scalarmult_:
   mypublic:uint8_p{length mypublic = 32} ->
   secret:uint8_p{length secret = 32} ->

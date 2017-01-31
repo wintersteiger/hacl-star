@@ -77,7 +77,7 @@ extract-c:
 	$(KREMLIN_HOME)/krml -tmpdir x25519-c -verbose \
 		-I ../bignum -I ../lib/kremlin \
 		$(X25519_FILES) Hacl.Test.X25519.fst \
-		-drop Prims -drop FStar -bundle EC=Hacl.* \
+		-drop Prims -drop FStar -bundle Curve25519=Hacl.Bignum.*,Hacl.EC.* \
 		$(KREMLIN_HOME)/kremlib/testlib.c -add-include '"testlib.h"' \
                 -no-prefix Hacl.Test.X25519 -ldopt -flto -ccopt -march=native -o x25519.exe
 	./x25519.exe
