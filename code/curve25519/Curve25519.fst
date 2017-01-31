@@ -1,9 +1,11 @@
-module Hacl.Curve25519
+module Curve25519
 open FStar.Mul
 open FStar.HyperStack
 open FStar.Ghost
 open FStar.Buffer
 open FStar.Buffer.Quantifiers
+
+type uint8_p = Buffer.buffer Hacl.UInt8.t
 
 val crypto_scalarmult:
   mypublic:uint8_p{length mypublic = 32} ->
