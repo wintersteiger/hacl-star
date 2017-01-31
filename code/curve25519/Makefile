@@ -73,11 +73,13 @@ hints: $(addsuffix -hints, $(X25519_SPECIFIC))
 
 
 extract-c:
+	# Weird \* because of https://caml.inria.fr/mantis/view.php?id=7473
 	mkdir -p x25519-c
-	$(KREMLIN_HOME)/krml -tmpdir x25519-c -verbose \
+	set -f && $(KREMLIN_HOME)/krml -tmpdir x25519-c -verbose \
 		-I ../bignum -I ../lib/kremlin \
 		$(X25519_FILES) Hacl.Test.X25519.fst \
-		-drop Prims -drop FStar -drop Hacl.Spec -bundle Curve25519=Hacl.Bignum.*,Hacl.EC.* \
+		-drop 'Hacl.Spec.\*' \
+		-drop Prims -drop FStar -bundle 'Curve25519=Hacl.Bignum.*,Hacl.EC.*' \
 		$(KREMLIN_HOME)/kremlib/testlib.c -add-include '"testlib.h"' \
                 -no-prefix Hacl.Test.X25519 -ldopt -flto -ccopt -march=native -o x25519.exe
 	./x25519.exe
