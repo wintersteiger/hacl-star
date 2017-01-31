@@ -32,6 +32,7 @@ inline_for_extraction val crypto_scalarmult__:
       /\ Hacl.Spec.EC.AddAndDouble.red_513 (as_seq h (getz q))
     ))
     (ensures (fun h0 _ h1 -> Buffer.live h1 mypublic /\ modifies_1 mypublic h0 h1))
+[@"substitute"]
 inline_for_extraction let crypto_scalarmult__ mypublic scalar basepoint q =
   let h0 = ST.get() in
   push_frame();
@@ -76,6 +77,7 @@ inline_for_extraction val crypto_scalarmult_:
       /\ Hacl.Spec.EC.AddAndDouble.red_513 (as_seq h (getz q))
     ))
     (ensures (fun h0 _ h1 -> Buffer.live h1 mypublic /\ modifies_1 mypublic h0 h1))
+[@"substitute"]
 inline_for_extraction let crypto_scalarmult_ mypublic secret basepoint q =
   let h0 = ST.get() in
   push_frame();
