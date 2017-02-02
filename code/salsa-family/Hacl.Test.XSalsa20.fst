@@ -1,5 +1,7 @@
 module Hacl.Test.XSalsa20
 
+open FStar.ST
+
 open FStar.Buffer
 
 val main: unit -> ST FStar.Int32.t

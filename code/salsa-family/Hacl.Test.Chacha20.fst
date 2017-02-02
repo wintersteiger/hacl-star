@@ -1,5 +1,7 @@
 module Hacl.Test.Chacha20
 
+open FStar.ST
+
 open FStar.Buffer
 
 let len = 114ul

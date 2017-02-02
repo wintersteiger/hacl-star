@@ -1,5 +1,6 @@
 module Hacl.Bignum.Crecip
 
+open FStar.ST
 open FStar.Mul
 open FStar.HyperStack
 open FStar.Buffer

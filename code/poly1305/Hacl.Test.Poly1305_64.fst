@@ -1,5 +1,6 @@
 module Hacl.Test.Poly1305_64
 
+open FStar.ST
 open FStar.Buffer
 open Hacl.Cast
 

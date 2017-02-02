@@ -1,5 +1,6 @@
 module Hacl.Test.X25519
 
+open FStar.ST
 open FStar.Buffer
 
 val main: unit -> ST FStar.Int32.t

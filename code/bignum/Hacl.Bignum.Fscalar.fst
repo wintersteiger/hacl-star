@@ -1,5 +1,6 @@
 module Hacl.Bignum.Fscalar
 
+open FStar.ST
 open FStar.HyperStack
 open FStar.Buffer
 
