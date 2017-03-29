@@ -17,22 +17,19 @@ let zero = zero #gf128
 let op_Plus_At e1 e2 = fadd #gf128 e1 e2
 let op_Star_At e1 e2 = fmul #gf128 e1 e2
 
+val add_comm: a:elem -> b:elem -> Lemma (a +@ b == b +@ a)
+let add_comm e1 e2 = add_comm #gf128 e1 e2
+
+(* GCM types and specs *)
+
 type word = w:bytes{length w <= 16}
 type word_16 = w:bytes{length w = 16}
-type tag =  word_16
+type tag = word_16
 type text = seq word
 
-let encode (w:word) : Tot elem =
-  let l = length w in
-  Math.Lemmas.pow2_le_compat 128 (8 * l);
-  lemma_big_endian_is_bounded w;
-  Math.Lemmas.pow2_plus (128 - 8 * l) (8 * l);
-  to_felem ((pow2 (128 - 8 * l)) * (big_endian w))
-  
-let decode (e:elem) : Tot word =
-  big_bytes 16ul (from_felem e)
-
-let seq_head (vs:seq 'a {Seq.length vs > 0}) = Seq.slice vs 0 (Seq.length vs - 1)
+let pad (w:word) : Tot word_16 = w @| (create (16 - length w) 0uy)
+let encode (w:word) : Tot elem = to_felem (big_endian (pad w))
+let decode (e:elem) : Tot word_16 = big_bytes 16ul (from_felem e)
 
 val poly: vs:text -> r:elem -> Tot (a:elem) (decreases (Seq.length vs))
 let rec poly vs r =
@@ -41,15 +38,9 @@ let rec poly vs r =
     let v = Seq.head vs in 
     (encode v +@ poly (Seq.tail vs) r ) *@ r
 
-let finish a s = decode (a +@ (encode s))
+let finish (a:elem) (s:tag) : Tot tag = decode (a +@ (encode s))
 
-let mac vs r s = finish (poly vs r) s
-
-
-#reset-options "--initial_fuel 0 --max_fuel 2 --initial_ifuel 0 --max_ifuel 2"
-
-val add_comm: a:elem -> b:elem -> Lemma (a +@ b == b +@ a)
-let add_comm e1 e2 = add_comm #gf128 e1 e2
+let mac (vs:text) (r:elem) (s:tag) : Tot tag  = finish (poly vs r) s
 
 val poly_non_empty: vs:text{Seq.length vs > 0} -> r:elem ->
   Lemma (poly vs r == (encode (Seq.head vs) +@ poly (Seq.tail vs) r) *@ r)
@@ -61,12 +52,11 @@ let poly_cons x xs r =
   poly_non_empty (Seq.cons x xs) r;
   Seq.lemma_eq_intro (Seq.tail (Seq.cons x xs)) xs
 
-val poly_empty: t:text{Seq.length t == 0} -> r:elem ->
-  Lemma (poly t r == zero)
-let poly_empty t r = ()
+(* Test *)
 
+#reset-options "--initial_fuel 0 --max_fuel 2 --initial_ifuel 0 --max_ifuel 2"
 
-val encode_bytes: txt:bytes -> Tot (text) (decreases (Seq.length txt))
+val encode_bytes: txt:bytes -> Tot text (decreases (Seq.length txt))
 let rec encode_bytes txt =
   let l = Seq.length txt in
   if l = 0 then

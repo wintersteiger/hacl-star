@@ -1,27 +1,52 @@
-all:
-	@echo
-	@echo "############## LAX TYPECHEKING #############"
-	@echo
-	$(MAKE) lax
-	@echo
-	@echo "############## FULL TYPECHEKING #############"
-	@echo
-	$(MAKE) ver
+FSTAR_HOME?=../../../../FStar
+KREMLIN_HOME?=$(FSTAR_HOME)/../kremlin
+HACL_HOME?=../../..
+include ../../Makefile.include
 
-FSTAR_HOME ?= ../../../FStar
-FSTAR ?= $(FSTAR_HOME)/bin/fstar.exe 
-KREMLIN_HOME = $(FSTAR_HOME)/../kremlin
-HACL_HOME ?= ../..
+SPECS=$(HACL_HOME)/specs
 
-MODULES= Hacl.Symmetric.GCM.fst Hacl.Symmetric.AES.fst Hacl.AEAD.AES256GCM.fst
+INCLUDE_DIRS=$(HACL_HOME)/code/lib/kremlin $(SPECS)
 
-FSTAR_INCLUDES:=--include $(FSTAR_HOME)/ulib/hyperstack --include $(HACL_HOME)/code/lib
+GCM_SPECIFIC= \
+	Hacl.Impl.GF128.fst
 
-lax:
-	$(FSTAR) $(FSTAR_INCLUDES) --lax $(MODULES)
 
-ver:
-	$(FSTAR) $(FSTAR_INCLUDES) $(MODULES)
+SLOW=
+
+TODO=
+
+GCM_FILES= $(GCM_SPECIFIC)
+
+FSTARB=$(FSTAR_HOME)/bin/fstar.exe --include $(FSTAR_HOME)/ulib/hyperstack \
+	$(addprefix --include , $(INCLUDE_DIRS)) --include $(KREMLIN_HOME)/kremlib
+
+FSTAR_CT=$(FSTAR_HOME)/bin/fstar.exe --include $(FSTAR_HOME)/ulib/hyperstack \
+		--include ../lib $(addprefix --include , $(SPECS)) \
+		--include $(KREMLIN_HOME)/kremlib
+
+# Lax typechecking against the restricted integer interface
+%.fst-ct: %.fst
+	$(FSTAR_CT) --lax $^
+
+all-ct: $(addsuffix -ct, $(GCM_FILES))
+
+# Full typechecking against the transparent integer interface
+%.fst-verify: %.fst
+	$(FSTARB) $^ --use_hints --record_hints
+
+all-ver: $(addsuffix -verify, $(GCM_FILES))
+
+# Minimal lax typechecking, pre-requisite to any extraction
+%.fst-lax: %.fst
+	$(FSTARB) --lax $^
+
+all-lax: $(addsuffix -lax, $(GCM_FILES))
+
+# Hints regeneration
+%.fst-hints: %.fst
+	$(FSTARB) $^ --use_hints --record_hints
+
+all-hints: $(addsuffix -hints, $(GCM_FILES))
 
 clean:
-	rm -f *~
+	rm -rf *.exe *.exe.* *.out *~

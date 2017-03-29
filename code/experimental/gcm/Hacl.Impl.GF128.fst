@@ -28,7 +28,10 @@ noextract let sel_elem h (b:elemB{live h b}): GTot elem = to_felem #gf128 (H128.
 val load128_be: b:buffer H8.t{length b = 16} -> Stack H128.t
   (requires (fun h -> live h b))
   (ensures (fun h0 n h1 -> h0 == h1 /\ live h1 b /\ to_felem #gf128 (H128.v n) = encode (as_seq h1 b)))
-let load128_be b = load128_be b
+let load128_be b = 
+  let h = ST.get() in
+  lemma_eq_intro (as_seq h b) (pad (as_seq h b));
+  load128_be b
 
 #reset-options "--z3rlimit 20 --max_fuel 1 --initial_fuel 1"
 
@@ -208,6 +211,6 @@ val finish: acc:elemB -> s:buffer H8.t{length s = 16} -> Stack unit
   (ensures  (fun h0 _ h1 -> live h0 acc /\ live h0 s
     /\ modifies_1 acc h0 h1 /\ live h1 acc
     /\ decode (sel_elem h1 acc) = finish (sel_elem h0 acc) (as_seq h0 s)))
-let finish a s = 
+let finish acc s = 
   let sf = load128_be s in
-  a.(0ul) <- H128.(a.(0ul) ^^ sf)
+  acc.(0ul) <- H128.(acc.(0ul) ^^ sf)
