@@ -20,12 +20,14 @@ open Hacl.Endianness
 
 type elem = Spec.elem
 type elemB = b:buffer H128.t{length b = 1}
+type wordB_16 = b:buffer H8.t{length b = 16}
+type tagB = wordB_16
 
 noextract let sel_elem h (b:elemB{live h b}): GTot elem = to_felem #gf128 (H128.v (Seq.index (as_seq h b) 0))
 
 #set-options "--z3rlimit 20 --max_fuel 0 --initial_fuel 0"
 
-val load128_be: b:buffer H8.t{length b = 16} -> Stack H128.t
+val load128_be: b:wordB_16 -> Stack H128.t
   (requires (fun h -> live h b))
   (ensures (fun h0 n h1 -> h0 == h1 /\ live h1 b /\ to_felem #gf128 (H128.v n) = encode (as_seq h1 b)))
 let load128_be b = 
@@ -35,7 +37,7 @@ let load128_be b =
 
 #reset-options "--z3rlimit 20 --max_fuel 1 --initial_fuel 1"
 
-val store128_be: b:buffer H8.t{length b = 16} -> n:H128.t -> Stack unit
+val store128_be: b:wordB_16 -> n:H128.t -> Stack unit
   (requires (fun h -> live h b))
   (ensures (fun h0 _ h1 -> modifies_1 b h0 h1 /\ live h1 b /\ Seq.equal (decode (to_felem #gf128 (H128.v n))) (as_seq h1 b)))
 let store128_be b n =
@@ -206,7 +208,7 @@ let add_and_multiply acc block k =
   gf128_add acc block;
   gf128_mul acc k
 
-val finish: acc:elemB -> s:buffer H8.t{length s = 16} -> Stack unit
+val finish: acc:elemB -> s:tagB -> Stack unit
   (requires (fun h -> live h acc /\ live h s /\ disjoint acc s))
   (ensures  (fun h0 _ h1 -> live h0 acc /\ live h0 s
     /\ modifies_1 acc h0 h1 /\ live h1 acc
