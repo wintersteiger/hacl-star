@@ -48,9 +48,43 @@ private val as_pure_st: h:HyperStack.mem -> st:gmac_state{valid_st h st} -> GTot
 let as_pure_st h st = MkState (get_r h st) (get_s h st) (get_acc h st) (get_pmsg h st)
 
 
-(* Intermediate function *)
-#reset-options "--z3rlimit 40 --initial_fuel 0 --max_fuel 0 --initial_ifuel 0 --max_ifuel 0"
+#reset-options "--z3rlimit 50 --initial_fuel 0 --max_fuel 0 --initial_ifuel 0 --max_ifuel 0"
 
+val gmac_init: st:gmac_state -> r:wordB_16{disjoint st.r_acc r /\ disjoint st.s_pmsg_len r} ->
+  s:tagB{disjoint st.r_acc s /\ disjoint st.s_pmsg_len s /\ disjoint r s} -> Stack unit
+  (requires (fun h -> valid_st h st /\ live h r /\ live h s))
+  (ensures (fun h0 _ h1 -> valid_st h0 st /\ live h0 r /\ live h0 s /\
+    valid_st h1 st /\ live h1 r /\ live h1 s /\ modifies_2 st.r_acc st.s_pmsg_len h0 h1 /\
+    as_pure_st h1 st == gmac_init_spec (as_seq h0 r) (as_seq h0 s)))
+let gmac_init st r s =
+  let h0 = ST.get() in
+  let st_r = sub st.r_acc 0ul 1ul in
+  let rv = load128_be r in
+  st_r.(0ul) <- rv;
+  let st_s = sub st.s_pmsg_len 0ul 16ul in
+  blit s 0ul st_s 0ul 16ul;
+  let st_acc = sub st.r_acc 1ul 1ul in
+  st_acc.(0ul) <- zero_128;
+  let st_len = sub st.s_pmsg_len 32ul 1ul in
+  st_len.(0ul) <- uint8_to_sint8 0uy;
+  let h1 = ST.get() in
+  (* valid_st h1 st *)
+  lemma_sub_spec st.s_pmsg_len 32ul 1ul h1;
+  Seq.lemma_index_slice (as_seq h1 st.s_pmsg_len) 32 33 0;
+  (* get_r h1 st = encode (as_seq h0 r) *)
+  Seq.lemma_eq_intro (get_r h1 st) (encode (as_seq h0 r));
+  (* get_s h1 st = as_seq h0 s *)
+  Seq.lemma_eq_intro (Seq.slice (get_s h1 st) 0 16) (get_s h1 st);
+  Seq.lemma_eq_intro (Seq.slice (as_seq h0 s) 0 16) (as_seq h0 s);
+  Seq.lemma_eq_intro (get_s h1 st) (as_seq h0 s);
+  (* get_acc h1 st = zero *)
+  fzero_lemma zero_128;
+  Seq.lemma_eq_intro (get_acc h1 st) zero;
+  lemma_sub_spec st.s_pmsg_len 16ul (h8_to_u32 (get h1 st.s_pmsg_len 32)) h1;
+  Seq.lemma_eq_intro (get_pmsg h1 st) (Seq.createEmpty)
+
+
+(*
 inline_for_extraction private
 val gmac_set_r: st:gmac_state -> r:wordB_16{disjoint st.r_acc r /\ disjoint st.s_pmsg_len r} -> Stack unit
   (requires (fun h -> valid_st h st /\ live h r))
@@ -180,3 +214,4 @@ let gmac_init st r s =
   gmac_set_s st s;
   gmac_init_acc st;
   gmac_init_pmsg st
+*)

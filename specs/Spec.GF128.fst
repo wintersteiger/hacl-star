@@ -24,6 +24,7 @@ let add_comm e1 e2 = add_comm #gf128 e1 e2
 
 type word = w:bytes{length w <= 16}
 type word_16 = w:bytes{length w = 16}
+type key = word_16
 type tag = word_16
 type text = seq word
 
