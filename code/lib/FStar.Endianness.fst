@@ -359,3 +359,20 @@ let rec big_bytes len n =
     let b = Seq.append b' b'' in
     assert(Seq.equal b' (Seq.slice b 0 (v len)));
     b
+
+#reset-options "--z3rlimit 20 --initial_fuel 1 --max_fuel 1"
+
+val lemma_index_big_bytes: len:UInt32.t -> n:nat{n < pow2 (8 * v len)} -> i:nat{i < v len} -> Lemma
+  (requires True)
+  (ensures (U8.v (index (big_bytes len n) i) = n / (pow2 (8 * (v len - i - 1))) % pow2 8))
+  (decreases (v len - i))
+  [SMTPat (index (big_bytes len n) i)]
+let rec lemma_index_big_bytes len n i =
+  if v len = i + 1 then assert_norm(pow2 8 = 256)
+  else begin
+    pow2_minus (8 * v len) 8;
+    assert_norm(pow2 8 = 256);
+    lemma_index_big_bytes (len -^ 1ul) (n / 256) i;
+    division_multiplication_lemma n 256 (pow2 (8 * (v (len -^ 1ul) - i - 1)));
+    pow2_plus 8 (8 * (v (len -^ 1ul) - i - 1))
+  end

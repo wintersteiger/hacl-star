@@ -1,5 +1,6 @@
 module Hacl.Impl.GF128
 
+module U8   = FStar.UInt8
 module U32  = FStar.UInt32
 module H8   = Hacl.UInt8
 module H128 = Hacl.UInt128
@@ -15,53 +16,27 @@ open FStar.Seq
 open FStar.Buffer
 open FStar.UInt
 open FStar.BitVector
+open FStar.Endianness
 open Hacl.Cast
 open Hacl.Endianness
-
-type elem = Spec.elem
-type elemB = b:buffer H128.t{length b = 1}
-type wordB_16 = b:buffer H8.t{length b = 16}
-type tagB = wordB_16
-
-noextract let sel_elem h (b:elemB{live h b}): GTot elem = to_felem #gf128 (H128.v (Seq.index (as_seq h b) 0))
+open Hacl.Spec.Endianness
 
 #set-options "--z3rlimit 20 --max_fuel 0 --initial_fuel 0"
 
-val load128_be: b:wordB_16 -> Stack H128.t
-  (requires (fun h -> live h b))
-  (ensures (fun h0 n h1 -> h0 == h1 /\ live h1 b /\ to_felem #gf128 (H128.v n) = encode (as_seq h1 b)))
-let load128_be b = 
-  let h = ST.get() in
-  lemma_eq_intro (as_seq h b) (pad (as_seq h b));
-  load128_be b
+(* Type definition *)
 
-#reset-options "--z3rlimit 20 --max_fuel 1 --initial_fuel 1"
+type elem = Spec.elem
+type elemB = b:buffer H128.t{length b = 1}
+type wordB = b:buffer H8.t{length b <= 16}
+type wordB_16 = b:buffer H8.t{length b = 16}
+type keyB = wordB_16
+type tagB = wordB_16
 
-val store128_be: b:wordB_16 -> n:H128.t -> Stack unit
-  (requires (fun h -> live h b))
-  (ensures (fun h0 _ h1 -> modifies_1 b h0 h1 /\ live h1 b /\ Seq.equal (decode (to_felem #gf128 (H128.v n))) (as_seq h1 b)))
-let store128_be b n =
-  hstore128_be b n;
-  let h1 = ST.get() in
-  FStar.Endianness.lemma_big_endian_inj (decode (to_felem #gf128 (H128.v n))) (as_seq h1 b)
+let sel_elem h (b:elemB{live h b}): GTot elem = to_felem #gf128 (H128.v (Seq.index (as_seq h b) 0))
+let sel_word h (b:buffer H8.t{live h b}): GTot (w:seq U8.t{Seq.length w = length b}) = reveal_sbytes (as_seq h b)
 
-(* * Every block of message is regarded as an element in Galois field GF(2^128), **)
-(* * The following several functions are basic operations in this field.         **)
-(* * gf128_add: addition. Equivalent to bitxor.                                  **)
-(* * gf128_shift_reduce: shift right by 1 bit then add. Used in multiplication.  **)
-(* * gf128_mul: multiplication. Achieved by combining 128 additions.             **)
 
-(* In place addition. Calculate "a + b" and store the result in a. *)
-val gf128_add: a:elemB -> b:elemB {disjoint a b} -> Stack unit
-  (requires (fun h -> live h a /\ live h b))
-  (ensures (fun h0 _ h1 -> 
-    live h0 a /\ live h0 b /\ live h1 a /\ modifies_1 a h0 h1 /\
-    sel_elem h1 a = sel_elem h0 a +@ sel_elem h0 b))
-let gf128_add a b = 
-  let av = a.(0ul) in
-  let bv = b.(0ul) in
-  let r = H128.(av ^^ bv) in
-  a.(0ul) <- r
+(* Basic constants *)
 
 #reset-options "--z3rlimit 40 --max_fuel 0 --initial_fuel 0"
 
@@ -89,11 +64,26 @@ private val elem_vec_logand_lemma: a:BV.bv_t 128 -> i:nat{i < 128} ->
 let elem_vec_logand_lemma a i = ()
 
 
+(* Field addition *)
+
+(* In place addition. Calculate "a + b" and store the result in a. *)
+abstract val gf128_add: a:elemB -> b:elemB {disjoint a b} -> Stack unit
+  (requires (fun h -> live h a /\ live h b))
+  (ensures (fun h0 _ h1 -> 
+    live h0 a /\ live h0 b /\ live h1 a /\ modifies_1 a h0 h1 /\
+    sel_elem h1 a = sel_elem h0 a +@ sel_elem h0 b))
+let gf128_add a b = 
+  let av = a.(0ul) in
+  let bv = b.(0ul) in
+  let r = H128.(av ^^ bv) in
+  a.(0ul) <- r
+
+
+(* Assistant functions for gf128_mul *)
+
 #reset-options "--max_fuel 0 --z3rlimit 50"
 
-(* * ith_bit_mask return a mask corresponding to the i-th bit of num.            **)
-(* * This function should be in constant time.                                   **)
-
+(* ith_bit_mask return a mask corresponding to the i-th bit of num. *)
 private inline_for_extraction 
 val ith_bit_mask: num:H128.t -> i:U32.t{U32.v i < 128} ->
   Tot (r:H128.t {(nth (H128.v num) (U32.v i) = true  ==> r == ones_128) /\
@@ -108,7 +98,8 @@ let ith_bit_mask num i =
   let res = H128.(num &^ proj) in
   elem_vec_logand_lemma (FStar.UInt.to_vec #128 (H128.v num)) (U32.v i);
   H128.eq_mask res proj
-
+  
+(* Shift right by 1 bit then add. *)
 private val gf128_shift_reduce: a:elemB -> Stack unit
   (requires (fun h -> live h a))
   (ensures (fun h0 _ h1 -> 
@@ -125,6 +116,7 @@ let gf128_shift_reduce a =
   FStar.UInt.logxor_lemma_1 (H128.v av);
   a.(0ul) <- H128.(av ^^ msk_r_mul)
 
+(* Conditional addition *)
 private val gf128_cond_fadd:
   x:elemB ->
   y:elemB {disjoint x y} ->
@@ -152,6 +144,9 @@ private val fmul_loop_lemma: #f:field -> a:felem f -> b:felem f -> n:nat{n < f.b
   (requires True)
   (ensures fmul_loop a b n = cond_fadd a b (fmul_loop (shift_reduce #f a) b (n + 1)) n)
 let fmul_loop_lemma #f a b n = ()
+
+
+(* Field multiplication *)
 
 private val gf128_mul_loop: 
   x:elemB -> 
@@ -181,8 +176,7 @@ let rec gf128_mul_loop x y z ctr =
 #reset-options "--z3rlimit 20 --max_fuel 0 --initial_fuel 0"
 
 (* In place multiplication. Calculate "a * b" and store the result in a.    *)
-(* WARNING: may have issues with constant time. *)
-val gf128_mul: x:elemB -> y:elemB {disjoint x y} -> Stack unit
+abstract val gf128_mul: x:elemB -> y:elemB {disjoint x y} -> Stack unit
   (requires (fun h -> live h x /\ live h y))
   (ensures (fun h0 _ h1 -> live h0 x /\ live h0 y /\ live h1 x /\ live h1 y /\ modifies_1 x h0 h1 /\
     sel_elem h1 x = sel_elem h0 x *@ sel_elem h0 y))
@@ -197,6 +191,24 @@ let gf128_mul x y =
   pop_frame()
 
 
+(* Functions for MAC *)
+
+abstract val encodeB: b:wordB_16 -> Stack H128.t
+  (requires (fun h -> live h b))
+  (ensures (fun h0 n h1 -> h0 == h1 /\ live h1 b /\ to_felem #gf128 (H128.v n) = encode (sel_word h0 b)))
+let encodeB b = 
+  let h = ST.get() in
+  lemma_eq_intro (sel_word h b) (pad (sel_word h b));
+  hload128_be b
+
+abstract val decodeB: b:wordB_16 -> n:H128.t -> Stack unit
+  (requires (fun h -> live h b))
+  (ensures (fun h0 _ h1 -> modifies_1 b h0 h1 /\ live h1 b /\ decode (to_felem #gf128 (H128.v n)) = sel_word h1 b))
+let decodeB b n =
+  hstore128_be b n;
+  let h1 = ST.get() in
+  FStar.Endianness.lemma_big_endian_inj (decode (to_felem #gf128 (H128.v n))) (sel_word h1 b)
+  
 val add_and_multiply: acc:elemB -> block:elemB{disjoint acc block}
   -> k:elemB{disjoint acc k /\ disjoint block k} -> Stack unit
   (requires (fun h -> live h acc /\ live h block /\ live h k))
@@ -212,7 +224,7 @@ val finish: acc:elemB -> s:tagB -> Stack unit
   (requires (fun h -> live h acc /\ live h s /\ disjoint acc s))
   (ensures  (fun h0 _ h1 -> live h0 acc /\ live h0 s
     /\ modifies_1 acc h0 h1 /\ live h1 acc
-    /\ decode (sel_elem h1 acc) = finish (sel_elem h0 acc) (as_seq h0 s)))
+    /\ decode (sel_elem h1 acc) = finish (sel_elem h0 acc) (sel_word h0 s)))
 let finish acc s = 
-  let sf = load128_be s in
+  let sf = encodeB s in
   acc.(0ul) <- H128.(acc.(0ul) ^^ sf)

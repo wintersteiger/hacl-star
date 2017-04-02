@@ -4,7 +4,6 @@ module Spec = Spec.GF128
 
 open Spec
 
-open FStar.Mul
 open FStar.Seq
 open FStar.Endianness
 
@@ -12,7 +11,7 @@ open FStar.Endianness
 
 type gmac_state_ = | MkState: r:elem -> acc:elem -> pmsg:bytes{length pmsg < 16} -> gmac_state_
 
-#set-options "--z3rlimit 20 --initial_fuel 0 --max_fuel 0 --initial_ifuel 0 --max_ifuel 0"
+#set-options "--z3rlimit 30 --initial_fuel 0 --max_fuel 0 --initial_ifuel 0 --max_ifuel 0"
 
 let gmac_alloc_spec : gmac_state_ = MkState zero zero createEmpty
 

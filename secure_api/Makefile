@@ -15,7 +15,7 @@ FSTAR_ARGS=$(OTHERFLAGS)
 OCAMLOPT := $(OCAMLOPT) -w -8-20-26-28-10
 FSTAR_EXTRACT=$(FSTAR) $(CODEGEN_ARGS) --include $(FSTAR_HOME)/ulib/hyperstack --include crypto --include crypto/real --include ../specs
 
-KRML_INCLUDES=$(addprefix -I ,aead uf1cma vale vale/aes prf utils ../code/experimental/aesgcm ../code/bignum ../code/poly1305 ../code/salsa-family ../code/lib/kremlin ../specs $(KREMLIN_HOME)/kremlib $(KREMLIN_HOME)/test)
+KRML_INCLUDES=$(addprefix -I ,aead uf1cma vale vale/aes prf utils ../code/experimental/aesgcm ../code/experimental/gcm ../code/bignum ../code/poly1305 ../code/salsa-family ../code/lib/kremlin ../specs $(KREMLIN_HOME)/kremlib $(KREMLIN_HOME)/test)
 KRML_ARGS=-ccopt -maes -ccopt -Wno-error=pointer-sign $(KOPTS) -ccopt -std=gnu99
 KRML=$(KREMLIN_HOME)/krml $(KRML_ARGS) $(KRML_INCLUDES) 
 
@@ -80,7 +80,7 @@ OPTIONS=--max_fuel 4 --initial_fuel 0 --max_ifuel 2 --initial_ifuel 0 --z3rlimit
 FSTAR_INCLUDE_PATHS= \
 --include $(FSTAR_HOME)/ulib/hyperstack \
 --include $(HACL_HOME)/code/bignum \
---include $(HACL_HOME)/code/experimental/aesgcm \
+--include $(HACL_HOME)/code/experimental/gcm \
 --include $(HACL_HOME)/code/lib/kremlin \
 --include $(HACL_HOME)/code/poly1305 \
 --include $(HACL_HOME)/code/salsa-family \
@@ -104,7 +104,7 @@ FSTAR_INCLUDE_PATHS= \
 VERIFY= \
   utils/Buffer.Utils \
   utils/Crypto.Symmetric.Bytes \
-  ../code/experimental/aesgcm/Crypto.Symmetric.GF128 \
+  ../code/experimental/gcm/Hacl.Impl.GF128 \
   ../code/experimental/aesgcm/Crypto.Symmetric.AES \
   ../code/experimental/aesgcm/Crypto.Symmetric.AES128 \
   prf/Crypto.Symmetric.Cipher \

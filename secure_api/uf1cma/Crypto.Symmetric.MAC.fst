@@ -18,7 +18,7 @@ open Flag
 open FStar.Buffer // no need?
 
 module GS = Spec.GF128
-module GF = Crypto.Symmetric.GF128
+module GF = Hacl.Impl.GF128
 
 //17-02-11 now switched from 32-bit to 64-bit; can we keep both?
 
@@ -249,7 +249,7 @@ let encode_r #i b raw =
   | GHASH ->
       //let h0 = ST.get () in
       //assert (Buffer.modifies_1 raw h0 h0); // Necessary for triggering right lemmas
-      let i = GF.load128_be raw in
+      let i = GF.encodeB raw in
       let b' : Buffer.buffer UInt128.t = b in
       b'.(0ul) <- i
 
@@ -404,7 +404,7 @@ let update #i r a w =
     let a' : Buffer.buffer UInt128.t = a in
     let r' : Buffer.buffer UInt128.t = r in
     let e = Buffer.create GF.zero_128 1ul in
-    e.(0ul) <- GF.load128_be w;
+    e.(0ul) <- GF.encodeB w;
     GF.add_and_multiply a' e r'
   ); pop_frame()
 
@@ -439,8 +439,6 @@ val finish: #i:id -> s:tagB -> a:elemB i -> t:tagB -> Stack unit
     | GHASH    -> Seq.equal tv (GS.finish av sv) )))
 
 #reset-options "--z3rlimit 200 --initial_fuel 0 --max_fuel 0 --initial_ifuel 1 --max_ifuel 1"
-
-#reset-options "--z3rlimit 200 --initial_fuel 0 --max_fuel 0 --initial_ifuel 1 --max_ifuel 1"
 private val lemma_modifies_3_2_finish: #a:Type -> #a':Type -> h:mem -> h':mem -> h'':mem -> b:buffer a -> b':buffer a' -> Lemma
   (requires (Buffer.live h b /\ Buffer.live h b' /\ Buffer.modifies_0 h h' /\ Buffer.modifies_2 b b' h' h''))
   (ensures (Buffer.modifies_3_2 b b' h h''))
@@ -472,7 +470,7 @@ let finish #i s a t =
   | GHASH ->
     let a' : Buffer.buffer UInt128.t = a in
     GF.finish a' s;
-    GF.store128_be t a'.(0ul)
+    GF.decodeB t a'.(0ul)
 
 //17-02-11 new lemma
 val lemma_poly_finish_to_mac:
