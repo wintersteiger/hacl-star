@@ -8,8 +8,6 @@ open Spec.GaloisField
 
 (* Field types and parameters *)
 
-#set-options "--initial_fuel 0 --max_fuel 0 --initial_ifuel 0 --max_ifuel 0"
-
 let irr : polynomial 127 = UInt.to_vec #128 0xe1000000000000000000000000000000
 let gf128 = mk_field 128 irr
 let elem = felem gf128
@@ -19,6 +17,7 @@ let op_Star_At e1 e2 = fmul #gf128 e1 e2
 
 val add_comm: a:elem -> b:elem -> Lemma (a +@ b == b +@ a)
 let add_comm e1 e2 = add_comm #gf128 e1 e2
+
 
 (* GCM types and specs *)
 
@@ -43,19 +42,38 @@ let finish (a:elem) (s:tag) : Tot tag = decode (a +@ (encode s))
 
 let mac (vs:text) (r:elem) (s:tag) : Tot tag  = finish (poly vs r) s
 
+
+(* Corresponding lemmas *)
+
+#set-options "--z3rlimit 40 --initial_fuel 1 --max_fuel 1 --initial_ifuel 0 --max_ifuel 0"
+
 val poly_non_empty: vs:text{Seq.length vs > 0} -> r:elem ->
-  Lemma (poly vs r == (encode (Seq.head vs) +@ poly (Seq.tail vs) r) *@ r)
+  Lemma (poly vs r = (encode (Seq.head vs) +@ poly (Seq.tail vs) r) *@ r)
 let poly_non_empty vs r = ()
 
 val poly_cons: x:word -> xs:text -> r:elem ->
-  Lemma (poly (Seq.cons x xs) r == (encode x +@ poly xs r) *@ r)
+  Lemma (poly (Seq.cons x xs) r = (encode x +@ poly xs r) *@ r)
 let poly_cons x xs r =
   poly_non_empty (Seq.cons x xs) r;
   Seq.lemma_eq_intro (Seq.tail (Seq.cons x xs)) xs
 
+val lemma_encode_decode: e:elem ->
+  Lemma (requires True) (ensures (encode (decode e) = e))
+  [SMTPat (encode (decode e))]
+let lemma_encode_decode e =
+  Seq.lemma_eq_intro (decode e) (pad (decode e))
+
+val lemma_decode_encode: w:word_16 ->
+  Lemma (requires True) (ensures (decode (encode w) = w))
+  [SMTPat (decode (encode w))]
+let lemma_decode_encode w =
+  Seq.lemma_eq_intro w (pad w);
+  lemma_big_endian_inj w (big_bytes 16ul (big_endian w))
+
+
 (* Test *)
 
-#reset-options "--initial_fuel 0 --max_fuel 2 --initial_ifuel 0 --max_ifuel 2"
+#reset-options "--z3rlimit 20 --initial_fuel 0 --max_fuel 0 --initial_ifuel 0 --max_ifuel 0"
 
 val encode_bytes: txt:bytes -> Tot text (decreases (Seq.length txt))
 let rec encode_bytes txt =

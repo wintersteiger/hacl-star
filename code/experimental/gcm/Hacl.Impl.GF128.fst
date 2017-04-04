@@ -195,7 +195,8 @@ let gf128_mul x y =
 
 abstract val encodeB: b:wordB_16 -> Stack H128.t
   (requires (fun h -> live h b))
-  (ensures (fun h0 n h1 -> h0 == h1 /\ live h1 b /\ to_felem #gf128 (H128.v n) = encode (sel_word h0 b)))
+  (ensures (fun h0 n h1 -> h0 == h1 /\ live h1 b /\
+    to_felem #gf128 (H128.v n) = encode (reveal_sbytes (as_seq h0 b))))
 let encodeB b = 
   let h = ST.get() in
   lemma_eq_intro (sel_word h b) (pad (sel_word h b));
@@ -203,7 +204,8 @@ let encodeB b =
 
 abstract val decodeB: b:wordB_16 -> n:H128.t -> Stack unit
   (requires (fun h -> live h b))
-  (ensures (fun h0 _ h1 -> modifies_1 b h0 h1 /\ live h1 b /\ decode (to_felem #gf128 (H128.v n)) = sel_word h1 b))
+  (ensures (fun h0 _ h1 -> modifies_1 b h0 h1 /\ live h1 b /\
+    decode (to_felem #gf128 (H128.v n)) = reveal_sbytes (as_seq h1 b)))
 let decodeB b n =
   hstore128_be b n;
   let h1 = ST.get() in

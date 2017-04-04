@@ -104,6 +104,24 @@ let rec little_endian_append w1 w2 =
     assert (UInt8.v (index w1 0) + pow2 8 * little_endian w1' == little_endian w1)
     end
 
+val big_endian_append: w1:bytes -> w2:bytes -> Lemma
+  (requires True)
+  (ensures
+    big_endian (Seq.append w1 w2) ==
+    big_endian w1 * pow2 (8 * Seq.length w2) + big_endian w2)
+  (decreases (Seq.length w2))
+let rec big_endian_append w1 w2 =
+  if length w2 = 0 then begin
+    assert_norm(pow2 (8 * 0) = 1);
+    Seq.lemma_eq_intro w1 (Seq.append w1 w2)
+  end else begin
+    let w2' = Seq.slice w2 0 (Seq.length w2 - 1) in
+    Seq.lemma_eq_intro (Seq.slice (Seq.append w1 w2) 0 (Seq.length w1 + Seq.length w2 - 1)) 
+      (Seq.append w1 (Seq.slice w2 0 (Seq.length w2 - 1)));
+    big_endian_append w1 w2';
+    Math.Lemmas.pow2_plus (8 * Seq.length w2') 8
+  end
+
 
 #reset-options "--initial_fuel 1 --max_fuel 1 --z3rlimit 50"
 
