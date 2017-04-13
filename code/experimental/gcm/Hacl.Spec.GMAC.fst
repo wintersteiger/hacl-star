@@ -188,6 +188,17 @@ let lemma_gmac_update_ st msg_1 msg_2 =
 val lemma_gmac_update_empty: st:gmac_state_ -> Lemma (gmac_update_spec st createEmpty = st)
 let lemma_gmac_update_empty st = lemma_eq_intro (st.pmsg @| createEmpty) st.pmsg
 
+val lemma_gmac_update_exact_block: st:gmac_state_ -> msg:sbytes{length msg + length st.pmsg = 16} -> Lemma
+  (gmac_update_spec st msg = MkState st.r ((st.acc +@ (encode (st.pmsg @| reveal_sbytes msg))) *@ st.r) createEmpty)
+let lemma_gmac_update_exact_block st msg =
+  let block : word = st.pmsg @| reveal_sbytes (slice msg 0 (16 - length st.pmsg)) in
+  lemma_eq_intro block (st.pmsg @| reveal_sbytes msg);
+  let nmsg : sbytes = slice msg (16 - length st.pmsg) (length msg) in
+  lemma_eq_intro nmsg createEmpty;
+  let nacc = (st.acc +@ (encode block)) *@ st.r in
+  let nst = MkState st.r nacc createEmpty in
+  lemma_gmac_update_empty nst
+
 val lemma_gmac_update_last: st:gmac_state_{length st.pmsg = 0} ->
   msg:sbytes{length msg > 0 /\ length msg <= 16} -> Lemma
   (gmac_last_spec (gmac_update_spec st msg) = (st.acc +@ (encode (reveal_sbytes msg))) *@ st.r)
