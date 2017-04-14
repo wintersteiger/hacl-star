@@ -1,6 +1,5 @@
 module Hacl.Standalone.GMAC
 
-module U8   = FStar.UInt8
 module U32  = FStar.UInt32
 module H8   = Hacl.UInt8
 module H128 = Hacl.UInt128
@@ -34,9 +33,9 @@ let live_st h (st:gmac_state) : Type0 =
 let valid_st h (st:gmac_state) : Type0 =
   live_st h st /\ U32.v (get h st.len 0) < 16
 
-private let get_r h (st:gmac_state{live_st h st}) : GTot elem = sel_elem h (sub st.r_acc 0ul 1ul)
-private let get_acc h (st:gmac_state{live_st h st}) : GTot elem = sel_elem h (sub st.r_acc 1ul 1ul)
-private let get_pmsg h (st:gmac_state{valid_st h st}) : GTot bytes =
+let get_r h (st:gmac_state{live_st h st}) : GTot elem = sel_elem h (sub st.r_acc 0ul 1ul)
+let get_acc h (st:gmac_state{live_st h st}) : GTot elem = sel_elem h (sub st.r_acc 1ul 1ul)
+let get_pmsg h (st:gmac_state{valid_st h st}) : GTot bytes =
   reveal_sbytes (slice (as_seq h st.pmsg) 0 (U32.v (get h st.len 0)))
 
 private val as_pure_st: h:HyperStack.mem -> st:gmac_state{valid_st h st} -> GTot (pst:gmac_state_)

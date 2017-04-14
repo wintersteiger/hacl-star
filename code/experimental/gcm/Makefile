@@ -8,6 +8,7 @@ SPECS=$(HACL_HOME)/specs
 INCLUDE_DIRS=$(HACL_HOME)/code/lib/kremlin $(SPECS)
 
 GCM_SPECIFIC= \
+	GCM.fst \
 	Hacl.Impl.GF128.fst \
 	Hacl.Spec.GMAC.fst \
 	Hacl.Standalone.GMAC.fst
