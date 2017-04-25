@@ -28,10 +28,33 @@ let poly1305_start a = Hacl.Impl.Poly1305_64.poly1305_start a
 let poly1305_encode_r r key =
   Hacl.Impl.Poly1305_64.poly1305_encode_r r key
 
+#reset-options "--max_fuel 0 --z3rlimit 200"
+
 [@"c_inline"]
-let poly1305_update log st m =
-  admit(); // TODO: Fix
-  Hacl.Impl.Poly1305_64.poly1305_update log st m
+let poly1305_update current_log st m =
+  let h0 = ST.get() in
+  let updated_log = Hacl.Impl.Poly1305_64.poly1305_update current_log st m in
+  let h1 = ST.get() in
+  assert(modifies_1 (get_h st) h0 h1);
+  assert(live_st h1 st);
+  assert(red_44 (as_seq h1 (get_h st)));
+  assert(selem (as_seq h1 (get_r st)) == selem (as_seq h0 (get_r st)));
+  assert(let acc0 = selem (as_seq h0 (get_h st)) in
+         let acc1 = selem (as_seq h1 (get_h st)) in
+         let r0 = selem (as_seq h0 (get_r st)) in
+         let block  = Hacl.Spec.Endianness.hlittle_endian (as_seq h0 m) + pow2 128 in
+         acc1  = Spec.Poly1305.((acc0 +@ block) *@ r0));
+  assert(let acc0 = selem (as_seq h0 (get_h st)) in
+         let acc1 = selem (as_seq h1 (get_h st)) in
+         let r0 = selem (as_seq h0 (get_r st)) in
+         let r1 = selem (as_seq h1 (get_r st)) in
+         let log0 = Ghost.reveal current_log in
+         let log1 = Ghost.reveal updated_log in
+         let block  = Hacl.Spec.Endianness.hlittle_endian (as_seq h0 m) + pow2 128 in
+         (log1 == FStar.Seq.((create 1 (Hacl.Spec.Endianness.reveal_sbytes (as_seq h0 m))) @| log0)));
+  admit();
+  updated_log
+
 
 [@"substitute"]
 let poly1305_finish_ log st mac m len key_s =

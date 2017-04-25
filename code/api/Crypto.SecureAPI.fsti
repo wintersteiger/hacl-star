@@ -61,6 +61,7 @@ val poly1305_encode_r:
                                                 0x0ffffffc0ffffffc0ffffffc0fffffff
     ))
 
+#reset-options "--max_fuel 0 --z3rlimit 20"
 
 [@"c_inline"]
 val poly1305_update:
@@ -77,14 +78,14 @@ val poly1305_update:
       /\ red_45 (as_seq h0 (get_h st))
       /\ red_44 (as_seq h0 (get_r st))
       /\ red_45 (as_seq h1 (get_h st))
-      /\ (let acc0 = seval (as_seq h0 (get_h st)) in
-         let acc1 = seval (as_seq h1 (get_h st)) in
-         let r0 = seval (as_seq h0 (get_r st)) in
-         let r1 = seval (as_seq h1 (get_r st)) in
+      /\ (let acc0 = selem (as_seq h0 (get_h st)) in
+         let acc1 = selem (as_seq h1 (get_h st)) in
+         let r0 = selem (as_seq h0 (get_r st)) in
+         let r1 = selem (as_seq h1 (get_r st)) in
          let log0 = Ghost.reveal current_log in
          let log1 = Ghost.reveal updated_log in
          let block  = Hacl.Spec.Endianness.hlittle_endian (as_seq h0 m) + pow2 128 in
-         r0 = r1 /\ acc1 % Spec.Poly1305.prime = ((acc0 + block) * r0) % Spec.Poly1305.prime
+         r0 = r1 /\ acc1  = Spec.Poly1305.((acc0 +@ block) *@ r0)
          /\ (log1 == FStar.Seq.((create 1 (Hacl.Spec.Endianness.reveal_sbytes (as_seq h0 m))) @| log0)))
       ))
 
@@ -104,15 +105,14 @@ val poly1305_finish_:
     (ensures  (fun h0 updated_log h1 -> modifies_2 (get_h st) mac h0 h1 /\ live_st h0 st /\ live h0 m
       /\ live h1 (get_h st) /\ live h1 mac /\ live h0 key_s
       /\ red_44 (as_seq h0 (get_r st)) /\ red_45 (as_seq h0 (get_h st))
-      /\ (let acc = seval (as_seq h0 (get_h st)) in
-         let r   = seval (as_seq h0 (get_r st)) in
+      /\ (let acc = selem (as_seq h0 (get_h st)) in
+         let r   = selem (as_seq h0 (get_r st)) in
          let k   = Hacl.Spec.Endianness.hlittle_endian (as_seq h0 key_s)   in
-         let m'   = Hacl.Spec.Endianness.hlittle_endian (as_seq h0 m) + pow2 (8*length m) in
-         let m    = as_seq h0 m in
-         let mac = Hacl.Spec.Endianness.hlittle_endian (as_seq h1 mac) in
-         if Seq.length m >= 1
-         then mac = (((((acc + m') * r) % Spec.Poly1305.prime)) + k) % pow2 128
-         else mac = ((((acc % Spec.Poly1305.prime) ) + k) % pow2 128))
+         let m'   = (Hacl.Spec.Endianness.hlittle_endian (as_seq h0 m) + pow2 (8*length m)) % Spec.Poly1305.prime in
+         let mac = as_seq h1 mac in
+         if length m >= 1
+         then Hacl.Spec.Endianness.reveal_sbytes mac == Spec.Poly1305.(finish ((acc +@ m') *@ r) (Hacl.Spec.Endianness.reveal_sbytes (as_seq h0 key_s)))
+         else Hacl.Spec.Endianness.reveal_sbytes mac == Spec.Poly1305.(finish acc (Hacl.Spec.Endianness.reveal_sbytes (as_seq h0 key_s))))
     ))
 
 #reset-options "--initial_fuel 1 --max_fuel 1 --z3rlimit 20"
