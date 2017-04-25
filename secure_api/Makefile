@@ -37,9 +37,9 @@ LowCProvider/tmp:
 krml-test-vale.exe: vale/aes/aes.o
 	$(KRML) test/test_vale/Crypto.Indexing.fst \
 		test/test_vale/vale.c vale/aes/aes.o \
-		../code/api/Crypto.SecureAPI.fst \
 		test/Flag.fst utils/Hacl.Spec.fst \
 		test/Crypto.KrmlTest.fst -no-prefix Crypto.KrmlTest \
+		../code/api/Crypto.SecureAPI.fst \
 		$(KREMLIN_HOME)/test/../kremlib/testlib.c test/test_hacks.c \
 		-tmpdir tmp-vale -add-include '"testlib.h"' -o krml-test-vale.exe \
 		-drop Hacl.Spe.* -drop Spec -drop Hacl.Spec -drop Spec.* -drop Hacl.Spec.* \
