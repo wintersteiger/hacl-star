@@ -16,7 +16,8 @@ open Crypto.Indexing
 #reset-options "--initial_fuel 0 --initial_ifuel 0 --z3rlimit 20"
 
 (* module CHACHA = Hacl.Symmetric.Chacha20 *)
-module CHACHA = Hacl.SecureAPI.Chacha20
+(* module CHACHA = Hacl.SecureAPI.Chacha20 *)
+module CHACHA = Crypto.SecureAPI
 
 type alg = cipherAlg
 let algi = cipherAlg_of_id

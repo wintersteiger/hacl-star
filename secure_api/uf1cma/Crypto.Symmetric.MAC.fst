@@ -23,9 +23,12 @@ module GF = Crypto.Symmetric.GF128
 //17-02-11 now switched from 32-bit to 64-bit; can we keep both?
 
 //17-02-11 Please at least document such notations! Besides Spec.Poly1305 is also used below.
-module PS_ = Hacl.Spec.Poly1305_64
-module PS = Hacl.Spe.Poly1305_64
-module PL = Hacl.Impl.Poly1305_64
+(* module PS_ = Hacl.Spec.Poly1305_64 *)
+(* module PS = Hacl.Spe.Poly1305_64 *)
+(* module PL = Hacl.Impl.Poly1305_64 *)
+module PS_ = Crypto.SecureAPI
+module PS  = Crypto.SecureAPI
+module PL  = Crypto.SecureAPI
 
 module HH = FStar.HyperHeap
 module HS = FStar.HyperStack
@@ -121,7 +124,7 @@ let live h #i b = Buffer.live h (as_buffer b)
 val norm: mem -> #i:id -> b:elemB i -> Type0
 let norm h #i b =
   match alg i with
-  | POLY1305 -> Buffer.live h b /\ Hacl.Spec.Bignum.AddAndMultiply.red_45 (as_seq h b)
+  | POLY1305 -> Buffer.live h b /\ (* Hacl.Spec.Bignum.AddAndMultiply. *)PL.red_45 (as_seq h b)
     //Crypto.Symmetric.Poly1305.Bigint.norm h b // implies live
   | GHASH -> Buffer.live h b
 
@@ -129,7 +132,7 @@ val norm_r: mem -> #i:id -> b:elemB i -> Type0
 let norm_r h #i b =
   let b = reveal_elemB b in
   match alg i with
-  | POLY1305 -> Buffer.live h b /\ Hacl.Spec.Bignum.AddAndMultiply.red_44 (as_seq h b)
+  | POLY1305 -> Buffer.live h b /\ (* Hacl.Spec.Bignum.AddAndMultiply. *)PL.red_44 (as_seq h b)
     //Crypto.Symmetric.Poly1305.Bigint.norm h b // implies live
   | GHASH -> Buffer.live h b
 

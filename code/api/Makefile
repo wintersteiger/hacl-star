@@ -44,7 +44,10 @@ all-ct: $(addsuffix -ct, $(API_FILES))
 %.fst-verify: %.fst
 	$(FSTARB) $^ --use_hints --record_hints
 
-all-ver: $(addsuffix -verify, $(API_FILES))
+secure-api-ver:
+	$(FSTAR_HOME)/bin/fstar.exe --include $(FSTAR_HOME)/ulib/hyperstack --include $(HACL_HOME)/code/lib/kremlin --include $(HACL_HOME)/code/salsa-family --include $(HACL_HOME)/code/bignum --include $(HACL_HOME)/code/poly1305 --include $(HACL_HOME)/specs --include $(KREMLIN_HOME)/kremlib Crypto.SecureAPI.fst --use_hints --record_hints
+
+all-ver: $(addsuffix -verify, $(API_FILES)) secure-api-ver
 
 # Minimal lax typechecking, pre-requisite to any extraction
 %.fst-lax: %.fst

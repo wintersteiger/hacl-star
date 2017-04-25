@@ -15,7 +15,7 @@ FSTAR_ARGS=$(OTHERFLAGS)
 OCAMLOPT := $(OCAMLOPT) -w -8-20-26-28-10
 FSTAR_EXTRACT=$(FSTAR) $(CODEGEN_ARGS) --include $(FSTAR_HOME)/ulib/hyperstack --include crypto --include crypto/real --include ../specs
 
-KRML_INCLUDES=$(addprefix -I ,aead uf1cma vale vale/aes prf utils indexing ../code/experimental/aesgcm ../code/bignum ../code/poly1305 ../code/salsa-family ../code/lib/kremlin ../specs $(KREMLIN_HOME)/kremlib $(KREMLIN_HOME)/test)
+KRML_INCLUDES=$(addprefix -I ,aead uf1cma vale vale/aes prf utils indexing ../code/experimental/aesgcm ../code/bignum ../code/poly1305 ../code/salsa-family ../code/lib/kremlin ../specs ../code/api $(KREMLIN_HOME)/kremlib $(KREMLIN_HOME)/test)
 KRML_ARGS=-ccopt -maes -ccopt -Wno-error=pointer-sign $(KOPTS) -ccopt -std=gnu99
 KRML=$(KREMLIN_HOME)/krml $(KRML_ARGS) $(KRML_INCLUDES)
 
@@ -37,6 +37,7 @@ LowCProvider/tmp:
 krml-test-vale.exe: vale/aes/aes.o
 	$(KRML) test/test_vale/Crypto.Indexing.fst \
 		test/test_vale/vale.c vale/aes/aes.o \
+		../code/api/Crypto.SecureAPI.fst \
 		test/Flag.fst utils/Hacl.Spec.fst \
 		test/Crypto.KrmlTest.fst -no-prefix Crypto.KrmlTest \
 		$(KREMLIN_HOME)/test/../kremlib/testlib.c test/test_hacks.c \
@@ -49,6 +50,7 @@ krml-test-hacl.exe:
 	$(KRML) test/test_hacl/Crypto.Indexing.fst \
 		test/Flag.fst utils/Hacl.Spec.fst \
 		test/Crypto.KrmlTest.fst -no-prefix Crypto.KrmlTest \
+		../code/api/Crypto.SecureAPI.fst \
 		$(KREMLIN_HOME)/test/../kremlib/testlib.c test/test_hacks.c \
 		-tmpdir tmp-hacl -add-include '"testlib.h"' -o krml-test-hacl.exe \
 		-drop Hacl.Spe.* -drop Spec -drop Hacl.Spec -drop Spec.* -drop Hacl.Spec.* \
