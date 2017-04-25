@@ -8,6 +8,8 @@ let text  = Spec.Poly1305.text
 let elem  = Spec.Poly1305.elem
 let log_t = Ghost.erased text
 let elemB = b:buffer Hacl.UInt64.t{length b = 3}
+let wordB    = b:buffer Hacl.UInt8.t{length b <= 16}
+let wordB_16 = b:buffer Hacl.UInt8.t{length b = 16}
 
 val poly1305_state: Type0
 
