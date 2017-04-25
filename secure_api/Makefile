@@ -84,6 +84,7 @@ FSTAR_INCLUDE_PATHS= \
 --include $(HACL_HOME)/code/experimental/aesgcm \
 --include $(HACL_HOME)/code/lib/kremlin \
 --include $(HACL_HOME)/code/poly1305 \
+--include $(HACL_HOME)/code/api \
 --include $(HACL_HOME)/code/salsa-family \
 --include $(HACL_HOME)/secure_api/aead \
 --include $(HACL_HOME)/secure_api/prf \
