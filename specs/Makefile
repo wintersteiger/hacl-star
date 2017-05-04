@@ -1,6 +1,6 @@
-FSTAR_HOME?=../../../dependencies/FStar
+FSTAR_HOME?=../../FStar
 KREMLIN_HOME?=$(FSTAR_HOME)/../kremlin
-HACL_HOME?=../..
+HACL_HOME?=..
 
 include $(FSTAR_HOME)/src/gmake/fstar.mk
 include $(FSTAR_HOME)/ulib/ml/Makefile.include
@@ -51,6 +51,14 @@ all-ver: $(addsuffix -verify, $(SPEC_FILES))
 	-$(FSTAR) --include $(KREMLIN_HOME)/kremlib --include $(HACL_HOME)/code/lib/kremlin $*.fst --record_hints
 
 all-hints: $(addsuffix -hints, $(SPEC_FILES))
+
+aes.exe: Spec.AES.fst
+	$(MAKE) -C ../code/lib/ml MEM=HST
+	mkdir -p aes-spec
+	$(FSTAR) $(ARGS) --odir aes-spec $^
+	@echo 'let _ = print_string (if test() then "SUCCESS\n" else failwith "Test failed\n")' >> aes-spec/Spec_AES.ml
+	$(OCAMLOPT) -I aes-spec $(OCAML_INCLUDES) $(addprefix aes-spec/, $(EXTRACTED)) aes-spec/Spec_Sbox.ml aes-spec/Spec_GaloisField.ml aes-spec/Spec_Loops.ml aes-spec/Spec_AES.ml -o aes.exe
+	./aes.exe
 
 gf128.exe: Spec.GF128.fst
 	$(MAKE) -C ../code/lib/ml MEM=HST
@@ -111,4 +119,4 @@ chacha20poly1305.exe: Spec.Chacha20Poly1305.fst
 
 clean:
 	$(MAKE) -C ../code/lib/ml clean
-	rm -rf *.cmi *.cmo *.cmx *.o *~ *.out *.exe poly-spec chacha-spec secretbox-spec chacha-poly-spec salsa-spec gf128-spec curve25519-spec
+	rm -rf *.cmi *.cmo *.cmx *.o *~ *.out *.exe poly-spec chacha-spec secretbox-spec chacha-poly-spec salsa-spec aes-spec gf128-spec curve25519-spec
