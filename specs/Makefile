@@ -57,7 +57,7 @@ aes.exe: Spec.AES.fst
 	mkdir -p aes-spec
 	$(FSTAR) $(ARGS) --odir aes-spec $^
 	@echo 'let _ = print_string (if test() then "SUCCESS\n" else failwith "Test failed\n")' >> aes-spec/Spec_AES.ml
-	$(OCAMLOPT) -I aes-spec $(OCAML_INCLUDES) $(addprefix aes-spec/, $(EXTRACTED)) aes-spec/Spec_Sbox.ml aes-spec/Spec_GaloisField.ml aes-spec/Spec_Loops.ml aes-spec/Spec_AES.ml -o aes.exe
+	$(OCAMLOPT) -I aes-spec $(OCAML_INCLUDES) $(addprefix aes-spec/, $(EXTRACTED)) aes-spec/Spec_Sbox.ml aes-spec/Spec_GaloisField.ml aes-spec/Spec_Loops.ml aes-spec/Spec_Lib.ml aes-spec/Spec_CTR.ml aes-spec/Spec_AES.ml -o aes.exe
 	./aes.exe
 
 gf128.exe: Spec.GF128.fst
@@ -67,6 +67,14 @@ gf128.exe: Spec.GF128.fst
 	@echo 'let _ = print_string (if test() then "SUCCESS\n" else failwith "Test failed\n")' >> gf128-spec/Spec_GF128.ml
 	$(OCAMLOPT) -I gf128-spec $(OCAML_INCLUDES) $(addprefix gf128-spec/, $(EXTRACTED)) gf128-spec/Spec_GaloisField.ml gf128-spec/Spec_GF128.ml -o gf128.exe
 	./gf128.exe
+
+aes256gcm.exe: Spec.AES256GCM.fst
+	$(MAKE) -C ../code/lib/ml MEM=HST
+	mkdir -p aes256gcm-spec
+	$(FSTAR) $(ARGS) --odir aes256gcm-spec $^
+	@echo 'let _ = print_string (if test() then "SUCCESS\n" else failwith "Test failed\n")' >> aes256gcm-spec/Spec_AES256GCM.ml
+	$(OCAMLOPT) -I aes256gcm-spec $(OCAML_INCLUDES) $(addprefix aes256gcm-spec/, $(EXTRACTED)) aes256gcm-spec/Spec_Sbox.ml aes256gcm-spec/Spec_GaloisField.ml aes256gcm-spec/Spec_Loops.ml aes256gcm-spec/Spec_Lib.ml aes256gcm-spec/Spec_CTR.ml aes256gcm-spec/Spec_AES.ml aes256gcm-spec/Spec_GF128.ml aes256gcm-spec/Spec_AES256GCM.ml -o aes256gcm.exe
+	./aes256gcm.exe
 
 poly1305.exe: Spec.Poly1305.fst
 	$(MAKE) -C ../code/lib/ml MEM=HST

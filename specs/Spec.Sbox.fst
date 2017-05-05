@@ -87,7 +87,8 @@ let s2x : trans_mat = createL [0x8C; 0x79; 0x05; 0xEB; 0x12; 0x04; 0x51; 0x53]
 val gf8_newbasis_loop: x:gf8_elem -> m:trans_mat -> i:int{i < 8} -> Tot gf8_elem (decreases (i + 1))
 let rec gf8_newbasis_loop x m i=
   if i < 0 then zero_vec #8 else begin
-    if index x i then gf8_add (UInt.to_vec #8 (index m i)) (gf8_newbasis_loop x m (i - 1)) else gf8_newbasis_loop x m (i - 1)
+    if index x i then gf8_add (UInt.to_vec #8 (index m i)) (gf8_newbasis_loop x m (i - 1))
+    else gf8_newbasis_loop x m (i - 1)
   end
   
 let gf8_newbasis x m = gf8_newbasis_loop x m 7

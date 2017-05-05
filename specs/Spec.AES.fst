@@ -100,18 +100,19 @@ let keyScheduleCore (s:vec) (i:pos) : vec =
 val keyExpansion_aux: k:seq elem{length k >= 32 /\ length k <= 240 /\ length k % 4 = 0} ->
   Tot (r:seq elem{length k + length r = 240}) (decreases (240 - length k))
 let rec keyExpansion_aux k =
-  let t = slice k (length k - 4) (length k) in
+  let t : (v:seq elem{length v = 4}) = slice k (length k - 4) (length k) in
+  let d : (v:seq elem{length v = 4}) = slice k (length k - 32) (length k - 28) in
   if length k > 236 then (assert(length k = 240); createEmpty)
   else if length k % 32 = 0 then
     let t = keyScheduleCore t (length k / 32) in
-    let t = Spec.Loops.seq_map2 op_Plus_At t (slice k (length k - 32) (length k - 28)) in
+    let t = Spec.Loops.seq_map2 op_Plus_At t d in
     t @| keyExpansion_aux (k @| t)
   else if length k % 32 = 16 then
     let t = Spec.Loops.seq_map getSbox t in
-    let t = Spec.Loops.seq_map2 op_Plus_At t (slice k (length k - 32) (length k - 28)) in
+    let t = Spec.Loops.seq_map2 op_Plus_At t d in
     t @| keyExpansion_aux (k @| t)
   else
-    let t = Spec.Loops.seq_map2 op_Plus_At t (slice k (length k - 32) (length k - 28)) in
+    let t = Spec.Loops.seq_map2 op_Plus_At t d in
     t @| keyExpansion_aux (k @| t)
  
 let keyExpansion (k:key) : epdkey =
@@ -153,7 +154,8 @@ let rec cipher_loop (a:block) (k:epdkey) (i:nat{i <= 14}) : Tot block (decreases
   let a = subBytes a in
   let a = shiftRows a in
   let a = mixColumns a in
-  let a = addRoundKey a (slice k (i * 16) (i * 16 + 16)) in
+  let bk : block = slice k (i * 16) (i * 16 + 16) in
+  let a = addRoundKey a bk in
   cipher_loop a k (i + 1)
 
 let cipher (w:word) (k:key) : word_16 =
@@ -168,7 +170,8 @@ let cipher (w:word) (k:key) : word_16 =
 
 let rec inv_cipher_loop (a:block) (k:epdkey) (i:nat{i < 14}) : Tot block (decreases i) =
   if i = 0 then a else
-  let a = addRoundKey a (slice k (i * 16) (i * 16 + 16)) in
+  let bk : block = slice k (i * 16) (i * 16 + 16) in
+  let a = addRoundKey a bk in
   let a = invMixColumns a in
   let a = invShiftRows a in
   let a = invSubBytes a in
@@ -200,5 +203,64 @@ let expected : word = createL [
   0xeauy; 0xfcuy; 0x49uy; 0x90uy; 0x4buy; 0x49uy; 0x60uy; 0x89uy
 ]
   
-let test() = Spec.Sbox.test() && cipher msg k = expected && inv_cipher expected k = msg
+let test_block() = Spec.Sbox.test() && cipher msg k = expected && inv_cipher expected k = msg
 
+
+type nonce = lbytes 12
+type counter = uint_t 32
+
+let aes256_block (k:key) (n:nonce) (c:counter) : Tot word_16 =
+  cipher (n @| big_bytes 4ul c) k
+
+let aes256_ctx: Spec.CTR.block_cipher_ctx =
+  let open Spec.CTR in
+  {
+  keylen = 32;
+  blocklen = 16;
+  noncelen = 12;
+  counterbits = 32;
+  incr = 1
+  }
+
+let aes256_cipher: Spec.CTR.block_cipher aes256_ctx = aes256_block
+
+let aes256_encrypt_bytes key nonce counter m =
+  Spec.CTR.counter_mode aes256_ctx aes256_cipher key nonce counter m
+
+
+let test_plaintext : lbytes 60 = createL [
+  0xd9uy; 0x31uy; 0x32uy; 0x25uy; 0xf8uy; 0x84uy; 0x06uy; 0xe5uy;
+  0xa5uy; 0x59uy; 0x09uy; 0xc5uy; 0xafuy; 0xf5uy; 0x26uy; 0x9auy;
+  0x86uy; 0xa7uy; 0xa9uy; 0x53uy; 0x15uy; 0x34uy; 0xf7uy; 0xdauy;
+  0x2euy; 0x4cuy; 0x30uy; 0x3duy; 0x8auy; 0x31uy; 0x8auy; 0x72uy;
+  0x1cuy; 0x3cuy; 0x0cuy; 0x95uy; 0x95uy; 0x68uy; 0x09uy; 0x53uy;
+  0x2fuy; 0xcfuy; 0x0euy; 0x24uy; 0x49uy; 0xa6uy; 0xb5uy; 0x25uy;
+  0xb1uy; 0x6auy; 0xeduy; 0xf5uy; 0xaauy; 0x0duy; 0xe6uy; 0x57uy;
+  0xbauy; 0x63uy; 0x7buy; 0x39uy ]
+
+let test_ciphertext : lbytes 60 = createL [
+  0x52uy; 0x2duy; 0xc1uy; 0xf0uy; 0x99uy; 0x56uy; 0x7duy; 0x07uy;
+  0xf4uy; 0x7fuy; 0x37uy; 0xa3uy; 0x2auy; 0x84uy; 0x42uy; 0x7duy;
+  0x64uy; 0x3auy; 0x8cuy; 0xdcuy; 0xbfuy; 0xe5uy; 0xc0uy; 0xc9uy;
+  0x75uy; 0x98uy; 0xa2uy; 0xbduy; 0x25uy; 0x55uy; 0xd1uy; 0xaauy;
+  0x8cuy; 0xb0uy; 0x8euy; 0x48uy; 0x59uy; 0x0duy; 0xbbuy; 0x3duy;
+  0xa7uy; 0xb0uy; 0x8buy; 0x10uy; 0x56uy; 0x82uy; 0x88uy; 0x38uy;
+  0xc5uy; 0xf6uy; 0x1euy; 0x63uy; 0x93uy; 0xbauy; 0x7auy; 0x0auy;
+  0xbcuy; 0xc9uy; 0xf6uy; 0x62uy ]
+
+let test_key : Spec.CTR.key aes256_ctx = createL [
+  0xfeuy; 0xffuy; 0xe9uy; 0x92uy; 0x86uy; 0x65uy; 0x73uy; 0x1cuy;
+  0x6duy; 0x6auy; 0x8fuy; 0x94uy; 0x67uy; 0x30uy; 0x83uy; 0x08uy;
+  0xfeuy; 0xffuy; 0xe9uy; 0x92uy; 0x86uy; 0x65uy; 0x73uy; 0x1cuy;
+  0x6duy; 0x6auy; 0x8fuy; 0x94uy; 0x67uy; 0x30uy; 0x83uy; 0x08uy ]
+
+let test_nonce : Spec.CTR.nonce aes256_ctx = createL [
+  0xcauy; 0xfeuy; 0xbauy; 0xbeuy; 0xfauy; 0xceuy; 0xdbuy; 0xaduy;
+  0xdeuy; 0xcauy; 0xf8uy; 0x88uy ]
+
+let test_counter : Spec.CTR.counter aes256_ctx = 2
+
+let test_ctr() = aes256_encrypt_bytes test_key test_nonce test_counter test_plaintext = test_ciphertext
+
+
+let test() = test_block() && test_ctr()
