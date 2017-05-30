@@ -5,7 +5,7 @@ HACL_HOME=../..
 #include ../lib/hyperstack/Makefile.include
 
 KRML=$(KREMLIN_HOME)/krml -I $(HACL_HOME)/code/lib/kremlin -I $(HACL_HOME)/code/api/interfaces \
-	-I $(HACL_HOME)/code/curve25519/interfaces -I $(HACL_HOME)/test/snapshot -I /Users/anithagollamudi/mitls/libsodium-1.0.12/install/include \
+	-I $(HACL_HOME)/code/curve25519/interfaces -I $(HACL_HOME)/test/snapshot -I $(LIBSODIUM_HOME)/include \
 	-drop 'Prims' -drop 'Hacl.Constants' -drop 'Hacl.UInt8' -drop 'Hacl.UInt16' \
 	-drop 'Hacl.UInt32' -drop 'Hacl.UInt64' -drop 'Hacl.UInt128' -drop 'FStar' -drop 'Hacl.Cast' \
 	-ccopt '-Wno-pointer-sign' -ccopt "-D_GNU_SOURCE" -ccopt '-w'
@@ -16,36 +16,36 @@ FSTARB=$(FSTAR_HOME)/bin/fstar.exe --include $(FSTAR_HOME)/ulib/hyperstack --inc
 
 
 debug:
-	gcc-6 -Wno-unused-but-set-variable -std=c11 -Wall -Werror -Wno-parentheses -Wno-unused-variable -g -O3 -fwrapv -I FSTAR_LIB/hyperstack -I ../../code/lib/kremlin -I ../../code/api/interfaces -I ../../code/curve25519/interfaces -I ../../test/snapshot -I c_bindings -I /home/jkz/dev/kremlin/kremlib -I tube -Wno-pointer-sign tube/Hacl_Types.o tube/Hacl_Policies.o tube/Box_Ideal.o tube/FileIO_Types.o tube/PaddedFileIO.c tube/SocketIO.c tube/Hacl_Tube_Send.c tube/Hacl_Tube_Receive.c tube/kremlib.o tube/tube.o tube/SocketIO_impl.o -D_GNU_SOURCE c_bindings/PaddedFileIO_impl.c -o tube-star.exe -lsodium -lhacl -L../../test/snapshot/
+	gcc-7 -Wno-unused-but-set-variable -std=c11 -Wall -Werror -Wno-parentheses -Wno-unused-variable -g -O3 -fwrapv -I FSTAR_LIB/hyperstack -I ../../code/lib/kremlin -I ../../code/api/interfaces -I ../../code/curve25519/interfaces -I ../../test/snapshot -I c_bindings -I /home/jkz/dev/kremlin/kremlib -I webserver -Wno-pointer-sign webserver/Hacl_Types.o webserver/Hacl_Policies.o webserver/Box_Ideal.o webserver/FileIO_Types.o webserver/PaddedFileIO.c webserver/SocketIO.c webserver/Hacl_Web_Send.c webserver/Hacl_Web_Recv.c webserver/kremlib.o webserver/webserver.o webserver/SocketIO_impl.o -D_GNU_SOURCE c_bindings/PaddedFileIO_impl.c -o webserver-star.exe -lsodium -lhacl -L../../test/snapshot/
 
-tube-star.exe: Box.Ideal.fst c_bindings/PaddedFileIO_impl.c c_bindings/SocketIO_impl.c Hacl.Tube.Send.fst Hacl.Tube.Receive.fst tube.c
-	mkdir -p tube
+webserver-star.exe: Box.Ideal.fst c_bindings/PaddedFileIO_impl.c c_bindings/SocketIO_impl.c Hacl.Web.Send.fst Hacl.Web.Recv.fst webserver.c
+	mkdir -p webserver
 	$(KRML) $^ \
 		-I c_bindings \
 		-drop Libsodium,Hacl.Box,Curve25519,Hacl.Types,NaCl \
-		-bundle "Hacl.Tube.Send=Hacl.Tube.Send" \
+		-bundle "Hacl.Web.Send=Hacl.Web.Send" \
 		-no-prefix Libsodium -add-include '<sodium.h>' -add-include '"testlib.h"' \
 		-add-include '"NaCl.h"' -add-include '"Curve25519.h"' \
-		-tmpdir tube -o tube-star.exe -ldopt "-lsodium" -ldopt "-lhacl" -ldopt "-L../../test/snapshot/" \
-		-ldopt "-L/Users/anithagollamudi/mitls/libsodium-1.0.12/install/lib"
+		-tmpdir webserver -o webserver-star.exe -ldopt "-lsodium" -ldopt "-lhacl" -ldopt "-L../../test/snapshot/" \
+		-ldopt "-L$(LIBSODIUM_HOME)/lib"
 
-tube-lax: Hacl.Tube.Receive.fst Hacl.Tube.Send.fst
+webserver-lax: Hacl.Web.Recv.fst Hacl.Web.Send.fst
 	$(FSTARB) --lax $^
 
-tube-ver: $(addsuffix -ver, Hacl.Tube.Send.fst Hacl.Tube.Receive.fst)
+webserver-ver: $(addsuffix -ver, Hacl.Web.Send.fst Hacl.Web.Recv.fst)
 
-tube-test: tube-star.exe
+webserver-test: webserver-star.exe
 	mkdir -p send receive
 	cd receive && \
 		LD_LIBRARY_PATH=../../../test/snapshot:"$(LD_LIBRARY_PATH)" \
 		DYLD_LIBRARY_PATH=../../../test/snapshot:"$(DYLD_LIBRARY_PATH)" \
-		../tube-star.exe receive 5001 \
+		../webserver-star.exe receive 5001 \
 			-k dfcf8b782a2a72f65ee24f85fa68ab1a10b3b555751283c5f0bcdb20e1a6e4a8 \
 			-p 4d187de7a95fe760ba7ffc9a1ba4229eea9cd1136fe609bdc58816e3cf4d3350 &
 	cd send && echo "banana" > banana.txt; \
 		LD_LIBRARY_PATH=../../../test/snapshot:"$(LD_LIBRARY_PATH)" \
 		DYLD_LIBRARY_PATH=../../../test/snapshot:"$(DYLD_LIBRARY_PATH)" \
-		../tube-star.exe send banana.txt localhost:5001 \
+		../webserver-star.exe send banana.txt localhost:5001 \
 			-k 4d922658eb6d4aef64a83644a18e60e61a57c245aa8e5e9a93926cb2b317ffd7 \
 			-p 223fc224f2c9906fd4bbb1313236ecc4f36ed2f7e95b5fb1deafc459b19ab069
 #	@lsof -i tcp:5001 | awk 'NR!=1 {print $$2}' | xargs kill
@@ -56,23 +56,23 @@ tube-test: tube-star.exe
 	$(FSTARB) $^ --use_hints --record_hints
 
 
-# send-ver: Hacl.Tube.Send.fst
+# send-ver: Hacl.Web.Send.fst
 # 	$(FSTAR) -I $(HACL_KREMLIN) -I ../lib/io -I ../lib/io/c_bindings -I ../crypto/api --use_hints \
 # 		-I $(KREMLIB) -I $(KREMTEST) -I $(FSTAR_HOME)/ulib/hyperstack $^
 
-# send-lax: Hacl.Tube.Send.fst
+# send-lax: Hacl.Web.Send.fst
 # 	$(FSTAR) -I $(HACL_KREMLIN) -I ../lib/io -I ../lib/io/c_bindings -I ../crypto/api -fstop "--lax" \
 # 		-I $(KREMLIB) -I $(KREMTEST) -I $(FSTAR_HOME)/ulib/hyperstack $^
 
-# receive-ver: Hacl.Tube.Receive.fst
+# receive-ver: Hacl.Web.Recv.fst
 # 	$(FSTAR) -I $(HACL_KREMLIN) -I ../lib/io -I ../lib/io/c_bindings -I ../crypto/api --use_hints  \
 # 		-I $(KREMLIB) -I $(KREMTEST) -I $(FSTAR_HOME)/ulib/hyperstack $^
 
-# receive-lax: Hacl.Tube.Receive.fst
+# receive-lax: Hacl.Web.Recv.fst
 # 	$(FSTAR) -I $(HACL_KREMLIN) -I ../lib/io -I ../lib/io/c_bindings -I ../crypto/api -fsopt "--lax" \
 # 		-I $(KREMLIB) -I $(KREMTEST) -I $(FSTAR_HOME)/ulib/hyperstack $^ 
 
 
 clean:
-	rm -rf tube send receive
+	rm -rf webserver send receive
 	rm -rf *~ *.exe *.dSYM

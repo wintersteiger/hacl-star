@@ -1,4 +1,4 @@
-module Hacl.Tube.Receive
+module Hacl.Web.Recv
 
 
 open FStar.Seq
@@ -9,7 +9,7 @@ open SocketIO
 open Hacl.Constants
 open Hacl.Cast
 open Box.Ideal
-open Hacl.Tube.Send
+open Hacl.Web.Send
 
 #reset-options "--initial_fuel 0 --max_fuel 0"
 
