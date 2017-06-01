@@ -13,7 +13,7 @@ FSTAR_ARGS=$(OTHERFLAGS)
 OCAMLOPT := $(OCAMLOPT) -w -8-20-26-28-10
 
 all: lib
-	$(MAKE)	poly1305.exe chacha20.exe salsa20.exe secretbox.exe chacha20poly1305.exe gf128.exe
+	$(MAKE)	poly1305.exe chacha20.exe salsa20.exe chacha20poly1305.exe gf128.exe ed25519.exe curve25519.exe sha2_256.exe sha2_512.exe
 
 lib:
 	$(MAKE) -C ../code/lib/ml MEM=HST
@@ -29,6 +29,7 @@ OCAML_INCLUDES=-I ../code/lib/ml ../code/lib/ml/hacllib.cmxa
 
 SPEC_FILES=	Spec.Chacha20.Lemmas.fst \
 		Spec.Chacha20.fst \
+		Spec.Chacha20_vec.fst \
 		Spec.Chacha20Poly1305.fst \
 		Spec.CTR.fst \
 		Spec.Curve25519.Lemmas.fst \
@@ -40,7 +41,6 @@ SPEC_FILES=	Spec.Chacha20.Lemmas.fst \
 		Spec.Poly1305.fst \
 		Spec.Poly1305.Lemmas.fst \
 		Spec.Salsa20.fst \
-		Spec.SecretBox.fst \
 		Spec.SHA2_256.fst \
 		Spec.SHA2_512.fst \
 		Spec.Ed25519.fst
@@ -84,7 +84,7 @@ chacha20.exe: Spec.Chacha20.fst
 	mkdir -p chacha-spec
 	$(FSTAR) $(ARGS) --odir chacha-spec $^
 	@echo 'let _ = print_string (if test() then "SUCCESS\n" else failwith "Test failed\n")' >> chacha-spec/Spec_Chacha20.ml
-	$(OCAMLOPT) -I chacha-spec $(OCAML_INCLUDES) $(addprefix chacha-spec/, $(EXTRACTED)) chacha-spec/Spec_Loops.ml chacha-spec/Spec_Lib.ml chacha-spec/Spec_CTR.ml chacha-spec/Spec_Chacha20.ml -o chacha20.exe
+	$(OCAMLOPT) -I chacha-spec $(OCAML_INCLUDES) $(addprefix chacha-spec/, $(EXTRACTED)) chacha-spec/Spec_Loops.ml chacha-spec/Seq_Create.ml chacha-spec/Spec_Lib.ml chacha-spec/Spec_CTR.ml chacha-spec/Spec_Chacha20.ml -o chacha20.exe
 	./chacha20.exe
 
 salsa20.exe: Spec.Salsa20.fst
@@ -92,23 +92,15 @@ salsa20.exe: Spec.Salsa20.fst
 	mkdir -p salsa-spec
 	$(FSTAR) $(ARGS) --odir salsa-spec $^
 	@echo 'let _ = print_string (if test() then "SUCCESS\n" else failwith "Test failed\n")' >> salsa-spec/Spec_Salsa20.ml
-	$(OCAMLOPT) -I salsa-spec $(OCAML_INCLUDES) $(addprefix salsa-spec/, $(EXTRACTED)) salsa-spec/Spec_Loops.ml salsa-spec/Spec_Lib.ml salsa-spec/Spec_CTR.ml salsa-spec/Spec_Salsa20.ml -o salsa20.exe
+	$(OCAMLOPT) -I salsa-spec $(OCAML_INCLUDES) $(addprefix salsa-spec/, $(EXTRACTED)) salsa-spec/Spec_Loops.ml salsa-spec/Seq_Create.ml salsa-spec/Spec_Lib.ml salsa-spec/Spec_CTR.ml salsa-spec/Spec_Salsa20.ml -o salsa20.exe
 	./salsa20.exe
-
-secretbox.exe: Spec.HSalsa20.fst Spec.SecretBox.fst
-	$(MAKE) -C ../code/lib/ml MEM=HST
-	mkdir -p secretbox-spec
-	$(FSTAR) $(ARGS) --odir secretbox-spec $^
-	@echo 'let _ = print_string (if test() then "SUCCESS\n" else failwith "Test failed\n")' >> secretbox-spec/Spec_SecretBox.ml
-	$(OCAMLOPT) -I secretbox-spec $(OCAML_INCLUDES) $(addprefix secretbox-spec/, $(EXTRACTED)) secretbox-spec/Spec_Loops.ml secretbox-spec/Spec_Lib.ml secretbox-spec/Spec_CTR.ml secretbox-spec/Spec_Salsa20.ml secretbox-spec/Spec_HSalsa20.ml secretbox-spec/Spec_Poly1305_Lemmas.ml secretbox-spec/Spec_Poly1305.ml secretbox-spec/Spec_SecretBox.ml -o secretbox.exe
-	./secretbox.exe
 
 chacha20poly1305.exe: Spec.Chacha20Poly1305.fst
 	$(MAKE) -C ../code/lib/ml MEM=HST
 	mkdir -p chacha-poly-spec
 	$(FSTAR) $(ARGS) --odir chacha-poly-spec $^
 	@echo 'let _ = print_string (if test() then "SUCCESS\n" else failwith "Test failed\n")' >> chacha-poly-spec/Spec_Chacha20Poly1305.ml
-	$(OCAMLOPT) -I chacha-poly-spec $(OCAML_INCLUDES) $(addprefix chacha-poly-spec/, $(EXTRACTED)) chacha-poly-spec/Spec_Loops.ml chacha-poly-spec/Spec_Lib.ml chacha-poly-spec/Spec_CTR.ml chacha-poly-spec/Spec_Chacha20.ml chacha-poly-spec/Spec_Poly1305_Lemmas.ml chacha-poly-spec/Spec_Poly1305.ml chacha-poly-spec/Spec_Chacha20Poly1305.ml -o chacha20poly1305.exe
+	$(OCAMLOPT) -I chacha-poly-spec $(OCAML_INCLUDES) $(addprefix chacha-poly-spec/, $(EXTRACTED)) chacha-poly-spec/Spec_Loops.ml chacha-poly-spec/Seq_Create.ml chacha-poly-spec/Spec_Lib.ml chacha-poly-spec/Spec_CTR.ml chacha-poly-spec/Spec_Chacha20.ml chacha-poly-spec/Spec_Poly1305_Lemmas.ml chacha-poly-spec/Spec_Poly1305.ml chacha-poly-spec/Spec_Chacha20Poly1305.ml -o chacha20poly1305.exe
 	./chacha20poly1305.exe
 
 sha2_256.exe: Spec.SHA2_256.fst
@@ -153,4 +145,4 @@ ed25519.exe: Spec.SHA512.fst Spec.Ed25519.fst
 
 clean:
 	$(MAKE) -C ../code/lib/ml clean
-	rm -rf *.cmi *.cmo *.cmx *.o *~ *.out *.exe poly-spec chacha-spec secretbox-spec chacha-poly-spec salsa-spec gf128-spec curve25519-spec sha2-spec hmac-sha2-spec ed25519-spec
+	rm -rf *.cmi *.cmo *.cmx *.o *~ *.out *.exe poly-spec chacha-spec chacha-poly-spec salsa-spec gf128-spec curve25519-spec sha2-spec hmac-sha2-spec ed25519-spec

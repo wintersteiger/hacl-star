@@ -29,7 +29,7 @@ module U32  = FStar.UInt32
 module U64  = FStar.UInt64
 
 
-inline_for_extraction let log_t = erased (Hacl.Spec.Poly1305_64.text)
+let log_t = erased (Hacl.Spec.Poly1305_64.text)
 
 inline_for_extraction let bigint = felem
 inline_for_extraction let uint8_p = buffer Hacl.UInt8.t
@@ -188,7 +188,22 @@ let poly1305_init_ st key =
   log
 
 
-#set-options "--z3rlimit 100 --max_fuel 0"
+#reset-options "--z3rlimit 100 --max_fuel 0"
+
+private val hide_log:
+  h0:HyperStack.mem ->
+  m:uint8_p{length m <= 16} ->
+  log:log_t{live h0 m} ->
+  Tot (log':log_t{Ghost.reveal log' == FStar.Seq.(create 1 (as_seq h0 m) @| Ghost.reveal log)})
+
+#reset-options "--z3rlimit 100 --max_fuel 0"
+
+let hide_log h0 m log =
+  let (m':erased Spec.Poly1305.word) = elift1 #(b:wordB{live h0 b}) #Spec.word'
+                    (fun m -> reveal_sbytes (as_seq h0 m)) (hide m) in
+  elift2 (fun (l:Spec.Poly1305.text) (m:Spec.Poly1305.word) -> FStar.Seq.((Seq.create 1 (m)) @| l)) log m'
+
+#reset-options "--z3rlimit 100 --max_fuel 0"
 
 [@"c_inline"]
 val poly1305_update:
@@ -208,7 +223,7 @@ val poly1305_update:
       /\ Spec.MkState (as_seq h1 st.r) (as_seq h1 st.h) (reveal updated_log)
         == poly1305_update_spec (Spec.MkState (as_seq h0 st.r) (as_seq h0 st.h) (reveal current_log)) (as_seq h0 m)
       ))
-#reset-options "--z3rlimit 100 --max_fuel 0"
+#reset-options "--z3rlimit 200 --max_fuel 0"
 [@"c_inline"]
 let poly1305_update log st m =
   let acc = st.h in
@@ -229,9 +244,11 @@ let poly1305_update log st m =
   no_upd_lemma_1 h3 h4 acc r;
   pop_frame();
   let h5 = ST.get() in
-  let (m':erased Spec.Poly1305.word) = elift2_p #wordB_16 #HyperStack.mem #(fun m h -> live h m) #Spec.word'
-                    (fun m h -> reveal_sbytes (as_seq h m)) (hide m) (hide h0) in
-  elift2 (fun (l:Spec.Poly1305.text) (m:Spec.Poly1305.word) -> FStar.Seq.((Seq.create 1 (m)) @| l)) log m'
+  hide_log h0 m log
+
+  (* let (m':erased Spec.Poly1305.word) = elift2_p #wordB_16 #HyperStack.mem #(fun m h -> live h m) #Spec.word' *)
+  (*                   (fun m h -> reveal_sbytes (as_seq h m)) (hide m) (hide h0) in *)
+  (* elift2 (fun (l:Spec.Poly1305.text) (m:Spec.Poly1305.word) -> FStar.Seq.((Seq.create 1 (m)) @| l)) log m' *)
 
 
 #reset-options "--max_fuel 0 --z3rlimit 100"
@@ -263,6 +280,7 @@ let poly1305_concat b m len =
   Hacl.Spec.Bignum.Fmul.lemma_whole_slice (as_seq h1 b);
   Seq.lemma_eq_intro (as_seq h1 b) (Seq.append (as_seq h0 m) (Seq.create (16 - U64.v len) (uint8_to_sint8 0uy)))
 
+#reset-options "--max_fuel 0 --z3rlimit 100"
 
 [@"c_inline"]
 val poly1305_process_last_block_:
@@ -282,6 +300,9 @@ val poly1305_process_last_block_:
       /\ modifies_1 st.h h0 h1
       /\ Spec.MkState (as_seq h1 st.r) (as_seq h1 st.h) (reveal updated_log) == Hacl.Spec.Poly1305_64.poly1305_process_last_block_spec (Spec.MkState (as_seq h0 st.r) (as_seq h0 st.h) (reveal current_log)) (as_seq h0 m) (len)
     ))
+
+#reset-options "--max_fuel 0 --z3rlimit 100"
+
 [@"c_inline"]
 let poly1305_process_last_block_ log block st m rem' =
   let h0 = ST.get() in
@@ -296,9 +317,7 @@ let poly1305_process_last_block_ log block st m rem' =
   add_and_multiply st.h tmp st.r;
   let h2 = ST.get() in
   pop_frame();
-  let (m':erased Spec.Poly1305.word) = elift2_p #wordB #HyperStack.mem #(fun m h -> live h m) #Spec.word'
-                    (fun m h -> reveal_sbytes (as_seq h m)) (hide m) (hide h0) in
-  elift2 (fun (l:Spec.Poly1305.text) (m:Spec.Poly1305.word) -> FStar.Seq.((Seq.create 1 (m)) @| l)) log m'
+  hide_log h0 m log
   
 
 #reset-options "--max_fuel 0 --z3rlimit 100"

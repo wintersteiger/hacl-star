@@ -95,7 +95,7 @@ inline_for_extraction let pos_count_w  = size_k_w +^ size_ws_w +^ size_whash_w
 
 
 [@"substitute"]
-let rotate_right (a:uint32_t) (b:uint32_t{v b <= 32}) : Tot uint32_t =
+let rotate_right (a:uint32_ht) (b:uint32_t{v b <= 32}) : Tot uint32_ht =
   H32.logor (H32.shift_right a b) (H32.shift_left a (U32.sub 32ul b))
 
 [@"substitute"]
@@ -637,7 +637,7 @@ val update:
                   /\ H32.v counter_1 = H32.v counter_0 + 1 /\ H32.v counter_1 < pow2 32
                   /\ (reveal_h32s seq_hash_1 == Spec.update (reveal_h32s seq_hash_0) (reveal_sbytes seq_block)))))
 
-#reset-options "--max_fuel 0  --z3rlimit 200"
+#reset-options "--max_fuel 0  --z3rlimit 500"
 
 let update state data =
 

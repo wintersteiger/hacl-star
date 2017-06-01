@@ -1,4 +1,4 @@
-HACL_HOME?=..
+HACL_HOME=..
 KREMLIN_HOME?=$(HACL_HOME)/kremlin
 FSTAR_HOME?=$(HACL_HOME)/kremlin
 
@@ -11,24 +11,21 @@ GFIND=$(shell which gfind >/dev/null 2>&1 && echo gfind || echo find)
 
 SNAPSHOT_DIR=snapshot
 
-###########################################################
-# FIXME: temporarily disable extraction in CI for testing #
-###########################################################
 all:
-	# Ugly hack because we can't encode the fact that the generation of C
-	# files depends on i) Kremlin.native ii) the out.krml files iii) the
-	# KREMLIN_ARGS environment variable.
-#	if $(HAS_CCOMP); then $(MAKE) extract-c KREMLIN_ARGS="-cc compcert" OTHERFLAGS="--trace_error" ; fi
-#	if $(HAS_CL); then $(MAKE) extract-c KREMLIN_ARGS="-cc msvc" OTHERFLAGS="--trace_error" ; fi
-	# JP FIXME XXX why was this disabled?
-#	$(MAKE) extract-c-code OTHERFLAGS="--trace_error"
-	$(MAKE) ct verify-code OTHERFLAGS="--trace_error --z3rlimit_factor 3"
-#	$(MAKE) -C openssl-engine
+	$(MAKE) extract-specs extract-all-c ct verify
+	$(MAKE) compile-vale
+	$(MAKE) -C openssl-engine
+	$(MAKE) -B build-snapshot SNAPSHOT_DIR=snapshot-gcc
+	# JP: fixme, doesn't work on build machine
+	# $(MAKE) -C snapshot-gcc
 
 travis:
 	$(MAKE) extract-c-code
 	$(MAKE) ct
 	$(MAKE) -C .. world
+
+extract-specs:
+	$(MAKE) -C $(HACL_HOME)/specs
 
 extract-c-code:
 	$(GFIND) ../code -name out.krml -exec touch {} \;
@@ -41,10 +38,27 @@ extract-c-crypto:
 	$(MAKE) -C ../secure_api krml-test-vale.exe
 	$(MAKE) -C ../secure_api krml-test-hacl.exe
 
-extract-c: extract-c-code extract-c-crypto
+extract-c-apps:
+	$(MAKE) -C ../apps/pneutube tube-star.exe
+
+# JK: fixme, extract-c-apps to be added to the regression tests when
+# LibSodium is added to the build machine
+extract-c: extract-c-code extract-c-crypto # extract-c-apps
+
+# These cannot benefit from parallelism, tests C extraction for available compilers
+extract-all-c:
+	if $(HAS_CCOMP); then $(MAKE) extract-c KREMLIN_ARGS="-cc compcert"; fi
+	if $(HAS_CL); then $(MAKE) extract-c KREMLIN_ARGS="-cc msvc"; fi
+	$(MAKE) extract-c
+
+compile-vale:
+	$(MAKE) -C ../secure_api/vale/asm/
 
 ct:
 	$(MAKE) -C ../code ct
+
+verify-specs:
+	$(MAKE) -C ../specs all-ver
 
 verify-code:
 	$(MAKE) -C ../code ci
@@ -72,8 +86,10 @@ build-snapshot:
 		$(addprefix ../code/api/aead-c/, Chacha20Poly1305.*) \
 		$(addprefix ../code/api/box-c/, Hacl_Policies.* NaCl.*) \
 		$(addprefix ../code/ed25519/ed25519-c/, Ed25519.*) \
-		$(addprefix ../code/hash/sha2-c/, SHA2_256.*) \
-		$(addprefix ../code/hash/sha2-c/, SHA2_512.*) \
+		$(addprefix ../code/hash/sha2-256-c/, SHA2_256.*) \
+		$(addprefix ../code/hash/sha2-384-c/, SHA2_384.*) \
+		$(addprefix ../code/hash/sha2-512-c/, SHA2_512.*) \
+		$(addprefix ../code/hmac/hmac-c/, HMAC_SHA2_256.*) \
 		$(addprefix ../code/salsa-family/chacha-vec128/, Chacha20_Vec128.* ../vec128.h) \
 		 $(SNAPSHOT_DIR)
 	cp ./c/* $(SNAPSHOT_DIR)/
@@ -82,9 +98,8 @@ build-snapshot:
 GCC=$(shell which gcc-7 >/dev/null 2>&1 && echo gcc-7 || (which gcc-6 >/dev/null 2>&1 && echo gcc-6 || echo gcc))
 GCC_OPTS=-flto -std=c11 -D_GNU_SOURCE
 
-haclib: snapshot
+snapshot/libhacl.so: snapshot
 	$(MAKE) -C snapshot CC="$(GCC) $(GCC_OPTS) -fPIC" lib
-
 
 test-snapshot: snapshot
 	$(MAKE) -C snapshot CC="$(GCC) $(GCC_OPTS)" test
