@@ -69,14 +69,8 @@ int quic_crypto_tls_label(quic_hash a, char *info, size_t *info_len, const char 
   info[2] = (char)(label_len + 6);
   memcpy(info+3, "tls13 ", 6);
   memcpy(info+9, label, label_len);
-  info[9+label_len] = (char)hlen;
-
-  // Empty hash
-  char hash[hlen];
-  if(!quic_crypto_hash(a, hash, label, 0)) return 0;
-
-  memcpy(info + label_len + 10, hash, hlen);
-  *info_len = label_len + 10 + hlen;
+  info[9+label_len] = 0;
+  *info_len = label_len + 10;
   return 1;
 }
 
@@ -84,7 +78,7 @@ int quic_crypto_tls_derive_secret(quic_secret *derived, const quic_secret *secre
 {
   uint32_t hlen = (secret->hash == TLS_hash_SHA256 ? 32 :
     (secret->hash == TLS_hash_SHA384 ? 48 : 64));
-  char info[323] = {0};
+  char info[259] = {0};
   size_t info_len;
 
   if(!quic_crypto_tls_label(secret->hash, info, &info_len, label))
@@ -164,6 +158,9 @@ int quic_crypto_decrypt(quic_key *key, char *plain, uint64_t sn, const char *ad,
 
 int quic_crypto_free_key(quic_key *key)
 {
-  if(key && key->st.prf.key) free(key->st.prf.key);
+  // ADL: the PRF stats is allocated with Buffer.screate
+  // TODO switch to caller allocated style in Crypto.AEAD
+  if(key && key->st.prf.key)
+    free(key->st.prf.key);
   if(key) free(key);
 }
