@@ -56,7 +56,9 @@ int quic_crypto_hkdf_expand(quic_hash a, char *okm, uint32_t olen, const char *p
   return 1;
 }
 
-int quic_crypto_tls_label(quic_hash a, char *info, size_t *info_len, const char *label)
+// Use key_len = 0 for HASH("") context and hlen output
+// Use key_len = k for no context and k length output
+int quic_crypto_tls_label(quic_hash a, char *info, size_t *info_len, const char *label, uint16_t key_len)
 {
   if(a < TLS_hash_SHA256) return 0;
   uint32_t hlen = (a == TLS_hash_SHA256 ? 32 :
@@ -64,13 +66,26 @@ int quic_crypto_tls_label(quic_hash a, char *info, size_t *info_len, const char 
   size_t label_len = strlen(label);
   if(label_len > 249) return 0;
 
-  info[0] = 0;
-  info[1] = (char)hlen;
+  info[0] = key_len ? (key_len >> 8) : 0;
+  info[1] = key_len ? (key_len & 255) : (char)hlen;
   info[2] = (char)(label_len + 6);
   memcpy(info+3, "tls13 ", 6);
   memcpy(info+9, label, label_len);
-  info[9+label_len] = 0;
-  *info_len = label_len + 10;
+
+  if(key_len)
+  {
+    info[9 + label_len] = 0;
+    *info_len = label_len + 10;
+    return 1;
+  }
+
+  // Empty hash
+  char hash[hlen];
+  if(!quic_crypto_hash(a, hash, label, 0)) return 0;
+
+  info[9+label_len] = (char)hlen;
+  memcpy(info + label_len + 10, hash, hlen);
+  *info_len = label_len + 10 + hlen;
   return 1;
 }
 
@@ -78,17 +93,25 @@ int quic_crypto_tls_derive_secret(quic_secret *derived, const quic_secret *secre
 {
   uint32_t hlen = (secret->hash == TLS_hash_SHA256 ? 32 :
     (secret->hash == TLS_hash_SHA384 ? 48 : 64));
-  char info[259] = {0};
+  char tmp[hlen];
+  char info[323] = {0};
   size_t info_len;
 
-  if(!quic_crypto_tls_label(secret->hash, info, &info_len, label))
+  if(!quic_crypto_tls_label(secret->hash, info, &info_len, label, 0))
     return 0;
 
   derived->hash = secret->hash;
   derived->ae = secret->ae;
 
-  if(!quic_crypto_hkdf_expand(secret->hash, derived->secret, hlen,
+  if(!quic_crypto_hkdf_expand(secret->hash, tmp, hlen,
         secret->secret, hlen, info, info_len))
+    return 0;
+
+  if(!quic_crypto_tls_label(secret->hash, info, &info_len, "exporter", 0))
+    return 0;
+
+  if(!quic_crypto_hkdf_expand(secret->hash, derived->secret, hlen,
+        tmp, hlen, info, info_len))
     return 0;
 
   return 1;
@@ -109,14 +132,14 @@ int quic_crypto_derive_key(/*out*/quic_key **k, const quic_secret *secret)
   char dkey[32];
   size_t info_len;
 
-  if(!quic_crypto_tls_label(secret->hash, info, &info_len, "key"))
+  if(!quic_crypto_tls_label(secret->hash, info, &info_len, "key", klen))
     return 0;
 
   // HKDF-Expand-Label(Secret, "key", "", key_length)
   if(!quic_crypto_hkdf_expand(secret->hash, dkey, klen, secret->secret, slen, info, info_len))
     return 0;
 
-  if(!quic_crypto_tls_label(secret->hash, info, &info_len, "iv"))
+  if(!quic_crypto_tls_label(secret->hash, info, &info_len, "iv", 12))
     return 0;
 
   if(!quic_crypto_hkdf_expand(secret->hash, key->static_iv, 12, secret->secret, slen, info, info_len))
