@@ -97,10 +97,10 @@ int main(int argc, char **argv)
   }
 
   printf("\nCHACHA20-POLY1305 encrypt test:\n");
-  quic_crypto_encrypt(k, cipher, 0, salt, 13, data, 28);
+  quic_crypto_encrypt(k, cipher, 0x29e255a7, salt, 13, data, 28);
   dump(cipher, 28+16);
 
-  if(quic_crypto_decrypt(k, hash, 0, salt, 13, cipher, 28+16)) {
+  if(quic_crypto_decrypt(k, hash, 0x29e255a7, salt, 13, cipher, 28+16)) {
     printf("DECRYPT SUCCES: \n");
     dump(hash, 28);
   } else {
