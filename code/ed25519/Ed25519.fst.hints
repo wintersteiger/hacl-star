@@ -31,6 +31,18 @@
     ],
     [
       "Ed25519.sign",
+      3,
+      0,
+      1,
+      [
+        "@query", "assumption_Prims.HasEq_int", "equation_FStar.UInt32.n",
+        "haseqEd25519_Tm_refine_9235c02d1511e51ec81f86f339737457",
+        "projection_inverse_BoxInt_proj_0"
+      ],
+      0
+    ],
+    [
+      "Ed25519.sign",
       4,
       0,
       1,
@@ -75,6 +87,18 @@
       [
         "@query", "assumption_Prims.HasEq_int", "equation_FStar.UInt32.n",
         "haseqHacl.Spec.Endianness_Tm_refine_f2c63b31fd0059912139424a133143ce",
+        "projection_inverse_BoxInt_proj_0"
+      ],
+      0
+    ],
+    [
+      "Ed25519.verify",
+      2,
+      0,
+      1,
+      [
+        "@query", "assumption_Prims.HasEq_int", "equation_FStar.UInt32.n",
+        "haseqHacl.Spec.Endianness_Tm_refine_0652f3ea76d7f45a8f344679390ba046",
         "projection_inverse_BoxInt_proj_0"
       ],
       0

@@ -171,6 +171,18 @@
     ],
     [
       "Hacl.SecureAPI.Chacha20.chacha20_stream_finish",
+      1,
+      0,
+      1,
+      [
+        "@query", "assumption_Prims.HasEq_int", "equation_FStar.UInt32.n",
+        "haseqHacl.Spec.Endianness_Tm_refine_0652f3ea76d7f45a8f344679390ba046",
+        "projection_inverse_BoxInt_proj_0"
+      ],
+      0
+    ],
+    [
+      "Hacl.SecureAPI.Chacha20.chacha20_stream_finish",
       2,
       0,
       1,
