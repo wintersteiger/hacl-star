@@ -44,6 +44,47 @@
         "haseqSpec.Curve25519_Tm_refine_64fde586cd61a9af199b0a72fdba45d1"
       ],
       0
+    ],
+    [
+      "Hacl.Impl.Ed25519.RecoverX.recover_x",
+      5,
+      0,
+      2,
+      [
+        "@MaxFuel_assumption", "@MaxIFuel_assumption",
+        "@fuel_correspondence_Prims.pow2.fuel_instrumented", "@query",
+        "b2t_def", "bool_inversion", "data_elim_FStar.UInt8.Mk",
+        "data_elim_Prims.Cons", "equation_FStar.Buffer.buffer",
+        "equation_FStar.UInt.Types.fits",
+        "equation_FStar.UInt.Types.max_int",
+        "equation_FStar.UInt.Types.min_int",
+        "equation_FStar.UInt.Types.size", "equation_FStar.UInt.Types.uint_t",
+        "equation_FStar.UInt64.n", "equation_FStar.UInt64.t",
+        "equation_FStar.UInt64.v", "equation_FStar.UInt8.n",
+        "equation_FStar.UInt8.t", "equation_FStar.UInt8.uint_to_t",
+        "equation_Hacl.Bignum25519.limb",
+        "equation_Hacl.Impl.Ed25519.RecoverX.elemB", "equation_Prims.nat",
+        "equation_Prims.pos", "equation_Spec.Curve25519.scalar1",
+        "fuel_guarded_inversion_FStar.Buffer._buffer",
+        "function_token_typing_FStar.UInt64.n",
+        "function_token_typing_Spec.Curve25519.scalar1",
+        "function_token_typing_Spec.SHA512.h_0", "int_typing",
+        "kinding_FStar.UInt64.t_@tok", "lemma_FStar.UInt.Types.pow2_values",
+        "primitive_Prims.op_Addition", "primitive_Prims.op_AmpAmp",
+        "primitive_Prims.op_LessThanOrEqual", "primitive_Prims.op_Multiply",
+        "primitive_Prims.op_Subtraction",
+        "projection_inverse_BoxBool_proj_0",
+        "projection_inverse_BoxInt_proj_0",
+        "refinement_interpretation_FStar.Buffer_Tm_refine_ac61996218e7c5b51c85527152e93166",
+        "refinement_interpretation_FStar.UInt.Types_Tm_refine_a97696e19d575477d6d97f5d6fe15813",
+        "refinement_interpretation_Hacl.Bignum25519_Tm_refine_994c09abb18bca69db50e6987b7ef9ef",
+        "refinement_interpretation_Hacl.Impl.Ed25519.RecoverX_Tm_refine_ea0cdb077ae78da455b9677f874da9dd",
+        "refinement_interpretation_Prims_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
+        "refinement_interpretation_Prims_Tm_refine_f048236b5f8051f83b495ea5eaa6127b",
+        "refinement_interpretation_Spec.SHA512_Tm_refine_a38ba213f7d10ad82997d9720a14fea1",
+        "typing_FStar.Seq.Base.length", "typing_FStar.UInt.Types.fits"
+      ],
+      0
     ]
   ]
 ]
