@@ -292,4 +292,4 @@ val decrypt
                invariant st h1 /\
                enc_dec_liveness st aad plain cipher_tag h1 /\
                modifies_fp (footprint st `TSet.union` just_one_buffer (Plain.as_buffer plain)) h0 h1 /\
-               (safeId i ==> entry_for_nonce n st h1 == Some (entry_of n aad plain cipher_tag h1))))
+               (safeId i /\ verified ==> entry_for_nonce n st h1 == Some (entry_of n aad plain cipher_tag h1))))
