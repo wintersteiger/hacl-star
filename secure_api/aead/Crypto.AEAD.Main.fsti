@@ -10,93 +10,105 @@ module HS = FStar.HyperStack
 module I = Crypto.Indexing
 module Plain = Crypto.Plain
 
+module Bytes = Crypto.Symmetric.Bytes
+
 (* Several constants that the interface relies on *)
-type eternal_region =
-     rgn:HH.rid {HS.is_eternal_region rgn}
+type eternal_region = rgn:HH.rid{HS.is_eternal_region rgn}
 
-type lbuffer (l:nat) =
-     b:Buffer.buffer UInt8.t {Buffer.length b == l}
+type lbuffer (l:nat) = Bytes.lbuffer l
+type bytes = Bytes.bytes
+type lbytes (l:nat) = Bytes.lbytes l
 
-let ivlen (a:I.cipherAlg) =
-    12ul
+let ivlen (a:I.cipherAlg) = 12ul
 
-let taglen =
-    16ul
+let taglen = 16ul
 
 let iv (alg:I.cipherAlg) =
-     let open FStar.Mul in
-     n:UInt128.t { UInt128.v n < pow2 (8 * v (ivlen alg)) }
+  let open FStar.Mul in
+  n:UInt128.t{ UInt128.v n < pow2 (8 * v (ivlen alg)) }
 
 let aadmax =
-    assert_norm (2000 <= pow2 32 - 1);
-    2000ul // more than enough for TLS
+  assert_norm (2000 <= pow2 32 - 1);
+  2000ul //more than enough for TLS
 
-type aadlen_32 =
-     l:UInt32.t {l <=^ aadmax}
+type aadlen_32 = l:UInt32.t {l <=^ aadmax}
 
-val keylen      : I.id -> UInt32.t
-val statelen    : I.id -> UInt32.t
+(* maximum plain length with which clients can call encrypt/decrypt *)
+val max_plain_len :nat
 
-let bytes = FStar.Seq.seq FStar.UInt8.t
-let lbytes  (l:nat) = b:bytes  {Seq.length b == l}
-type adata = b:bytes {Seq.length b <= v aadmax}
+type plainLen = n:Plain.plainLen{n <= max_plain_len}
+
+val keylen  :I.id -> UInt32.t
+val statelen:I.id -> UInt32.t
+
+type adata = b:bytes{Seq.length b <= v aadmax}
 type cipher (i:I.id) (l:nat) = lbytes (l + v taglen)
 
-val entry : i:I.id -> Type0
+val entry :i:I.id -> Type0
 let nonce (i:I.id) = iv (I.cipherAlg_of_id i)
-val mk_entry (#i:I.id) :
-    nonce:nonce i ->
-    ad:adata ->
-    #l:Plain.plainLen ->
-    p:Plain.plain i l ->
-    c:cipher i (Seq.length (Plain.as_bytes p)) ->
-    entry i
+
+val mk_entry (#i:I.id):
+  nonce:nonce i ->
+  ad:adata ->
+  #l:plainLen ->
+  p:Plain.plain i l ->
+  c:cipher i l -> //(Seq.length (Plain.as_bytes p)) AR: is there a reason not to write just l here?
+  entry i
+
 val entry_injective (#i:I.id)
                     (n:nonce i) (n':nonce i)
                     (ad:adata) (ad':adata)
-                    (#l:Plain.plainLen) (#l':Plain.plainLen)
+                    (#l:plainLen) (#l':plainLen)
                     (p:Plain.plain i l) (p':Plain.plain i l')
-                    (c:cipher i (Seq.length (Plain.as_bytes p))) (c':cipher i (Seq.length (Plain.as_bytes p')))
-  : Lemma (let e  = mk_entry n ad p c in
-           let e' = mk_entry n' ad' p' c' in
-           (e == e' <==> (n == n' /\ ad == ad' /\ l == l' /\ p == p' /\ c == c')))
-val nonce_of_entry (#i:_) (e:entry i) : nonce i
+                    (c:cipher i l) (c':cipher i l')
+  :Lemma (let e  = mk_entry n ad p c in
+          let e' = mk_entry n' ad' p' c' in
+          (e == e' <==> (n == n' /\ ad == ad' /\ l == l' /\ p == p' /\ c == c')))
+
+val nonce_of_entry (#i:_) (e:entry i) :nonce i
 
 let safeMac (i:I.id) = Flag.safeHS i && Flag.mac1 i
 let safeId  (i:I.id) = Flag.safeId i
 
-val aead_state     : I.id -> I.rw -> Type0
+val aead_state: I.id -> I.rw -> Type0
+
+(* AR: aren't log_region and prf_region same? *)
 val log_region: #i:_ -> #rw:_ -> aead_state i rw -> eternal_region
 val prf_region: #i:_ -> #rw:_ -> aead_state i rw -> eternal_region
 val log       : #i:_ -> #rw:_ -> s:aead_state i rw{safeMac i} -> HS.mem -> GTot (Seq.seq (entry i))
 
-let address   = nat
+module TSet = FStar.TSet
+
+type tset (a:Type) = TSet.set a
+
+(* scaffolding for defining footprint *)
+type address = nat
 let addr_unused_in (rid:HH.rid) (a:address) (m0:HS.mem) =
   let open FStar.HyperStack in
   FStar.Monotonic.Heap.addr_unused_in a (Map.sel m0.h rid)
-let contains_addr (rid:HH.rid) (a:address) (m:HS.mem) =
-  ~ (addr_unused_in rid a m)
-let fresh_addresses (rid:HH.rid) (addrs:FStar.TSet.set address) (m0:HS.mem) (m1:HS.mem) =
-  forall a. a `FStar.TSet.mem` addrs ==>
+
+let contains_addr (rid:HH.rid) (a:address) (m:HS.mem) = ~ (addr_unused_in rid a m)
+let fresh_addresses (rid:HH.rid) (addrs:tset address) (m0:HS.mem) (m1:HS.mem) =
+  forall a. a `TSet.mem` addrs ==>
        addr_unused_in rid a m0 /\
        contains_addr  rid a m1
 
 noeq
 type refs_in_region =
-  | AllRefs  : refs_in_region
-  | SomeRefs : FStar.TSet.set address -> refs_in_region
+  | AllRefs : refs_in_region
+  | SomeRefs: tset address -> refs_in_region
 
-type fp = FStar.TSet.set (HH.rid * refs_in_region)
-val footprint     : #i:_ -> #rw:_ -> aead_state i rw -> fp
+type fp = tset (HH.rid * refs_in_region)
+val footprint: #i:_ -> #rw:_ -> aead_state i rw -> fp
 
-let regions_of_fp (fp:fp) = FStar.TSet.map fst fp
-let refs_of_region (rgn:HH.rid) (footprint:fp) : FStar.TSet.set refs_in_region =
-  FStar.TSet.map snd (FStar.TSet.filter (fun r -> fst r == rgn) footprint)
+let regions_of_fp (fp:fp) = TSet.map fst fp
+let refs_of_region (rgn:HH.rid) (footprint:fp) :tset refs_in_region =
+  TSet.map snd (TSet.filter (fun r -> fst r == rgn) footprint)
 
 //HH only provides modifies on sets, not tsets
-val hh_modifies_t (_:FStar.TSet.set HH.rid) (h0:HS.mem) (h1:HS.mem) : Type0
+val hh_modifies_t (_:tset HH.rid) (h0:HS.mem) (h1:HS.mem) :Type0
 
-let modifies_fp (fp:fp) (h0:HS.mem) (h1:HS.mem): Type0 =
+let modifies_fp (fp:fp) (h0:HS.mem) (h1:HS.mem) :Type0 =
   let open FStar.HyperStack in
   hh_modifies_t (regions_of_fp fp) h0 h1 /\
   (forall r. r `TSet.mem` (regions_of_fp fp) ==> (
@@ -106,7 +118,7 @@ let modifies_fp (fp:fp) (h0:HS.mem) (h1:HS.mem): Type0 =
               | AllRefs -> True
               | SomeRefs addrs -> FStar.Heap.modifies_t addrs (Map.sel h0.h r) (Map.sel h1.h r)))))
 
-let preserves_fp (fp:fp) (h0:HS.mem) (h1:HS.mem) : Type0 =
+let preserves_fp (fp:fp) (h0:HS.mem) (h1:HS.mem) :Type0 =
   let open FStar.HyperStack in
   (forall r. r `TSet.mem` regions_of_fp fp ==> (
         let refs = refs_of_region r fp in
@@ -114,44 +126,38 @@ let preserves_fp (fp:fp) (h0:HS.mem) (h1:HS.mem) : Type0 =
               let mod_refs =
                 match a with
                 | AllRefs -> TSet.empty
-                | SomeRefs addrs -> TSet.complement addrs in
+                | SomeRefs addrs -> TSet.complement addrs
+	      in
               FStar.Heap.modifies_t mod_refs (Map.sel h0.h r) (Map.sel h1.h r)))))
 
 //Leaving this abstract for now; but it should imply Crypto.AEAD.Invariant.safelen i len (otp_offset i)
-val safelen     : I.id -> nat -> bool
+val safelen: I.id -> nat -> bool
 let ok_plain_len_32 (i:I.id) = l:UInt32.t{safelen i (v l)}
 
-val invariant : #i:_ -> #rw:_ -> aead_state i rw -> HS.mem -> Type0
+val invariant: #i:_ -> #rw:_ -> aead_state i rw -> HS.mem -> Type0
 val frame_invariant: #i:_ -> #rw:_ -> st:aead_state i rw -> h0:HS.mem -> h1:HS.mem ->
-    Lemma (invariant st h0 /\ preserves_fp (footprint st) h0 h1 ==>
-           invariant st h1)
+  Lemma (invariant st h0 /\ preserves_fp (footprint st) h0 h1 ==>
+         invariant st h1)
 
 //val as_set': #a:Type -> list a -> Tot (TSet.set a)
-let rec as_set (#a:Type) (l:list a) : TSet.set a =
-  match l with
-  | [] -> TSet.empty
-  | hd::tl -> TSet.union (TSet.singleton hd) (as_set tl)
-
-//unfold let as_set (#a:Type) (l:list a) : TSet.set a = normalize_term (as_set' l)
+let as_set (#a:Type) (l:list a) :TSet.set a = TSet.as_set' #a l
 
 (*** The main stateful API ***)
 
 (** Allocating a writer **)
 val gen (i:I.id)
         (prf_rgn:eternal_region)
-        (log_rgn:eternal_region{HH.disjoint prf_rgn log_rgn})
-  : ST (aead_state i I.Writer)
-    (requires (fun h -> True))
-    (ensures (fun h0 s h1 ->
-             log_region s == log_rgn /\
-             prf_region s == prf_rgn /\
-             (exists fresh.
-                fresh_addresses prf_rgn fresh h0 h1 /\
-                footprint s == as_set [(log_rgn, AllRefs); (prf_rgn, SomeRefs fresh)]) /\
-             (safeMac i ==> log s h1 == Seq.createEmpty) /\
-             invariant s h1
-    ))
-
+        (log_rgn:eternal_region{HH.disjoint prf_rgn log_rgn})  //AR: isn't prf_rgn = log_rgn
+  :ST (aead_state i I.Writer)
+      (requires (fun h -> True))
+      (ensures (fun h0 s h1 ->
+                log_region s == log_rgn /\
+                prf_region s == prf_rgn /\
+                (exists fresh.
+                   fresh_addresses prf_rgn fresh h0 h1 /\
+                   footprint s == as_set [(log_rgn, AllRefs); (prf_rgn, SomeRefs fresh)]) /\
+                (safeMac i ==> log s h1 == Seq.createEmpty) /\
+                invariant s h1))
 
 (** Building a reader from a writer **)
 
@@ -281,7 +287,7 @@ val decrypt
      (aadlen: aadlen_32)
         (aad: lbuffer (v aadlen))
    (plainlen: ok_plain_len_32 i)
-      (plain: Plain.plainBuffer i (v plainlen))
+       (plain: Plain.plainBuffer i (v plainlen))
  (cipher_tag: lbuffer (v plainlen + v taglen))
             : ST bool
   (requires (fun h ->
