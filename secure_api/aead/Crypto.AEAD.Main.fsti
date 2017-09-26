@@ -144,6 +144,9 @@ let as_set (#a:Type) (l:list a) :TSet.set a = TSet.as_set' #a l
 
 (*** The main stateful API ***)
 
+(*
+ * AR: if prf_rgn = log_rgn, can we just make the footprint as the whole region (transitively)?
+ *)
 (** Allocating a writer **)
 val gen (i:I.id)
         (prf_rgn:eternal_region)
