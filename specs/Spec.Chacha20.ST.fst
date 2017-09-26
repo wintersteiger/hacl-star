@@ -1,4 +1,4 @@
-module Spec.Chacha20
+module Spec.Chacha20.ST
 
 module ST = FStar.HyperStack.ST
 
@@ -17,10 +17,10 @@ let idx = index_l 16
 
 (* Wrapper monadic functions specialized for the Chacha state *)
 let copy : chacha_st st = seq1_copy #u32 #16 
-let read i : chacha_st u32 = seq1_read #u32 #16 i
-let write i x : chacha_st unit = seq1_write #u32 #16 i x
+unfold let read i : chacha_st u32 = seq1_read #u32 #16 i
+unfold let write i x : chacha_st unit = seq1_write #u32 #16 i x
 let return (y:'b) : chacha_st 'b = seq1_return y
-let bind (f:chacha_st 'b) (g:'b -> chacha_st 'c) : chacha_st 'c = seq1_bind f g
+unfold let bind (f:chacha_st 'b) (g:'b -> chacha_st 'c) : chacha_st 'c = seq1_bind f g
 let iter (n:nat) (f:chacha_st unit) = seq1_iter n f
 let in_place_map2 (f:u32 -> u32 -> Tot u32) (s:st) = seq1_in_place_map2 f s
 let alloc (f:chacha_st 'b) = seq1_alloc 0ul f
@@ -44,8 +44,8 @@ type nonce = lbytes noncelen
 type counter = UInt.uint_t 32
 
 let line (a:idx) (b:idx) (d:idx) (s:t{0 < v s /\ v s < 32}) : chacha_st unit =
-  mb <-- read b ;
   ma <-- read a ;
+  mb <-- read b ;
   write a (ma +%^ mb) ;;
   ma <-- read a ;
   md <-- read d ;
@@ -87,14 +87,15 @@ let c1 = 0x3320646eul
 let c2 = 0x79622d32ul
 let c3 = 0x6b206574ul
 
-
-let setup (k:key) (n:nonce) (c:counter): chacha_st unit =
+let setup0 (c:counter): chacha_st unit = 
   write 0 c0 ;;
   write 1 c1 ;;
   write 2 c2 ;;
   write 3 c3 ;;
+  write 12 (UInt32.uint_to_t c) 
+
+let setup (k:key) (n:nonce) (c:counter): chacha_st unit =
   uint32s_from_le k 4 8 ;; 
-  write 12 (UInt32.uint_to_t c) ;;
   uint32s_from_le n 13 3
 
 let chacha20_block (k:key) (n:nonce) (c:counter): Tot block =

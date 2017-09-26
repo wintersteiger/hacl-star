@@ -2,9 +2,7 @@ module Spec.Chacha20
 
 module ST = FStar.HyperStack.ST
 
-#set-options "--max_fuel 0 --z3rlimit 100"
-
-//open FStar.Mul
+open FStar.Mul
 open FStar.Seq
 open FStar.UInt32
 open FStar.Endianness
@@ -12,124 +10,9 @@ open Spec.Lib
 open Spec.Chacha20.Lemmas
 open Seq.Create
 
+#set-options "--max_fuel 0 --z3rlimit 100"
 
-(* Generic key-value state monad: WIP *)
-noeq 
-type kv (a:Type) = 
-  |  MkSt: k: Type -> v: Type -> 
-	   get:(a -> k -> Tot v) -> 
-	   set:(a -> k -> v -> Tot a) -> kv a
-
-     
-type stateful (a:Type) (b:Type) =
-	      a -> Tot (b * a)
-
-val stateful_read: #a:Type -> kv:kv a -> key:kv.k -> Tot (stateful a kv.v)	   
-let stateful_read  #a kv key = 
-    fun m -> kv.get m key, m
-
-val stateful_write: #a:Type -> kv:kv a -> key:kv.k -> value:kv.v -> Tot (stateful a unit)	   
-let stateful_write  #a kv key value = 
-    fun m -> (), kv.set m key value
-
-val stateful_return: #a: Type -> #b:Type -> r:b -> Tot (stateful a b)
-let stateful_return #a #b r = 
-    fun m -> r, m
-    
-val stateful_bind: #a:Type -> #b:Type -> #c:Type -> stateful a b -> (b -> Tot (stateful a c)) -> Tot (stateful a c)
-let stateful_bind #a #b #c f g = fun s -> let (a,s) = f s in g a s
-
-type u32 = FStar.UInt32.t
-
-// state monad for manipulating one sequence
-type seq_l 'a n = m: seq 'a{length m = n}
-type index_l n = m: nat{m < n}
-type seq1_st s n b =
-     seq_l s n -> Tot (b * seq_l s n)
-
-val seq1_read: #a:Type -> #n:nat -> (i:index_l n) -> Tot (seq1_st a n a)
-let seq1_read  #a #n i = fun m -> Seq.index m i, m
-
-val seq1_copy: #a:Type -> #n:nat -> Tot (seq1_st a n (seq_l a n))
-let seq1_copy  #a #n = fun m -> m, m
-
-
-val seq1_return: #a:Type -> #n:nat -> #b:Type -> x:b -> seq1_st a n b
-let seq1_return #a #n #b w = fun m -> (w,m)
-
-val seq1_write: #a:Type -> #n:nat -> (i:index_l n) -> (v:a) -> Tot (seq1_st a n unit)
-let seq1_write #a #n i x = fun m ->  (), (m.[i] <- x)
-
-val seq1_bind: #a:Type -> #n:nat -> #b:Type -> #c:Type -> seq1_st a n b -> (b -> seq1_st a n c) -> Tot (seq1_st a n c)
-let seq1_bind #a #n #b #c f g = fun s -> let a, s = f s in g a s
-
-val seq1_iter: #a:Type -> #n:nat -> c:nat -> seq1_st a n unit -> Tot (seq1_st a n unit)
-let seq1_iter #a #m n f = 
-    let f' (s:seq_l a m) : Tot (seq_l a m) = 
-        let s' = f s in
-	snd s'
-    in
-    fun s -> (),iter 10 f' s
-
-val seq1_in_place_map2: #a:Type -> #n:nat -> #b:Type -> f:(a -> b -> Tot a) -> s:seq_l b n -> Tot (seq1_st a n unit)
-let seq1_in_place_map2  #a #m #b f i = 
-    fun s -> 
-      let s' = Spec.Loops.seq_map2 f s i in
-      (),s'
-
-val seq1_alloc: #a:Type -> #n:nat -> #b:Type -> init:a -> f:seq1_st a n b -> Tot b
-let seq1_alloc #a #n #b init f =
-    let s = Seq.create n init in
-    let s' = f s in
-    fst s'
-
-val seq1_uint32s_from_le: #n:nat -> b:bytes -> start:nat -> len: nat{
-						     length b = FStar.Mul.(4 * len)
-					 	   /\ start + len <= n} -> 
-		     Tot (seq1_st u32 n unit) 
-let seq1_uint32s_from_le #n src start len =
-  fun s ->
-    let s' = uint32s_from_le len src in
-    let s0,s_ = split s start in
-    let s1,s2 = split s_ len in
-    (), s0 @| s' @| s2
-
-val seq1_uint32s_to_le: #n:nat -> start:nat -> len: nat{start + len <= n} -> 
-		     Tot (seq1_st u32 n (lbytes (FStar.Mul.(4 * len)))) 
-let seq1_uint32s_to_le #n start len =
-  fun s ->
-    if len = 0 then
-       Seq.createEmpty, s
-    else
-       let s0,s_ = split s start in
-       let s1,s2 = split s_ len in
-       let b = uint32s_to_le len s1 in
-       b, s
-
-
-(* Chacha20 State *)
-// internally, blocks are represented as 16 x 4-byte integers
-type chacha_st 'b = seq1_st u32 16 'b
-type st = seq_l u32 16
-let idx = index_l 16
-let copy : chacha_st st = seq1_copy #u32 #16 
-let read i : chacha_st u32 = seq1_read #u32 #16 i
-let write i x : chacha_st unit = seq1_write #u32 #16 i x
-let return (y:'b) : chacha_st 'b = seq1_return y
-let bind (f:chacha_st 'b) (g:'b -> chacha_st 'c) : chacha_st 'c = seq1_bind f g
-let iter (n:nat) (f:chacha_st unit) = seq1_iter n f
-let in_place_map2 (f:u32 -> u32 -> Tot u32) (s:st) = seq1_in_place_map2 f s
-let alloc (f:chacha_st 'b) = seq1_alloc 0ul f
-let uint32s_from_le src (start:idx) 
-		    (len:nat{FStar.Mul.(len * 4 = length src)
-			   /\ start + len <= 16}): chacha_st unit = 
-		seq1_uint32s_from_le src start len
-let uint32s_to_le (start:idx) 
-		  (len:nat{start + len <= 16}): chacha_st (lbytes FStar.Mul.(4 * len)) = 
-		seq1_uint32s_to_le start len
-
-
-(* Chacha20 Code *)
+(* Constants *)
 let keylen = 32   (* in bytes *)
 let blocklen = 64 (* in bytes *)
 let noncelen = 12 (* in bytes *)
@@ -139,43 +22,43 @@ type block = lbytes blocklen
 type nonce = lbytes noncelen
 type counter = UInt.uint_t 32
 
-let line (a:idx) (b:idx) (d:idx) (s:t{0 < v s /\ v s < 32}) : chacha_st unit =
-  mb <-- read b ;
-  ma <-- read a ;
-  write a (ma +%^ mb) ;;
-  ma <-- read a ;
-  md <-- read d ;
-  write d ((md ^^ ma) <<< s)
+// using @ as a functional substitute for ;
+// internally, blocks are represented as 16 x 4-byte integers
+type state = m:seq UInt32.t {length m = 16}
+type idx = n:nat{n < 16}
+type shuffle = state -> Tot state
 
-let quarter_round a b c d : chacha_st unit =
-  line a b d 16ul ;;
-  line c d b 12ul ;;
-  line a b d 8ul  ;;
+let line (a:idx) (b:idx) (d:idx) (s:t{0 < v s /\ v s < 32}) (m:state) : Tot state =
+  let m = m.[a] <- (m.[a] +%^ m.[b]) in
+  let m = m.[d] <- ((m.[d] ^^ m.[a]) <<< s) in m
+
+let quarter_round a b c d : shuffle =
+  line a b d 16ul @
+  line c d b 12ul @
+  line a b d 8ul  @
   line c d b 7ul
 
-let column_round : chacha_st unit = 
-  quarter_round 0 4 8  12 ;;
-  quarter_round 1 5 9  13 ;;
-  quarter_round 2 6 10 14 ;;
+let column_round : shuffle =
+  quarter_round 0 4 8  12 @
+  quarter_round 1 5 9  13 @
+  quarter_round 2 6 10 14 @
   quarter_round 3 7 11 15
 
-let diagonal_round : chacha_st unit =
-  quarter_round 0 5 10 15 ;;
-  quarter_round 1 6 11 12 ;;
-  quarter_round 2 7 8  13 ;;
+let diagonal_round : shuffle =
+  quarter_round 0 5 10 15 @
+  quarter_round 1 6 11 12 @
+  quarter_round 2 7 8  13 @
   quarter_round 3 4 9  14
 
-let double_round: chacha_st unit =
-    column_round ;; 
-    diagonal_round (* 2 rounds *)
+let double_round: shuffle =
+    column_round @ diagonal_round (* 2 rounds *)
 
-let rounds : chacha_st unit =
+let rounds : shuffle =
     iter 10 double_round (* 20 rounds *)
- 
-let chacha20_core: chacha_st unit = 
-    s <-- copy ;
-    rounds ;;
-    in_place_map2 (+%^) s
+
+let chacha20_core (s:state) : Tot state =
+    let s' = rounds s in
+    Spec.Loops.seq_map2 (fun x y -> x +%^ y) s' s
 
 (* state initialization *)
 let c0 = 0x61707865ul
@@ -183,24 +66,16 @@ let c1 = 0x3320646eul
 let c2 = 0x79622d32ul
 let c3 = 0x6b206574ul
 
-
-let setup (k:key) (n:nonce) (c:counter): chacha_st unit =
-  write 0 c0 ;;
-  write 1 c1 ;;
-  write 2 c2 ;;
-  write 3 c3 ;;
-  uint32s_from_le k 4 8 ;; 
-  write 12 (UInt32.uint_to_t c) ;;
-  uint32s_from_le n 13 3
-
-
+let setup (k:key) (n:nonce) (c:counter): Tot state =
+  create_4 c0 c1 c2 c3          @|
+  uint32s_from_le 8 k           @|
+  create_1 (UInt32.uint_to_t c) @|
+  uint32s_from_le 3 n
 
 let chacha20_block (k:key) (n:nonce) (c:counter): Tot block =
-    alloc (
-       setup k n c ;;
-       chacha20_core ;;
-       uint32s_to_le 0 16 
-    )
+    let st  = setup k n c in
+    let st' = chacha20_core st in
+    uint32s_to_le 16 st'
 
 let chacha20_ctx: Spec.CTR.block_cipher_ctx =
     let open Spec.CTR in
@@ -277,5 +152,3 @@ let test() =
   let test_nonce = createL test_nonce in
   chacha20_encrypt_bytes test_key test_nonce test_counter test_plaintext
   = test_ciphertext
-
-

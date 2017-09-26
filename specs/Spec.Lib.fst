@@ -427,8 +427,8 @@ type index_l n = m: nat{m < n}
 type seq1_st s n b =
      seq_l s n -> Tot (b * seq_l s n)
 
-val seq1_read: #a:Type -> #n:nat -> (i:index_l n) -> Tot (seq1_st a n a)
-let seq1_read  #a #n i = fun m -> Seq.index m i, m
+unfold val seq1_read: #a:Type -> #n:nat -> (i:index_l n) -> Tot (seq1_st a n a)
+unfold let seq1_read  #a #n i = fun m -> Seq.index m i, m
 
 val seq1_copy: #a:Type -> #n:nat -> Tot (seq1_st a n (seq_l a n))
 let seq1_copy  #a #n = fun m -> m, m
@@ -437,11 +437,11 @@ let seq1_copy  #a #n = fun m -> m, m
 val seq1_return: #a:Type -> #n:nat -> #b:Type -> x:b -> seq1_st a n b
 let seq1_return #a #n #b w = fun m -> (w,m)
 
-val seq1_write: #a:Type -> #n:nat -> (i:index_l n) -> (v:a) -> Tot (seq1_st a n unit)
-let seq1_write #a #n i x = fun m ->  (), (m.[i] <- x)
+unfold val seq1_write: #a:Type -> #n:nat -> (i:index_l n) -> (v:a) -> Tot (seq1_st a n unit)
+unfold let seq1_write #a #n i x = fun m ->  (), (m.[i] <- x)
 
-val seq1_bind: #a:Type -> #n:nat -> #b:Type -> #c:Type -> seq1_st a n b -> (b -> seq1_st a n c) -> Tot (seq1_st a n c)
-let seq1_bind #a #n #b #c f g = fun s -> let a, s = f s in g a s
+unfold val seq1_bind: #a:Type -> #n:nat -> #b:Type -> #c:Type -> seq1_st a n b -> (b -> seq1_st a n c) -> Tot (seq1_st a n c)
+unfold let seq1_bind #a #n #b #c f g = fun s -> let a, s = f s in g a s
 
 val seq1_iter: #a:Type -> #n:nat -> c:nat -> seq1_st a n unit -> Tot (seq1_st a n unit)
 let seq1_iter #a #m n f = 
@@ -449,7 +449,7 @@ let seq1_iter #a #m n f =
         let s' = f s in
 	snd s'
     in
-    fun s -> (),iter 10 f' s
+    fun s -> (),iter n f' s
 
 val seq1_in_place_map2: #a:Type -> #n:nat -> #b:Type -> f:(a -> b -> Tot a) -> s:seq_l b n -> Tot (seq1_st a n unit)
 let seq1_in_place_map2  #a #m #b f i = 
