@@ -46,7 +46,7 @@ let state_pre (st:state) h0 = live h0 st
 let state_post (spec:Spec.chacha_st 'b) (st:state) h0 r h1 = 
 	       live h0 st /\ live h1 st /\ modifies_1 st h0 h1 /\ 
 	       spec (st_v (as_seq h0 st)) == 
-	       (r,st_v (as_seq h1 st))
+	            (r,st_v (as_seq h1 st))
 
 #reset-options "--max_fuel 0 --z3rlimit 50"
 noeq
@@ -162,10 +162,26 @@ assume val uint32s_from_le: src:buffer h8 -> start:idx ->
 let setup0 (c:U32.t) : (s:stateful_st unit{
 	     forall st. s.spec st == Spec.setup0 (U32.v c) st}) =
    write_st 0ul 0x61707865ul;;
-     write_st 1ul 0x3320646eul;;
+   write_st 1ul 0x3320646eul;;
    write_st 2ul 0x79622d32ul;;
    write_st 3ul 0x6b206574ul;;
    write_st 12ul c 
+
+val setup1: k:uint8_p{length k = 32} ->
+            n:uint8_p{length n = 12} ->
+           st: state -> 
+           Stack unit
+           (requires (fun h -> state_pre st h /\ live h k /\ live h n /\  
+			    disjoint st k /\ disjoint st n))
+           (ensures  (fun h0 r h1 -> live h0 k /\ live h0 n /\
+   			          live h1 k /\ live h1 n /\
+		           (let spec = Spec.setup1 (as_seq h0 k) (as_seq h0 n) in
+			    state_post spec st h0 r h1)))
+#reset-options "--max_fuel 0 --z3rlimit 300"
+let setup1 k n st = 
+  uint32s_from_le k 4ul 8ul st;
+  uint32s_from_le n 13ul 3ul st
+
 
 val setup: k:uint8_p{length k = 32} ->
            n:uint8_p{length n = 12} ->
@@ -183,169 +199,80 @@ val setup: k:uint8_p{length k = 32} ->
 let setup k n c st = 
   let s0 = setup0 c in
   s0.impl st;
-  uint32s_from_le k 4ul 8ul st;
-  uint32s_from_le n 13ul 3ul st
-  
-  (*
-
-[@ "substitute"]
-private
-val ivsetup:
-  st:buffer H32.t{length st = 3} ->
-  iv:uint8_p{length iv = 12 /\ disjoint st iv} ->
-  Stack unit
-    (requires (fun h -> live h st /\ live h iv))
-    (ensures  (fun h0 _ h1 -> live h1 st /\ modifies_1 st h0 h1 /\ live h0 iv
-      /\ (let s = reveal_h32s (as_seq h1 st) in
-         let iv = reveal_sbytes (as_seq h0 iv) in
-         s == Spec.Lib.uint32s_from_le 3 iv) ))
-[@ "substitute"]
-let ivsetup st iv =
-  uint32s_from_le_bytes st iv 3ul
-
-
-[@ "substitute"]
-private
-val ctrsetup:
-  st:buffer H32.t{length st = 1} ->
-  ctr:U32.t ->
-  Stack unit
-    (requires (fun h -> live h st))
-    (ensures  (fun h0 _ h1 -> live h1 st /\ modifies_1 st h0 h1
-      /\ (let s = as_seq h1 st in
-         s == Spec.Lib.singleton (uint32_to_sint32 ctr)) ))
-[@ "substitute"]
-let ctrsetup st ctr =
-  st.(0ul) <- uint32_to_sint32 ctr;
-  let h = ST.get() in
-  Seq.lemma_eq_intro (Spec.Lib.singleton (uint32_to_sint32 ctr)) (as_seq h st)
-
-
-private val lemma_setup: h:mem -> st:state{live h st} -> Lemma
-  (as_seq h st == FStar.Seq.(as_seq h (Buffer.sub st 0ul 4ul) @| as_seq h (Buffer.sub st 4ul 8ul)
-                           @| as_seq h (Buffer.sub st 12ul 1ul) @| as_seq h (Buffer.sub st 13ul 3ul)))
-private let lemma_setup h st =
-  let s = as_seq h st in
-  Seq.lemma_eq_intro (Seq.slice s 0 4) (as_seq h (Buffer.sub st 0ul 4ul));
-  Seq.lemma_eq_intro (Seq.slice s 4 12) (as_seq h (Buffer.sub st 4ul 8ul));
-  Seq.lemma_eq_intro (Seq.slice s 12 13) (as_seq h (Buffer.sub st 12ul 1ul));
-  Seq.lemma_eq_intro (Seq.slice s 13 16) (as_seq h (Buffer.sub st 13ul 3ul));
-  Seq.lemma_eq_intro s (FStar.Seq.(slice s 0 4 @| slice s 4 12 @| slice s 12 13 @| slice s 13 16))
-
-#reset-options "--max_fuel 0 --z3rlimit 100"
-
-[@ "c_inline"]
-val setup:
-  st:state ->
-  k:uint8_p{length k = 32 /\ disjoint st k} ->
-  n:uint8_p{length n = 12 /\ disjoint st n} ->
-  c:U32.t ->
-  Stack unit
-    (requires (fun h -> live h st /\ live h k /\ live h n))
-    (ensures (fun h0 _ h1 -> live h0 k /\ live h0 n /\ live h1 st /\ modifies_1 st h0 h1
-      /\ (let s = reveal_h32s (as_seq h1 st) in
-         let k = reveal_sbytes (as_seq h0 k) in
-         let n = reveal_sbytes (as_seq h0 n) in
-         s == setup k n (U32.v c))))
-[@ "c_inline"]
-let setup st k n c =
-  let h0 = ST.get() in
-  let stcst = Buffer.sub st 0ul 4ul in
-  let stk   = Buffer.sub st 4ul 8ul in
-  let stc   = Buffer.sub st 12ul 1ul in
-  let stn   = Buffer.sub st 13ul 3ul in
-  constant_setup stcst;
-  let h1 = ST.get() in
-  keysetup stk k;
-  let h2 = ST.get() in
-  ctrsetup stc c;
-  let h3 = ST.get() in
-  ivsetup stn n;
-  let h4 = ST.get() in
-  no_upd_lemma_1 h0 h1 stcst stk;
-  no_upd_lemma_1 h0 h1 stcst stn;
-  no_upd_lemma_1 h0 h1 stcst stc;
-  no_upd_lemma_1 h1 h2 stk stcst;
-  no_upd_lemma_1 h1 h2 stk stn;
-  no_upd_lemma_1 h1 h2 stk stc;
-  no_upd_lemma_1 h2 h3 stc stcst;
-  no_upd_lemma_1 h2 h3 stc stk;
-  no_upd_lemma_1 h2 h3 stc stn;
-  no_upd_lemma_1 h3 h4 stn stcst;
-  no_upd_lemma_1 h3 h4 stn stk;
-  no_upd_lemma_1 h3 h4 stn stc;
-  lemma_setup h4 st;
-  Seq.lemma_eq_intro (reveal_h32s (as_seq h4 st)) (Spec.setup (reveal_sbytes (as_seq h0 k)) (reveal_sbytes (as_seq h0 n)) (U32.v c))
-
-
+  setup1 k n st
 
 
 
 #reset-options " --max_fuel 0 --z3rlimit 100"
-
 [@ "c_inline"]
 val sum_states:
-  st:state ->
-  st':state{disjoint st st'} ->
+  st_in:state ->
+  st_out:state ->
   Stack unit
-    (requires (fun h -> live h st /\ live h st'))
-    (ensures  (fun h0 _ h1 -> live h0 st /\ live h1 st /\ live h0 st' /\ modifies_1 st h0 h1
-      /\ (let s1 = as_seq h1 st in let s = as_seq h0 st in let s' = as_seq h0 st' in
-         s1 == seq_map2 (fun x y -> H32.(x +%^ y)) s s')))
+    (requires (fun h -> state_pre st_out h /\ live h st_in /\ disjoint st_in st_out))
+    (ensures  (fun h0 r h1 -> live h0 st_in /\ live h1 st_in /\
+        (let spec = Spec.in_place_map2 (+%^) (as_seq h0 st_in) in
+	 state_post spec st_out h0 r h1)))
 [@ "c_inline"]
-let sum_states st st' =
-  in_place_map2 st st' 16ul (fun x y -> H32.(x +%^ y))
+let sum_states st_in st_out =
+  in_place_map2 st_out st_in 16ul (fun x y -> H32.(x +%^ y))
 
 
 [@ "c_inline"]
 val copy_state:
-  st:state ->
-  st':state{disjoint st st'} ->
+  st_in:state ->
+  st_out:state ->
   Stack unit
-    (requires (fun h -> live h st /\ live h st'))
-    (ensures (fun h0 _ h1 -> live h1 st /\ live h0 st' /\ modifies_1 st h0 h1
-      /\ (let s = as_seq h0 st' in let s' = as_seq h1 st in s' == s)))
+    (requires (fun h -> state_pre st_out h /\ live h st_in /\ disjoint st_in st_out))
+    (ensures (fun h0 r h1 -> live h0 st_in /\ live h1 st_in /\ 
+      modifies_1 st_out h0 h1 /\
+      (as_seq h0 st_in) == (as_seq h1 st_out)))
 [@ "c_inline"]
-let copy_state st st' =
-  Buffer.blit st' 0ul st 0ul 16ul;
-  let h = ST.get() in
-  Seq.lemma_eq_intro (as_seq h st) (Seq.slice (as_seq h st) 0 16);
-  Seq.lemma_eq_intro (as_seq h st') (Seq.slice (as_seq h st') 0 16);
-  Seq.lemma_eq_intro (as_seq h st) (as_seq h st')
+let copy_state st_in st_out =
+  Buffer.blit st_in 0ul st_out 0ul 16ul
 
+[@ "c_inline"]
+private
+val chacha20_core:
+  st_copy:state ->
+  st:state ->
+  Stack unit
+    (requires (fun h -> state_pre st h /\ live h st_copy /\ disjoint st st_copy))
+    (ensures  (fun h0 _ h1 -> live h0 st_copy /\ live h1 st_copy /\ modifies_2 st st_copy h0 h1 /\ 
+        (Spec.chacha20_core (as_seq h0 st) == ((),as_seq h1 st))))
+	
+#reset-options " --max_fuel 0 --z3rlimit 100"
+[@ "c_inline"]
+let chacha20_core st st_copy =
+  let h0 = ST.get() in
+  copy_state st st_copy;
+  let h1 = ST.get() in
+  assert (as_seq h1 st_copy == as_seq h0 st);
+  assert (as_seq h1 st == as_seq h0 st);
+  rounds.impl st;
+  let h2 = ST.get() in
+  assert (((),as_seq h2 st) == Spec.rounds (as_seq h1 st));
+  assert (as_seq h2 st_copy == as_seq h1 st_copy);
+  sum_states st_copy st;
+  let h3 = ST.get() in
+  assert (((),as_seq h3 st) == Spec.in_place_map2 (+%^) (as_seq h2 st_copy) (as_seq h2 st));
+  admit()
+ 
 
+(*
 #reset-options " --max_fuel 0 --z3rlimit 100"
 
 type log_t_ = | MkLog: k:Spec.key -> n:Spec.nonce -> log_t_
 type log_t = Ghost.erased log_t_
 
-private
-val lemma_setup_inj:
-  k:Spec.key -> n:Spec.nonce -> c:Spec.counter ->
-  k':Spec.key -> n':Spec.nonce -> c':Spec.counter -> Lemma
-  (requires (Spec.setup k n c == Spec.setup k' n' c'))
-  (ensures (k == k' /\ n == n' /\ c == c'))
-let lemma_setup_inj k n c k' n' c' =
-  let s = Spec.setup k n c in let s' = Spec.setup k' n' c' in
-  Seq.lemma_eq_intro (Seq.slice s 4 12) (Seq.slice s' 4 12);
-  Seq.lemma_eq_intro (Seq.slice s 12 13) (Seq.slice s' 12 13);
-  Seq.lemma_eq_intro (Seq.slice s 13 16) (Seq.slice s' 13 16);
-  Seq.lemma_eq_intro (Seq.slice s 4 12) (Spec.Lib.uint32s_from_le 8 k);
-  Seq.lemma_eq_intro (Seq.slice s' 4 12) (Spec.Lib.uint32s_from_le 8 k');
-  Seq.lemma_eq_intro (Seq.slice s 13 16) (Spec.Lib.uint32s_from_le 3 n);
-  Seq.lemma_eq_intro (Seq.slice s' 13 16) (Spec.Lib.uint32s_from_le 3 n');
-  Seq.lemma_eq_intro (Seq.slice s 12 13) (Spec.Lib.singleton ( (U32.uint_to_t c)));
-  Seq.lemma_eq_intro (Seq.slice s' 12 13) (Spec.Lib.singleton ( (U32.uint_to_t c')));
-  cut (c == U32.v (Seq.index (Seq.slice s 12 13) 0));
-  cut (c' == U32.v (Seq.index (Seq.slice s' 12 13) 0));
-  Spec.Lib.lemma_uint32s_from_le_inj 8 k k';
-  Spec.Lib.lemma_uint32s_from_le_inj 3 n n'
-
 
 (* Invariant on the state recording which block was computed last *)
 let invariant (log:log_t) (h:mem) (st:state) : GTot Type0 =
   live h st /\ (let log = Ghost.reveal log in let s   = as_seq h st in
-    match log with | MkLog key nonce -> reveal_h32s s == Spec.setup key nonce (H32.v (Seq.index s 12)))
+    match log with | MkLog key nonce -> 
+       forall st.
+	((),reveal_h32s s) == 
+	Spec.setup key nonce (H32.v (Seq.index s 12)) st)
 
 
 private

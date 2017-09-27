@@ -94,9 +94,13 @@ let setup0 (c:counter): chacha_st unit =
   write 3 c3 ;;
   write 12 (UInt32.uint_to_t c) 
 
-let setup (k:key) (n:nonce) (c:counter): chacha_st unit =
+let setup1 (k:key) (n:nonce) : chacha_st unit =
   uint32s_from_le k 4 8 ;; 
   uint32s_from_le n 13 3
+
+let setup (k:key) (n:nonce) (c:counter): chacha_st unit =
+  setup0 c ;;
+  setup1 k n
 
 let chacha20_block (k:key) (n:nonce) (c:counter): Tot block =
     alloc (
