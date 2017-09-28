@@ -93,25 +93,31 @@ let line a b d s =
   sa <-- read_st a ;
   sd <-- read_st d ;
   write_st d ((sd ^^ sa) <<< s)
-  
 
+let sh16: s:U32.t{0 < U32.v s /\ U32.v s < 32} = 16ul
+let sh12: s:U32.t{0 < U32.v s /\ U32.v s < 32} = 12ul
+let sh8: s:U32.t{0 < U32.v s /\ U32.v s < 32} = 8ul
+let sh7: s:U32.t{0 < U32.v s /\ U32.v s < 32} = 7ul
+
+#reset-options "--max_fuel 0 --z3rlimit 300"
+
+(* EXPENSIVE 145s *)
 [@ "c_inline"]
 private
 val quarter_round:
   a:idx -> b:idx -> c:idx -> d:idx ->
   Tot (r:stateful_st unit{forall st. r.spec st == Spec.quarter_round (idx_v a) (idx_v b) (idx_v c) (idx_v d) st})
-#reset-options "--max_fuel 0 --z3rlimit 100"
 [@ "c_inline"]
 let quarter_round a b c d =
-  line a b d 16ul;;
-  line c d b 12ul;;
-  line a b d 8ul ;;
-  line c d b 7ul
+  line a b d sh16;;
+  line c d b sh12;;
+  line a b d sh8 ;;
+  line c d b sh7
 
+(* MOST EXPENSIVE SO FAR 100s *)
 [@ "substitute"]
 private
 val column_round: (r:stateful_st unit{forall st. r.spec st == Spec.column_round st})
-#reset-options "--max_fuel 0 --z3rlimit 200"
 [@ "substitute"]
 let column_round =
   quarter_round 0ul 4ul 8ul  12ul;;
@@ -167,6 +173,7 @@ let setup0 (c:U32.t) : (s:stateful_st unit{
    write_st 3ul 0x6b206574ul;;
    write_st 12ul c 
 
+(* EXPENSIVE 85s *)
 val setup1: k:uint8_p{length k = 32} ->
             n:uint8_p{length n = 12} ->
            st: state -> 
@@ -177,7 +184,7 @@ val setup1: k:uint8_p{length k = 32} ->
    			          live h1 k /\ live h1 n /\
 		           (let spec = Spec.setup1 (as_seq h0 k) (as_seq h0 n) in
 			    state_post spec st h0 r h1)))
-#reset-options "--max_fuel 0 --z3rlimit 300"
+#reset-options "--max_fuel 0 --z3rlimit 100"
 let setup1 k n st = 
   uint32s_from_le k 4ul 8ul st;
   uint32s_from_le n 13ul 3ul st
@@ -195,11 +202,12 @@ val setup: k:uint8_p{length k = 32} ->
 		           (let spec = Spec.setup (as_seq h0 k) (as_seq h0 n) 
 			                          (U32.v c) in
 			    state_post spec st h0 r h1)))
-#reset-options "--max_fuel 0 --z3rlimit 300"
+#reset-options "--max_fuel 0 --z3rlimit 100"
 let setup k n c st = 
   let s0 = setup0 c in
   s0.impl st;
   setup1 k n st
+
 
 
 
@@ -225,11 +233,14 @@ val copy_state:
   Stack unit
     (requires (fun h -> state_pre st_out h /\ live h st_in /\ disjoint st_in st_out))
     (ensures (fun h0 r h1 -> live h0 st_in /\ live h1 st_in /\ 
-      modifies_1 st_out h0 h1 /\
+      live h0 st_out /\ live h1 st_out /\ modifies_1 st_out h0 h1 /\
       (as_seq h0 st_in) == (as_seq h1 st_out)))
 [@ "c_inline"]
 let copy_state st_in st_out =
   Buffer.blit st_in 0ul st_out 0ul 16ul
+
+	
+#reset-options " --max_fuel 0 --z3rlimit 300"
 
 [@ "c_inline"]
 private
@@ -238,10 +249,9 @@ val chacha20_core:
   st:state ->
   Stack unit
     (requires (fun h -> state_pre st h /\ live h st_copy /\ disjoint st st_copy))
-    (ensures  (fun h0 _ h1 -> live h0 st_copy /\ live h1 st_copy /\ modifies_2 st st_copy h0 h1 /\ 
-        (Spec.chacha20_core (as_seq h0 st) == ((),as_seq h1 st))))
-	
-#reset-options " --max_fuel 0 --z3rlimit 100"
+    (ensures  (fun h0 r h1 -> live h0 st_copy /\ live h1 st_copy /\ modifies_2 st st_copy h0 h1 /\ 
+     live h0 st /\ live h1 st /\ 
+     Spec.chacha20_core (as_seq h0 st) == (r,as_seq h1 st)))
 [@ "c_inline"]
 let chacha20_core st st_copy =
   let h0 = ST.get() in
@@ -256,8 +266,11 @@ let chacha20_core st st_copy =
   sum_states st_copy st;
   let h3 = ST.get() in
   assert (((),as_seq h3 st) == Spec.in_place_map2 (+%^) (as_seq h2 st_copy) (as_seq h2 st));
+  assert (modifies_2 st st_copy h0 h3);
+  assert (((),as_seq h3 st) == Spec.in_place_map2 (+%^) (as_seq h0 st) (snd (Spec.rounds (as_seq h0 st))));
+//  assert (((),as_seq h3 st) == Spec.chacha20_core (as_seq h0 st));
   admit()
- 
+
 
 (*
 #reset-options " --max_fuel 0 --z3rlimit 100"

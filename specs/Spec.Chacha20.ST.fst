@@ -16,7 +16,6 @@ type st = seq_l u32 16
 let idx = index_l 16
 
 (* Wrapper monadic functions specialized for the Chacha state *)
-let copy : chacha_st st = seq1_copy #u32 #16 
 unfold let read i : chacha_st u32 = seq1_read #u32 #16 i
 unfold let write i x : chacha_st unit = seq1_write #u32 #16 i x
 let return (y:'b) : chacha_st 'b = seq1_return y
@@ -76,10 +75,9 @@ let double_round: chacha_st unit =
 let rounds : chacha_st unit =
     iter 10 double_round (* 20 rounds *)
  
-let chacha20_core: chacha_st unit = 
-    s <-- copy ;
-    rounds ;;
-    in_place_map2 (+%^) s
+let chacha20_core st = 
+    let _,st' = rounds st in
+    in_place_map2 (+%^) st st'
 
 (* state initialization *)
 let c0 = 0x61707865ul

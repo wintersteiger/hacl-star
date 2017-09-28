@@ -5,6 +5,7 @@ SALSA_FAMILY_FILES= \
 	Hacl.Lib.Create.fst \
 	Hacl.Impl.Xor.Lemmas.fst \
 	Hacl.Impl.Chacha20.fst \
+	Hacl.Impl.Chacha20.ST.fst \
 	Hacl.Impl.Salsa20.fst \
 	Hacl.Impl.HSalsa20.fst \
 	Hacl.SecureAPI.Chacha20.fst \

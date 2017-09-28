@@ -430,8 +430,8 @@ type seq1_st s n b =
 unfold val seq1_read: #a:Type -> #n:nat -> (i:index_l n) -> Tot (seq1_st a n a)
 unfold let seq1_read  #a #n i = fun m -> Seq.index m i, m
 
-val seq1_copy: #a:Type -> #n:nat -> Tot (seq1_st a n (seq_l a n))
-let seq1_copy  #a #n = fun m -> m, m
+unfold val seq1_copy: #a:Type -> #n:nat -> Tot (seq1_st a n (seq_l a n))
+unfold let seq1_copy  #a #n = fun m -> m, m
 
 
 val seq1_return: #a:Type -> #n:nat -> #b:Type -> x:b -> seq1_st a n b
