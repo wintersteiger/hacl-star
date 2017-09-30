@@ -455,14 +455,14 @@ type block = b:uint32_p{length b == 16}
 type table = b:uint32_p{length b == 64}
 type hash  =  b:uint32_p{length b == 8}
 type u32 = UInt32.t
-type lseq 'a n = s:Seq.seq 'a{Seq.length s == n}
+type u32seq n = s:Seq.seq u32{Seq.length s == n}
 type state_spec = {
-  k: lseq u32 64;
-  h0: lseq u32 8;
-  data: lseq u32 16;
-  ws: lseq u32 64;
-  whash: lseq u32 8;
-  whash_copy: lseq u32 8;
+  k: u32seq 64;
+  h0: u32seq 8;
+  data: u32seq 16;
+  ws: u32seq 64;
+  whash: u32seq 8;
+  whash_copy: u32seq 8;
   counter: u32
 }
 
@@ -649,18 +649,13 @@ val update:
         (requires (fun h0 -> state_inv_st st h0 /\ live h0 data 
                   /\ (let counter = Seq.index (as_seq h0 (get_counter st)) 0 in
                      v counter < (pow2 32 - 1))))
-        (ensures  (fun h0 r h1 -> state_inv_st st h1 /\ live h1 data /\ modifies_1 st h0 h1
-                  /\ (let ws = get_ws st in
-		   let whash = get_whash st in
-		   let whash_copy = get_whash st in
-		   let ws_seq1 = as_seq h1 ws in
-		   let whash_seq0 = as_seq h0 whash in
-		   let whash_seq1 = as_seq h1 whash in
-		   let data_block0 = as_seq h0 data in
-		   let counter_0 = Seq.index (as_seq h0 (get_counter st)) 0 in
-		   let counter_1 = Seq.index (as_seq h1 (get_counter st)) 0 in
-                   H32.v counter_1 = H32.v counter_0 + 1 /\ H32.v counter_1 < pow2 32
-                  /\ whash_seq1 == Spec.update whash_seq0  data_block0)))
+        (ensures  (fun h0 r h1 -> state_inv_st st h1 /\ live h1 data /\ modifies_1 st h0 h1 /\
+                     (let spec0 = as_spec h0 st in 
+		      let spec1 = as_spec h1 st in 
+		      let data_block0 = as_seq h0 data in
+                      H32.v spec1.counter = H32.v spec0.counter + 1 /\ 
+		      H32.v spec1.counter < pow2 32 /\
+                      spec1.whash == Spec.update spec0.whash data_block0)))
 
 #reset-options "--max_fuel 0 --max_ifuel 0 --z3rlimit 100"
 
@@ -682,20 +677,18 @@ let inv_multi st data n h0 hi (i:nat{0 <= i /\ i <= n /\ length data >= n * (v s
       /\ (let data_seq = as_seq h0 data in
 	 let sizei = i * v size_block in
 	 let data_blocks = Seq.slice data_seq 0 sizei in 
-	 let whash = get_whash st in
-	 let whash_seq0 = as_seq h0 whash in
-	 let whash_seq1 = as_seq hi whash in
-	 let counter_0 = Seq.index (as_seq h0 (get_counter st)) 0 in
-	 let counter_1 = Seq.index (as_seq hi (get_counter st)) 0 in
-         H32.v counter_1 == H32.v counter_0 + i /\ 
-	 H32.v counter_1 < pow2 32 - n + i /\
-         whash_seq1 == Spec.update_multi whash_seq0 data_blocks) 
+	 let spec0 = as_spec h0 st in
+	 let speci = as_spec hi st in
+         H32.v speci.counter == H32.v spec0.counter + i /\ 
+	 H32.v speci.counter < pow2 32 - n + i /\
+         speci.whash == Spec.update_multi spec0.whash data_blocks) 
 
 let updatei st data n h0 
     (i:UInt32.t{0 <= v i /\ v i < n /\ length data >= n * (v size_block)}) 
     : Stack unit 
      (requires (fun h -> inv_multi st data n h0 h (v i)))
      (ensures  (fun _ _ h1 -> inv_multi st data n h0 h1 (v i + 1))) =
+    admit();
     let h = ST.get() in
     let blocks = Buffer.sub data 0ul (i *^ size_block) in
     let b      = Buffer.sub data (i *^ size_block) size_block in
@@ -707,7 +700,7 @@ let updatei st data n h0
     Seq.lemma_eq_intro (Seq.append (as_seq h blocks) (as_seq h b)) (as_seq h blocks1);
     update st b
 
-(*
+
 val update_multi:
   st    : state -> 
   data  : uint8_p  {disjoint st data} ->
@@ -717,36 +710,18 @@ val update_multi:
         (requires (fun h0 -> state_inv_st st h0 /\ live h0 data 
                   /\ (let counter = Seq.index (as_seq h0 (get_counter st)) 0 in
                      v counter < (pow2 32 - v n))))
-        (ensures  (fun h0 r h1 -> state_inv_st st h1 /\ live h1 data /\ modifies_1 st h0 h1
-                  /\ (let ws = get_ws st in
-		   let whash = get_whash st in
-		   let whash_copy = get_whash st in
-		   let ws_seq1 = as_seq h1 ws in
-		   let whash_seq0 = as_seq h0 whash in
-		   let whash_seq1 = as_seq h1 whash in
-		   let data_block0 = as_seq h0 data in
-		   let counter_0 = Seq.index (as_seq h0 (get_counter st)) 0 in
-		   let counter_1 = Seq.index (as_seq h1 (get_counter st)) 0 in
-                   H32.v counter_1 == H32.v counter_0 + v n /\ 
-		   H32.v counter_1 < pow2 32
-                  /\ whash_seq1 == Spec.update_multi whash_seq0  data_block0)))
-
-#reset-options "--z3rlimit 30 --max_fuel 0 --max_ifuel 0"
+        (ensures  (fun h0 r h1 -> inv_multi st data (v n) h0 h1 (v n)))
+	
+#reset-options "--z3rlimit 100 --max_fuel 0 --max_ifuel 0"
 
 let update_multi st data n =
-  let h0 = ST.get() in
-  let inv (h1:HS.mem) (i:nat) : Type0 = inv_multi
-  in
-  in
-  assert (modifies_1 st h0 h0);
-  assert ( 
-  	 let counter_0 = Seq.index (as_seq h0 (get_counter st)) 0 in
-         H32.v counter_0 == H32.v counter_0 + 0 /\ H32.v counter_0 < pow2 32 - v n);
   admit();
+  let h0 = ST.get() in
+  let inv = inv_multi st data (v n) h0 in
+  let f = updatei st data (v n) h0 in
   for 0ul n inv f
 
 
-(*
 #reset-options "--max_fuel 0  --z3rlimit 50"
 
 inline_for_extraction
@@ -762,7 +737,55 @@ let encode_length (count:uint32_ht) (len:uint32_t) : Tot (l:uint64_ht{H64.v l = 
   let l_1 = u32_to_h64 len in
   H64.((l_0 +^ l_1) *%^ (u32_to_h64 8ul))
 
+let padded_length (len:u32{v len < v size_block}) : 
+		  Tot (plen:u32{(v plen == v size_block \/
+		    		 v plen == v size_block + v size_block) /\
+				 v plen > v len + v size_len_8}) =
+    if (len <^ 56ul) then size_block else size_block +^ size_block
 
+#reset-options "--max_fuel 0  --z3rlimit 30"
+val update_last:
+  st    :state ->
+  data  :uint8_p  {disjoint st data} ->
+  len   :uint32_t {v len == length data /\ v len < v size_block} ->
+  Stack unit
+        (requires (fun h0 -> state_inv_st st h0 /\ live h0 data /\ 
+		  (let spec = as_spec h0 st in 
+  		   let prevlen = (v spec.counter) * (v size_block) in
+		   prevlen % (v size_block) == 0 /\
+		   v size_block + prevlen < Spec.max_input_len_8 /\
+                   v spec.counter < (pow2 32 - 2))))
+        (ensures  (fun h0 r h1 -> state_inv_st st h1 /\ live h1 data /\ modifies_1 st h0 h1 /\ 
+			     true (*
+		             (let spec0 = as_spec h0 st in 
+			      let spec1 = as_spec h1 st in 
+			      let prevlen = (v spec0.counter) * (v size_block) in
+			      let data_seq = as_seq h0 data in
+			      spec1.whash == Spec.update_last spec0.whash prevlen data_seq)*)))
+
+#reset-options "--max_fuel 0 --initial_ifuel 1 --max_ifuel 1 --z3rlimit 200"
+
+let update_last st data len =
+  push_frame();
+  
+  let blocks = Buffer.create (uint8_to_sint8 0uy) (size_block +^ size_block) in
+  Buffer.blit data 0ul blocks 0ul len;
+  blocks.(len) <- 0x80uy;
+  let plen = padded_length len in
+  let n = (get_counter st).(0ul) in
+  let encodedlen = encode_length n len in
+  let lenb = Buffer.sub blocks (plen -^ size_len_8) size_len_8 in
+  Hacl.Endianness.hstore64_be lenb encodedlen;
+  if (plen =^ 64ul) then 
+    let block1 = Buffer.sub blocks 0ul size_block in
+    update st block1
+  else update_multi st blocks 2ul;
+  pop_frame()
+
+
+
+(*
+								   
 #reset-options "--max_fuel 0  --z3rlimit 20"
 
 [@"substitute"]
@@ -1077,4 +1100,7 @@ let hash hash input len =
 
   (**) let hfin = ST.get() in
   (**) modifies_popped_1 hash hinit h0 h5 hfin
+
+
 *)
+
