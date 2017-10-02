@@ -84,7 +84,7 @@ chacha20-st.exe: Spec.Chacha20.ST.fst
 	$(FSTAR_EXTRACT) --odir chacha-spec $^
 	@echo 'let _ = print_string (if test() then "SUCCESS\n" else failwith "Test failed\n")' >> chacha-spec/Spec_Chacha20_ST.ml
 	$(OCAMLOPT) -I chacha-spec $(OCAML_INCLUDES) chacha-spec/FStar_Endianness.ml chacha-spec/Spec_Loops.ml chacha-spec/Seq_Create.ml chacha-spec/Spec_Lib.ml chacha-spec/Spec_CTR.ml chacha-spec/Spec_Chacha20_ST.ml -o chacha20-st.exe
-	./chacha20.exe
+	./chacha20-st.exe
 
 salsa20.exe: Spec.Salsa20.fst
 	$(MAKE) -C ../code/lib/ml

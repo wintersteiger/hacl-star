@@ -542,7 +542,7 @@ private val update_core:
                   seq_hash_1 == Spec.update seq_hash_0 seq_block)))
 
 #reset-options "--max_fuel 0  --z3rlimit 400"
-
+  
 [@"substitute"]
 let update_core hash_w data data_w ws_w k_w =
   (**) assert_norm(pow2 32 = 0x100000000);

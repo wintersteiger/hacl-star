@@ -27,42 +27,76 @@ let h32 = U32.t
 let h8 = H8.t
 let uint8_p = buffer H8.t
 
-
-#reset-options "--max_fuel 0 --z3rlimit 50"
-type state = b:Buffer.buffer h32{length b = 16}
-
 [@ "c_inline"]
 private let rotate_left (a:h32) (s:u32{0 < U32.v s /\ U32.v s < 32}) : Tot h32 = 
   Spec.Lib.rotate_left a s
-
 private inline_for_extraction let ( <<< ) = rotate_left
 
+#reset-options "--max_fuel 0 --max_ifuel 0 --z3rlimit 50 --z3refresh"
+type st = b:Buffer.buffer h32{length b = 16}
+type key = k:uint8_p{length k = 32} 
+type nonce = n:uint8_p{length n = 12} 
+type block = b:uint8_p{length b = 64} 
+
 let idx = a:U32.t{U32.v a < 16}
-
 let idx_v (i:idx) : (Spec.idx) = U32.v i
-let st_v (s:Seq.seq h32{Seq.length s = 16}) : (Spec.st) = s
+noeq
+type chacha_state = {
+     st: b:Buffer.buffer h32{length b = 32};
+     key_block: block
+}
 
-let state_pre (st:state) h0 = live h0 st
-let state_post (spec:Spec.chacha_st 'b) (st:state) h0 r h1 = 
-	       live h0 st /\ live h1 st /\ modifies_1 st h0 h1 /\ 
-	       spec (st_v (as_seq h0 st)) == 
-	            (r,st_v (as_seq h1 st))
+unfold let get_st (s:chacha_state) : st = Buffer.sub s.st 0ul 16ul 
+unfold let get_st_copy (s:chacha_state) : st = Buffer.sub s.st 16ul 16ul 
+unfold let get_key_block (s:chacha_state) : block = s.key_block
 
-#reset-options "--max_fuel 0 --z3rlimit 50"
+
+unfold let st_v h (s:chacha_state) : GTot Spec.chacha_state = 
+    {Spec.st        = as_seq h (get_st s);
+     Spec.st_copy   = as_seq h (get_st_copy s);
+     Spec.key_block = as_seq h (get_key_block s)
+     }
+
+let state_inv (s:chacha_state) h0 = 
+    live h0 (get_st s) /\ live h0 (get_st_copy s) /\ live h0 (get_key_block s) /\ 
+    disjoint (get_st s) (get_st_copy s) /\
+    disjoint (get_st s) (get_key_block s) /\
+    disjoint (get_st_copy s) (get_key_block s) /\
+    frameOf (get_st s) == frameOf (get_st_copy s) /\
+    frameOf (get_st_copy s) == frameOf (get_key_block s)
+    
+let state_post (spec:Spec.chacha_st 'b) (s:chacha_state) h0 r h1 = 
+    state_inv s h0 /\
+    state_inv s h1 /\
+    modifies_2 s.st s.key_block h0 h1 /\
+    spec (st_v h0 s) == (r,st_v h1 s)
+
+#reset-options "--max_fuel 0 --max_ifuel 0 --z3rlimit 100"
+
 noeq
 type stateful_st 'b = 
    | MkStateful: 
      spec:Spec.chacha_st 'b -> 
-     impl: (st:state -> Stack 'b
-              (requires (fun h -> state_pre st h))
+     impl: (st:chacha_state -> Stack 'b
+              (requires (fun h -> state_inv st h))
 	      (ensures  (fun h0 r h1 -> state_post spec st h0 r h1))) ->
      stateful_st 'b
      
 unfold
-let read_st (i:idx) : stateful_st h32 = MkStateful (Spec.read (idx_v i)) (fun st -> st.(i))
+let read_st (i:idx) : stateful_st h32 = 
+    MkStateful (Spec.read_st (idx_v i)) 
+	       (fun s -> let st = get_st s in 
+		       st.(i))
+
 
 unfold
-let write_st (i:idx) (v:h32) : stateful_st unit = MkStateful (Spec.write (idx_v i) v) (fun st -> st.(i) <- v)
+let write_st (i:idx) (v:h32) : stateful_st unit = 
+    MkStateful (Spec.write_st (idx_v i) v) 
+	       (fun s -> let st = get_st s in
+		       let h0 = ST.get() in
+		       st.(i) <- v;
+		       let h1 = ST.get() in
+		       modifies_1_to_2_same_region_lemma h0 h1 s.st s.key_block)
 
 #reset-options "--max_fuel 0 --z3rlimit 50"
 unfold
@@ -71,13 +105,10 @@ let bind #a #b (f:stateful_st a) (g:a -> stateful_st b) =
     (fun st -> let r = f.impl st in
   	    (g r).impl st)
 
-let return (a:'a) : stateful_st 'a = 
-    MkStateful (fun st -> a,st)
-	       (fun st -> a)
-
-assume val iter: c:u32 -> spec: Spec.chacha_st unit -> f:stateful_st unit{forall st. f.spec st = spec st} ->
+assume val iter: c:u32 -> spec: Spec.chacha_st unit -> 
+	         f:stateful_st unit{forall st. f.spec st = spec st} ->
 	  Tot (r:stateful_st unit {
-		forall st. r.spec st = Spec.iter (U32.v c) spec st})
+		forall st. r.spec st == Spec.iter (U32.v c) spec st})
 
 #reset-options "--max_fuel 0 --z3rlimit 10"
 [@ "substitute"]
@@ -150,20 +181,41 @@ val rounds:  (r:stateful_st unit{forall st. r.spec st == Spec.rounds st})
 let rounds =
    iter 10ul Spec.double_round double_round
 
+let ext_inv (b:buffer h8) (s:chacha_state) (h:mem) = 
+    live h b /\ disjoint b (get_st s) /\ disjoint b (get_st_copy s) /\ disjoint b (get_key_block s) 
 
-assume val uint32s_from_le: src:buffer h8 -> start:idx -> 
-			    len:u32{FStar.Mul.(U32.v len * 4 = Buffer.length src)  
-			            /\ U32.v start + U32.v len <= 16} -> 
-			    st: state -> 
-			    Stack unit
-			    (requires (fun h -> state_pre st h /\ live h src))
-			    (ensures  (fun h0 r h1 -> 
-					 live h0 src /\ live h1 src /\
-					 (let spec = Spec.uint32s_from_le 
-						    (as_seq h0 src) (idx_v start) (U32.v len) in 
-					  state_post spec st h0 r h1)))
 
-  
+let uint32s_from_le_range (out:Buffer.buffer u32) (inp:Buffer.buffer h8) (start:u32) (len:u32) :
+			Stack unit 
+			(requires (fun h0 -> live h0 out /\ live h0 inp /\ disjoint out inp /\
+					   length inp = FStar.Mul.(4 * U32.v len) /\ U32.v len + U32.v start <= length out))
+			(ensures (fun h0 r h1 -> live h1 out /\ live h1 inp /\ modifies_1 out h0 h1 /\
+					       as_seq h1 out == Spec.seq_upd_range (as_seq h0 out) (Spec.Lib.uint32s_from_le (U32.v len) (as_seq h0 inp)) (U32.v start))) = 
+    admit();						 
+    let outsub = Buffer.sub out start len in
+    uint32s_from_le_bytes outsub inp len
+			
+
+#reset-options "--max_fuel 0 --z3rlimit 300"
+let import_key_st (k:key) (s:chacha_state) : Stack unit
+		  (requires (fun h -> state_inv s h /\ ext_inv k s h)) 
+		  (ensures (fun h0 r h1 -> ext_inv k s h0 /\ ext_inv k s h1 /\ 
+		    state_inv s h0 /\ state_inv s h1 /\ 
+		    modifies_1 (get_st s) h0 h1 /\
+		    Spec.import_key_st (as_seq h0 k) (st_v h0 s) == (r,st_v h1 s))) =
+    let st = get_st s in
+    uint32s_from_le_range st k 4ul 8ul
+
+let import_nonce_st (n:nonce) (s:chacha_state) : Stack unit
+		  (requires (fun h -> state_inv s h /\ ext_inv n s h)) 
+		  (ensures (fun h0 r h1 -> ext_inv n s h0 /\ ext_inv n s h1 /\ 
+		    state_inv s h0 /\ state_inv s h1 /\ 
+		    modifies_1 (get_st s) h0 h1 /\
+		    Spec.import_nonce_st (as_seq h0 n) (st_v h0 s) == (r,st_v h1 s))) =
+    let st = get_st s in
+    uint32s_from_le_range st n 13ul 3ul
+    
+
 #reset-options "--max_fuel 0 --z3rlimit 100"
 let setup0 (c:U32.t) : (s:stateful_st unit{
 	     forall st. s.spec st == Spec.setup0 (U32.v c) st}) =
@@ -174,31 +226,24 @@ let setup0 (c:U32.t) : (s:stateful_st unit{
    write_st 12ul c 
 
 (* EXPENSIVE 85s *)
-val setup1: k:uint8_p{length k = 32} ->
-            n:uint8_p{length n = 12} ->
-           st: state -> 
+val setup1: k:key ->
+            n:nonce ->
+           st: chacha_state -> 
            Stack unit
-           (requires (fun h -> state_pre st h /\ live h k /\ live h n /\  
-			    disjoint st k /\ disjoint st n))
-           (ensures  (fun h0 r h1 -> live h0 k /\ live h0 n /\
-   			          live h1 k /\ live h1 n /\
+           (requires (fun h -> state_inv st h /\ ext_inv k st h /\ ext_inv n st h))  
+           (ensures  (fun h0 r h1 -> ext_inv k st h1 /\ ext_inv n st h1 /\ 
 		           (let spec = Spec.setup1 (as_seq h0 k) (as_seq h0 n) in
 			    state_post spec st h0 r h1)))
 #reset-options "--max_fuel 0 --z3rlimit 100"
 let setup1 k n st = 
-  uint32s_from_le k 4ul 8ul st;
-  uint32s_from_le n 13ul 3ul st
+  import_key_st k st ;
+  import_nonce_st n st
 
-
-val setup: k:uint8_p{length k = 32} ->
-           n:uint8_p{length n = 12} ->
-	   c:U32.t ->
-           st: state -> 
+val setup: k:key -> n:nonce -> c:U32.t ->
+           st: chacha_state -> 
            Stack unit
-           (requires (fun h -> state_pre st h /\ live h k /\ live h n /\  
-			    disjoint st k /\ disjoint st n))
-           (ensures  (fun h0 r h1 -> live h0 k /\ live h0 n /\
-   			          live h1 k /\ live h1 n /\
+           (requires (fun h -> state_inv st h /\ ext_inv k st h /\ ext_inv n st h))
+           (ensures  (fun h0 r h1 -> ext_inv k st h1 /\ ext_inv n st h1 /\ 
 		           (let spec = Spec.setup (as_seq h0 k) (as_seq h0 n) 
 			                          (U32.v c) in
 			    state_post spec st h0 r h1)))
@@ -211,33 +256,27 @@ let setup k n c st =
 
 
 
-#reset-options " --max_fuel 0 --z3rlimit 100"
-[@ "c_inline"]
-val sum_states:
-  st_in:state ->
-  st_out:state ->
-  Stack unit
-    (requires (fun h -> state_pre st_out h /\ live h st_in /\ disjoint st_in st_out))
-    (ensures  (fun h0 r h1 -> live h0 st_in /\ live h1 st_in /\
-        (let spec = Spec.in_place_map2 (+%^) (as_seq h0 st_in) in
-	 state_post spec st_out h0 r h1)))
-[@ "c_inline"]
-let sum_states st_in st_out =
-  in_place_map2 st_out st_in 16ul (fun x y -> H32.(x +%^ y))
+#reset-options " --max_fuel 0 --z3rlimit 200"
+let sum_states =
+  MkStateful Spec.sum_st_copy_st
+  (fun s -> 
+     let st = get_st s in
+     let st_copy = get_st_copy s in
+     in_place_map2 st st_copy 16ul (+%^))
 
 
 [@ "c_inline"]
 val copy_state:
-  st_in:state ->
-  st_out:state ->
+  s:chacha_state ->
   Stack unit
-    (requires (fun h -> state_pre st_out h /\ live h st_in /\ disjoint st_in st_out))
-    (ensures (fun h0 r h1 -> live h0 st_in /\ live h1 st_in /\ 
-      live h0 st_out /\ live h1 st_out /\ modifies_1 st_out h0 h1 /\
-      (as_seq h0 st_in) == (as_seq h1 st_out)))
+    (requires (fun h -> state_inv s h))
+    (ensures (fun h0 r h1 -> state_inv s h1 /\ 
+      (as_seq h1 (get_st_copy s) == as_seq h0 (get_st s))))
 [@ "c_inline"]
-let copy_state st_in st_out =
-  Buffer.blit st_in 0ul st_out 0ul 16ul
+let copy_state s =
+  let st = get_st s in
+  let st_copy = get_st_copy s in
+  Buffer.blit st 0ul st_copy 0ul 16ul
 
 	
 #reset-options " --max_fuel 0 --z3rlimit 300"
@@ -266,7 +305,7 @@ let chacha20_core st st_copy =
   sum_states st_copy st;
   let h3 = ST.get() in
   assert (((),as_seq h3 st) == Spec.in_place_map2 (+%^) (as_seq h2 st_copy) (as_seq h2 st));
-  assert (modifies_2 st st_copy h0 h3);
+//  assert (modifies_2 st st_copy h0 h3);
   assert (((),as_seq h3 st) == Spec.in_place_map2 (+%^) (as_seq h0 st) (snd (Spec.rounds (as_seq h0 st))));
 //  assert (((),as_seq h3 st) == Spec.chacha20_core (as_seq h0 st));
   admit()

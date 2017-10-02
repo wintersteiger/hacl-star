@@ -11,28 +11,8 @@ open Spec.Lib
 
 (* Chacha20 State *)
 // internally, blocks are represented as 16 x 4-byte integers
-type chacha_st 'b = seq1_st u32 16 'b
-type st = seq_l u32 16
-let idx = index_l 16
-
-(* Wrapper monadic functions specialized for the Chacha state *)
-unfold let read i : chacha_st u32 = seq1_read #u32 #16 i
-unfold let write i x : chacha_st unit = seq1_write #u32 #16 i x
-let return (y:'b) : chacha_st 'b = seq1_return y
-unfold let bind (f:chacha_st 'b) (g:'b -> chacha_st 'c) : chacha_st 'c = seq1_bind f g
-let iter (n:nat) (f:chacha_st unit) = seq1_iter n f
-let in_place_map2 (f:u32 -> u32 -> Tot u32) (s:st) = seq1_in_place_map2 f s
-let alloc (f:chacha_st 'b) = seq1_alloc 0ul f
-let uint32s_from_le src (start:idx) (len:nat{FStar.Mul.(len * 4 = length src)
-					    /\ start + len <= 16}): chacha_st unit = 
-	seq1_uint32s_from_le src start len
-let uint32s_to_le (start:idx) (len:nat{start + len <= 16})
-		  : chacha_st (lbytes FStar.Mul.(4 * len)) = 
-	seq1_uint32s_to_le start len
-
-
-(* Chacha20 Spec *)
-
+type st = b:Seq.seq u32{length b == 16}
+let idx = n:nat {n < 16}
 let keylen = 32   (* in bytes *)
 let blocklen = 64 (* in bytes *)
 let noncelen = 12 (* in bytes *)
@@ -42,13 +22,80 @@ type block = lbytes blocklen
 type nonce = lbytes noncelen
 type counter = UInt.uint_t 32
 
+
+type chacha_state = {
+    st: st;
+    st_copy: st;
+    key_block: block;
+}
+
+(* Wrapper monadic functions specialized for the Chacha state *)
+type chacha_st 'b =  chacha_state -> Tot ('b * chacha_state)
+unfold let read_st (i:idx) : chacha_st u32 = fun s -> s.st.[i],s
+unfold let write_st (i:idx) (x:u32) : chacha_st unit = 
+       fun s -> (), {s with st = s.st.[i] <- x}
+unfold let bind (f:chacha_st 'b) (g:'b -> chacha_st 'c) : chacha_st 'c = 
+       fun s -> let (r,s) = f s in g r s
+
+let iter (n:nat) (f:chacha_st unit) : chacha_st unit = 
+    let f' (s:chacha_state) : Tot chacha_state = 
+        let s' = f s in
+	snd s' 
+    in
+    fun s ->  (), Spec.Loops.repeat_spec n f' s
+
+let copy_st : chacha_st unit = 
+   fun s -> 
+    (), {s with st_copy = s.st}
+
+let sum_st_copy_st : chacha_st unit = 
+   fun s -> 
+    let st' = Spec.Loops.seq_map2 (+%^) s.st s.st_copy in
+    (), {s with st = st'}
+
+
+let seq_upd_range (out:seq 'a) (inp:seq 'a) (start:nat{start + length inp <= length out})  = 
+    let s0,s_ = split out start in
+    let s1,s2 = split s_ (length inp) in
+    s0 @| inp @| s2
+    
+    
+let import_key_st (k:key) : chacha_st unit = 
+	fun s -> 
+	    let s1' = uint32s_from_le 8 k in
+	    let st' = seq_upd_range s.st s1' 4 in
+	    (), {s with st = st'}
+
+
+let import_nonce_st (n:nonce) : chacha_st unit = 
+	fun s -> 
+	    let s1' = uint32s_from_le 3 n in
+	    let st' = seq_upd_range s.st s1' 13 in
+	    (), {s with st = st'}
+
+let export_st_key_block : chacha_st unit = 
+	fun s -> 
+	    (), {s with key_block = uint32s_to_le 16 s.st}
+
+let st_get_key_block : chacha_st block = 
+	fun s ->  s.key_block,s
+
+let alloc (f:chacha_st 'b) = 
+    let st = Seq.create 16 0ul in
+    let st_copy = Seq.create 16 0ul in
+    let kb = Seq.create 64 0uy in
+    let s = {st = st; st_copy = st_copy; key_block = kb} in
+    fst (f s)
+    
+(* Chacha20 Spec *)
+
 let line (a:idx) (b:idx) (d:idx) (s:t{0 < v s /\ v s < 32}) : chacha_st unit =
-  ma <-- read a ;
-  mb <-- read b ;
-  write a (ma +%^ mb) ;;
-  ma <-- read a ;
-  md <-- read d ;
-  write d ((md ^^ ma) <<< s)
+  ma <-- read_st a ;
+  mb <-- read_st b ;
+  write_st a (ma +%^ mb) ;;
+  ma <-- read_st a ;
+  md <-- read_st d ;
+  write_st d ((md ^^ ma) <<< s)
 
 let quarter_round a b c d : chacha_st unit =
   line a b d 16ul ;;
@@ -75,9 +122,10 @@ let double_round: chacha_st unit =
 let rounds : chacha_st unit =
     iter 10 double_round (* 20 rounds *)
  
-let chacha20_core st = 
-    let _,st' = rounds st in
-    in_place_map2 (+%^) st st'
+let chacha20_core : chacha_st unit = 
+    copy_st ;;
+    rounds ;;
+    sum_st_copy_st 
 
 (* state initialization *)
 let c0 = 0x61707865ul
@@ -86,26 +134,29 @@ let c2 = 0x79622d32ul
 let c3 = 0x6b206574ul
 
 let setup0 (c:counter): chacha_st unit = 
-  write 0 c0 ;;
-  write 1 c1 ;;
-  write 2 c2 ;;
-  write 3 c3 ;;
-  write 12 (UInt32.uint_to_t c) 
+  write_st 0 c0 ;;
+  write_st 1 c1 ;;
+  write_st 2 c2 ;;
+  write_st 3 c3 ;;
+  write_st 12 (UInt32.uint_to_t c) 
 
 let setup1 (k:key) (n:nonce) : chacha_st unit =
-  uint32s_from_le k 4 8 ;; 
-  uint32s_from_le n 13 3
+  import_key_st k ;;
+  import_nonce_st n
 
 let setup (k:key) (n:nonce) (c:counter): chacha_st unit =
   setup0 c ;;
   setup1 k n
 
+let chacha20_key_block (k:key) (n:nonce) (c:counter): chacha_st unit =
+    setup k n c ;;
+    chacha20_core ;;
+    export_st_key_block
+
 let chacha20_block (k:key) (n:nonce) (c:counter): Tot block =
-    alloc (
-       setup k n c ;;
-       chacha20_core ;;
-       uint32s_to_le 0 16 
-    )
+    alloc (chacha20_key_block k n c;;
+	   st_get_key_block)
+	   
 
 let chacha20_ctx: Spec.CTR.block_cipher_ctx =
     let open Spec.CTR in
