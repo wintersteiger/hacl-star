@@ -147,10 +147,13 @@ let shuffle (hash:hash_w) (block:block_w) : Tot hash_w =
   Spec.Loops.repeat_range_spec 0 size_ws_w (shuffle_core block) hash
 
 
+let update_core (hash:hash_w) (block:block_w) : Tot hash_w =
+  let hash_1 = shuffle hash block in
+  Spec.Lib.map2 (fun x y -> x +%^ y) hash hash_1
+
 let update (hash:hash_w) (block:bytes{length block = size_block}) : Tot hash_w =
   let b = words_from_be size_block_w block in
-  let hash_1 = shuffle hash b in
-  Spec.Lib.map2 (fun x y -> x +%^ y) hash hash_1
+  update_core hash b
 
 
 let rec update_multi (hash:hash_w) (blocks:bytes{length blocks % size_block = 0}) : Tot hash_w (decreases (Seq.length blocks)) =
