@@ -451,6 +451,14 @@ let seq1_iter #a #m n f =
     in
     fun s -> (),iter n f' s
 
+val seq1_iteri: #a:Type -> #n:nat -> c:nat -> (nat -> seq1_st a n unit) -> Tot (seq1_st a n unit)
+let seq1_iteri #a #m n f = 
+    let f' (s:seq_l a m) i : Tot (seq_l a m) = 
+        let s' = f i s in
+	snd s'
+    in
+    fun s -> (),Spec.Loops.repeat_range_spec 0 n f' s
+
 val seq1_in_place_map2: #a:Type -> #n:nat -> #b:Type -> f:(a -> b -> Tot a) -> s:seq_l b n -> Tot (seq1_st a n unit)
 let seq1_in_place_map2  #a #m #b f i = 
     fun s -> 
@@ -474,6 +482,17 @@ let seq1_uint32s_from_le #n src start len =
     let s1,s2 = split s_ len in
     (), s0 @| s' @| s2
 
+val seq1_uint32s_from_be: #n:nat -> b:bytes -> start:nat -> len: nat{
+						     length b = (4 ** len)
+					 	   /\ start + len <= n} -> 
+		     Tot (seq1_st u32 n unit) 
+let seq1_uint32s_from_be #n src start len =
+  fun s ->
+    let s' = uint32s_from_be len src in
+    let s0,s_ = split s start in
+    let s1,s2 = split s_ len in
+    (), s0 @| s' @| s2
+
 val seq1_uint32s_to_le: #n:nat -> start:nat -> len: nat{start + len <= n} -> 
 		     Tot (seq1_st u32 n (lbytes (4 ** len)))
 let seq1_uint32s_to_le #n start len =
@@ -485,4 +504,53 @@ let seq1_uint32s_to_le #n start len =
        let s1,s2 = split s_ len in
        let b = uint32s_to_le len s1 in
        b, s
+
+val seq1_uint32s_to_be: #n:nat -> s:seq u32{length s == n} -> 
+			Tot (seq1_st u8 (4 ** n) unit)
+let seq1_uint32s_to_be #n inp =
+  fun s ->
+       let b = uint32s_to_be n inp in
+       (), b
+
+
+
+let seq1_upd8 #a #n (start:nat{start + 8 <= n}) x0 x1 x2 x3 x4 x5 x6 x7 : seq1_st a n unit = 
+  let bind = seq1_bind in
+  seq1_write #a #n start x0 ;;
+  seq1_write #a #n (start + 1) x1;;
+  seq1_write #a #n (start + 2) x2;;
+  seq1_write #a #n (start + 3) x3;;
+  seq1_write #a #n (start + 4) x4;;
+  seq1_write #a #n (start + 5) x5;;
+  seq1_write #a #n (start + 6) x6;;
+  seq1_write #a #n (start + 7) x7
+
+  
+
+let seq1_upd16 #a #n (start:nat{start + 16 <= n}) x0 x1 x2 x3 x4 x5 x6 x7 
+  x8 x9 x10 x11 x12 x13 x14 x15 : seq1_st a n unit = 
+  let bind = seq1_bind in
+  seq1_upd8 #a #n start x0 x1 x2 x3 x4 x5 x6 x7;;
+  seq1_upd8 #a #n (start + 8) x8 x9 x10 x11 x12 x13 x14 x15
+
+
+let seq1_upd32 #a #n (start:nat{start + 32 <= n}) 
+  x0 x1 x2 x3 x4 x5 x6 x7 
+  x8 x9 x10 x11 x12 x13 x14 x15 
+  x16 x17 x18 x19 x20 x21 x22 x23
+  x24 x25 x26 x27 x28 x29 x30 x31   
+  : seq1_st a n unit = 
+  let bind = seq1_bind in
+  seq1_upd16 #a #n start x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15;;
+  seq1_upd16 #a #n (start + 16)  x16 x17 x18 x19 x20 x21 x22 x23  x24 x25 x26 x27 x28 x29 x30 x31 
+
+
+let seq1_upd64 #a 
+  (x0:a) (x1:a) (x2:a) (x3:a) (x4:a) (x5:a) (x6:a) (x7  :a) (x8:a) (x9:a) (x10:a) (x11:a) (x12:a) (x13:a) (x14:a) (x15  :a) (x16:a) (x17:a) (x18:a) (x19:a) (x20:a) (x21:a) (x22:a) (x23 :a) (x24:a) (x25:a) (x26:a) (x27:a) (x28:a) (x29:a) (x30:a) (x31 :a) (y0:a) (y1:a) (y2:a) (y3:a) (y4:a) (y5:a) (y6:a) (y7  :a) (y8:a) (y9:a) (y10:a) (y11:a) (y12:a) (y13:a) (y14:a) (y15  :a) (y16:a) (y17:a) (y18:a) (y19:a) (y20:a) (y21:a) (y22:a) (y23 :a) (y24:a) (y25:a) (y26:a) (y27:a) (y28:a) (y29:a) (y30:a) (y31:a)   
+  : seq1_st a 64 unit = 
+  let bind = seq1_bind #a #64 #unit #unit in
+  seq1_upd32 #a #64 0  x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
+		 x16 x17 x18 x19 x20 x21 x22 x23  x24 x25 x26 x27 x28 x29 x30 x31 ;;
+  seq1_upd32 #a #64 32 y0 y1 y2 y3 y4 y5 y6 y7 y8 y9 y10 y11 y12 y13 y14 y15
+		 y16 y17 y18 y19 y20 y21 y22 y23  y24 y25 y26 y27 y28 y29 y30 y31 
 

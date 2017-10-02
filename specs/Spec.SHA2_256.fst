@@ -88,8 +88,9 @@ val _sigma1: x:word -> Tot word
 let _sigma1 x = word_logxor (rotate_right x 17ul) (word_logxor (rotate_right x 19ul) (word_shift_right x 10ul))
 
 
-let k : k_w =
-  Seq.Create.create_64
+let setup_k : stateful unit =
+  apply_write K (fun s ->
+  seq1_upd64 #u32 #64 0 
   0x428a2f98ul 0x71374491ul 0xb5c0fbcful 0xe9b5dba5ul
   0x3956c25bul 0x59f111f1ul 0x923f82a4ul 0xab1c5ed5ul
   0xd807aa98ul 0x12835b01ul 0x243185beul 0x550c7dc3ul
@@ -105,7 +106,7 @@ let k : k_w =
   0x19a4c116ul 0x1e376c08ul 0x2748774cul 0x34b0bcb5ul
   0x391c0cb3ul 0x4ed8aa4aul 0x5b9cca4ful 0x682e6ff3ul
   0x748f82eeul 0x78a5636ful 0x84c87814ul 0x8cc70208ul
-  0x90befffaul 0xa4506cebul 0xbef9a3f7ul 0xc67178f2ul
+  0x90befffaul 0xa4506cebul 0xbef9a3f7ul 0xc67178f2ul)
 
 
 let h_0 : hash_w =
