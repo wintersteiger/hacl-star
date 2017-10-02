@@ -32,42 +32,44 @@ let pow2_values x =
 // SHA-256
 //
 
-(* Define algorithm parameters *)
-let size_hash_w = 8
-let size_block_w = 16
-let size_hash = 4 * size_hash_w
-let size_block = 4 * size_block_w
-let size_k_w = 64
-let size_ws_w = size_k_w
-let size_len_8 = 8
-let size_len_ul_8 = 8ul
+type u32 = UInt32.t
+type u32seq n = s:Seq.seq u32{Seq.length s == n}
+type u8 = UInt8.t
+type u8seq n = s:Seq.seq u8{Seq.length s == n}
+
+type state_spec = {
+  k: u32seq 64;
+  h0: u32seq 8;
+  data: u32seq 16;
+  ws: u32seq 64;
+  whash: u32seq 8;
+  whash_copy: u32seq 8;
+  counter: u32
+}
+
+type block = u8seq 64
+type hash = u8seq 32
 let max_input_len_8 = pow2 61
 
-type bytes = m:seq UInt8.t
-type word = Word.t
-type hash_w = m:seq word {length m = size_hash_w}
-type k_w = m:seq word {length m = size_k_w}
-type ws_w = m:seq word {length m = size_ws_w}
-type block_w = m:seq word {length m = size_block_w}
-type blocks_w = m:seq block_w
-type counter = nat
-
-(* Define word based operators *)
-let words_to_be = Spec.Lib.uint32s_to_be
-let words_from_be = Spec.Lib.uint32s_from_be
-let word_logxor = Word.logxor
-let word_logand = Word.logand
-let word_logor = Word.logor
-let word_lognot = Word.lognot
-let word_shift_right = Word.shift_right
-
-
-
-let rotate_right (a:word) (s:word {0 < v s /\ v s<32}) : Tot word =
+let rotate_right (a:u32) (s:u32 {0 < v s /\ v s < 32}) : Tot u32 =
   ((a >>^ s) |^ (a <<^ (32ul -^ s)))
 
-(* [FIPS 180-4] section 4.1.2 *)
-val _Ch: x:word -> y:word -> z:word -> Tot word
+let _Ch x y z = (x &^ y) |^ ((lognot x) &^ z)
+
+[@"substitute"]
+let _Maj x y z = (x &^ y) ^^ ((x &^ z) ^^ (y &^ z))
+
+[@"substitute"]
+let _Sigma0 x = (x >>> 2ul) ^^ ((x >>> 13ul) ^^ (x >>> 22ul))
+
+[@"substitute"]
+let _Sigma1 x = (x >>> 6ul) ^^ ((x >>> 11ul) ^^ (x >>> 25ul))
+
+[@"substitute"]
+let _sigma0 x = (x >>> 7ul) ^^ ((x >>> 18ul) ^^ (x >>^ 3ul))
+
+[@"substitute"]
+let _sigma1 x = (x >>> 17ul) ^^ ((x >>> 19ul) ^^ (x >>^ 10ul))
 let _Ch x y z = word_logxor (word_logand x y) (word_logand (word_lognot x) z)
 
 val _Maj: x:word -> y:word -> z:word -> Tot word
