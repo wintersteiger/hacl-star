@@ -535,10 +535,7 @@ let seq1_upd16 #a #n (start:nat{start + 16 <= n}) x0 x1 x2 x3 x4 x5 x6 x7
 
 
 let seq1_upd32 #a #n (start:nat{start + 32 <= n}) 
-  x0 x1 x2 x3 x4 x5 x6 x7 
-  x8 x9 x10 x11 x12 x13 x14 x15 
-  x16 x17 x18 x19 x20 x21 x22 x23
-  x24 x25 x26 x27 x28 x29 x30 x31   
+  (x0:a) (x1:a) (x2:a) (x3:a) (x4:a) (x5:a) (x6:a) (x7  :a) (x8:a) (x9:a) (x10:a) (x11:a) (x12:a) (x13:a) (x14:a) (x15 :a) (x16:a) (x17:a) (x18:a) (x19:a) (x20:a) (x21:a) (x22:a) (x23 :a) (x24:a) (x25:a) (x26:a) (x27:a) (x28:a) (x29:a) (x30:a) (x31:a)
   : seq1_st a n unit = 
   let bind = seq1_bind in
   seq1_upd16 #a #n start x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15;;
