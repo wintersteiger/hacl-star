@@ -1,4 +1,10 @@
-;(set-logic QF_ABV)
+;(set-logic QF_ABV(define-fun carry_top ((b felem)) felem
+  (let ((b2 (select b 2)))
+    (let ((b0 (select b 0)))
+      (let ((n (store b 2 (bvand b2 #x3fffffffffffffff))))
+	 (let ((b2_42 (bvlshr b2 #x000000000000002a)))
+	   (store b 0 (bvadd (bvadd (bvshl b2_42 #x0000000000000004) b2_42) b0)))))))
+
 (set-option :produce-models true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
