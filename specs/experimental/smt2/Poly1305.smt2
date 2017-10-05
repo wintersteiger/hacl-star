@@ -1,41 +1,91 @@
-;(set-logic ABVNIA)
+(set-logic ALL)
 (set-option :produce-models true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Poly1305: RFC 7539
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(declare-fun pow2 (Int) Int)
+(assert (= (pow2 0) 1))
+(assert (= (pow2 1) 2))
+;(assert (= (pow2 2) 4))
+;(assert (= (pow2 63) 9223372036854775808))
+;(assert (= (pow2 64) 18446744073709551616))
+;(assert (= (pow2 128) 340282366920938463463374607431768211456))
+;(assert (= (pow2 42) 4398046511104))
+;(assert (= (pow2 44) 17592186044416))
+;(assert (= (pow2 88) 309485009821345068724781056))
+;(assert (= (pow2 44) (* 4 (pow2 42))))
+
+;(assert (forall ((m Int))
+;		(! (>= (pow2 m) 0)
+;		:pattern ((pow2 m)))))   
+(assert (forall ((m Int) (n Int))
+	       (! (=> (and (>= m 0) (>= n 0)) (= (* (pow2 m) (pow2 n)) (pow2 (+ m n))))
+		:pattern ((* (pow2 m) (pow2 n))))))
+;(assert (forall ((m Int) (n Int))
+;	       (! (=> (>= m n) (= (div (pow2 m) (pow2 n)) (pow2 (- m n))))
+;		:pattern ((div (pow2 m) (pow2 n))))))
+
+(check-sat) 
 (define-sort idx () (_ BitVec 2))
 (define-sort uint8 () (_ BitVec 8))
-(define-sort uint64 () (_ BitVec 64))
+(define-sort uint64 () Int)
 (define-sort uint64array () (Array idx uint64))
-(define-sort uint128 () (_ BitVec 128))
+(define-sort uint128 () Int)
 (define-sort felem_limb () (Array idx uint64))
 (define-sort felem_wide () (Array idx uint128))
 
+(define-fun shl64 ((b uint64) (s uint64)) uint64
+  (* b (pow2 s)))
+
+(define-fun shr64 ((b uint64) (s uint64)) uint64
+  (div b (pow2 s)))
+
+(define-fun add64 ((a uint64) (b uint64)) uint64
+  (mod (+ a b) (pow2 64)))
+
+(define-fun mask64 ((b uint64) (s uint64)) uint64
+  (mod b (pow2 s)))
+
+(define-fun shl128 ((b uint128) (s uint64)) uint128
+  (* b (pow2 s)))
+
+(define-fun shr128 ((b uint128) (s uint64)) uint128
+  (div b (pow2 s)))
+
+(define-fun mask128 ((b uint128) (s uint64)) uint128
+  (mod b (pow2 s)))
+
+(define-fun add128 ((a uint64) (b uint64)) uint128
+  (mod (+ a b) (pow2 128)))
+
+(define-fun mul128 ((a uint64) (b uint64)) uint128
+  (mod (* a b) (pow2 128)))
+
 (define-fun reduce ((b felem_limb)) felem_limb
-  (store b #b00 (bvadd (bvshl (select b #b00) #x0000000000000004) (bvshl (select b #b00) #x0000000000000002))))
+  (store b #b00 (add64 (shl64 (select b #b00) 4) (shl64 (select b #b00) 2))))
 
 (define-fun carry_top ((b felem_limb)) felem_limb
   (let ((b2 (select b #b10)))
   (let ((b0 (select b #b00)))
-  (let ((b2_42 (bvlshr b2 #x000000000000002a)))
-  (let ((b (store b #b10 (bvand b2 #x3fffffffffffffff))))
-  (store b #b00 (bvadd (bvadd (bvshl b2_42 #x0000000000000002) b2_42) b0)))))))
+  (let ((b2_42 (shr64 b2 42)))
+  (let ((b (store b #b10 (mask64 b2 42))))
+  (store b #b00 (add64 (add64 (shl64 b2_42 2) b2_42) b0)))))))
 
 
 (define-fun carry_top_wide ((b felem_wide)) felem_wide
   (let ((b2 (select b #b10)))
   (let ((b0 (select b #b00)))
-  (let ((b2_42 (bvlshr b2 #x0000000000000000000000000000002a)))
-  (let ((b (store b #b10 (bvand b2 #x00000000000000003fffffffffffffff))))
-  (store b #b00 (bvadd (bvadd (bvshl b2_42 #x00000000000000000000000000000002) b2_42) b0)))))))
+  (let ((b2_42 (shr128 b2 42)))
+  (let ((b (store b #b10 (mask128 b2 42))))
+  (store b #b00 (add128 (add128 (shl128 b2_42 2) b2_42) b0)))))))
 
 (define-fun uint64_to_uint128 ((b uint64)) uint128
-  (concat #x0000000000000000 b))
+  b)
 
 (define-fun uint128_to_uint64 ((b uint128)) uint64
-  ((_ extract 63 0) b))
+  (mod b (pow2 64)))
 
 (declare-const felem_limb0 felem_limb)
 (declare-const felem_wide0 felem_wide)
@@ -47,7 +97,7 @@
      f))))
 
 (define-fun add_mul ((a uint128) (b uint64) (s uint64)) uint128
-  (bvadd a (bvmul (uint64_to_uint128 b) (uint64_to_uint128 s))))
+  (add128 a (mul128 (uint64_to_uint128 b) (uint64_to_uint128 s))))
 		      
 (define-fun sum_scalar_multiplication ((output felem_wide) (input felem_limb) (s uint64)) felem_wide
   (let ((output (store output #b00 (add_mul (select output #b00) (select input #b00) s))))
@@ -59,10 +109,10 @@
   (let ((tmp0 (select tmp #b00)))
   (let ((tmp1 (select tmp #b01)))
   (let ((tmp2 (select tmp #b10)))
-  (let ((tmp0n (bvand tmp0 #x000000000000000000000fffffffffff)))
-  (let ((tmp1n (bvadd tmp1 (bvlshr tmp0 #x0000000000000000000000000000002c))))
-  (let ((tmp1nn (bvand tmp1n #x000000000000000000000fffffffffff)))
-  (let ((tmp2n (bvadd tmp2 (bvlshr tmp1n #x0000000000000000000000000000002c))))
+  (let ((tmp0n (mask128 tmp0 44)))
+  (let ((tmp1n (add128 tmp1 (shr128 tmp0 44))))
+  (let ((tmp1nn (mask128 tmp1n 44)))
+  (let ((tmp2n (add128 tmp2 (shr128 tmp1n 44))))
   (let ((tmp (store tmp #b00 tmp0n)))
   (let ((tmp (store tmp #b01 tmp1nn)))
   (let ((tmp (store tmp #b10 tmp2n)))
@@ -73,10 +123,10 @@
   (let ((tmp0 (select tmp #b00)))
   (let ((tmp1 (select tmp #b01)))
   (let ((tmp2 (select tmp #b10)))
-  (let ((tmp0n (bvand tmp0 #x00000fffffffffff)))
-  (let ((tmp1n (bvadd tmp1 (bvlshr tmp0 #x000000000000002c))))
-  (let ((tmp1nn (bvand tmp1n #x00000fffffffffff)))
-  (let ((tmp2n (bvadd tmp2 (bvlshr tmp1n #x000000000000002c))))
+  (let ((tmp0n (mask64 tmp0 44)))
+  (let ((tmp1n (add64 tmp1 (shr64 tmp0 44))))
+  (let ((tmp1nn (mask64 tmp1n 44)))
+  (let ((tmp2n (add64 tmp2 (shr64 tmp1n 44))))
   (let ((tmp (store tmp #b00 tmp0n)))
   (let ((tmp (store tmp #b01 tmp1nn)))
   (let ((tmp (store tmp #b10 tmp2n)))
@@ -104,7 +154,7 @@
   (let ((output (sum_scalar_multiplication output input i22)))
        output)))))))))      
 
-(define-fun fmul ((output felem_limb) (input felem_limb) (input2 felem_limb)) felem_limb
+(define-fun fmul ((input felem_limb) (input2 felem_limb)) felem_limb
   (let ((tmp input))
   (let ((t (mul_shift_reduce felem_wide0 tmp input2)))
   (let ((t (carry_wide t)))
@@ -113,73 +163,40 @@
   (let ((o0 (select output #b00)))
   (let ((o1 (select output #b01)))
   (let ((o2 (select output #b10)))
-  (let ((output (store output #b00 (bvand o0 #x00000fffffffffff))))
-  (let ((output (store output #b01 (bvadd o1 (bvlshr o0 #x000000000000002c)))))
+  (let ((output (store output #b00 (mask64 o0 44))))
+  (let ((output (store output #b01 (add64 o1 (shr64 o0 44)))))
        output)))))))))))
 
 (define-fun fadd ((input felem_limb) (input2 felem_limb)) felem_limb
-  (let ((acc (store felem_limb0 #b00 (bvadd (select input #b00) (select input2 #b00)))))
-  (let ((acc (store acc #b01 (bvadd (select input #b01) (select input2 #b01)))))
-  (let ((acc (store acc #b10 (bvadd (select input #b10) (select input2 #b10)))))
+  (let ((acc (store felem_limb0 #b00 (add64 (select input #b00) (select input2 #b00)))))
+  (let ((acc (store acc #b01 (add64 (select input #b01) (select input2 #b01)))))
+  (let ((acc (store acc #b10 (add64 (select input #b10) (select input2 #b10)))))
        acc))))      
 
 (define-fun add_and_multiply ((acc felem_limb) (block felem_limb) (r felem_limb)) felem_limb
   (let ((acc (fadd acc block)))
-    (fmul acc acc r)))
+    (fmul acc r)))
 
-(define-fun poly1305 ((input uint64array) (len uint64) (key felem_limb)) uint64array
-  (let ((k0 (select key #b00)))
-  (let ((k1 (select key #b01)))
-  (let ((k0 (bvand k0 #x0ffffffc0ffffffc)))
-  (let ((k1 (bvand k1 #x0ffffffc0fffffff)))
-  (let ((r0 (bvand k0 #x00000fffffffffff)))
-  (let ((r1 (bvand (bvshl k1 #x0000000000000014) (bvlshr k0 #x000000000000002c))))
-  (let ((r2 (bvlshr k0 #x0000000000000014)))
-       input))))))))
+;; (define-fun update ((acc felem_limb) (len uint64) (block uint128) (r felem_limb)) felem_limb
+;;   (let ((b0 (mask128 block 44)))
+;;   (let ((b1 (mask128 (shr128 block 44) 44)))
+;;   (let ((b2 (shr128 block 88)))
+;;   (let ((b2 (+ b2 (pow2 42))))
+    
+;;   )
+;; (define-fun poly1305 ((input uint64array) (len uint64) (key felem_limb)) uint64array
+;;    (let ((k0 (select key #b00)))
+;;    (let ((k1 (select key #b01)))
+;;    (let ((k0 (bvand k0 #x0ffffffc0ffffffc)))
+;;    (let ((k1 (bvand k1 #x0ffffffc0fffffff)))
+;;    (let ((r0 (bvand k0 #x00000fffffffffff)))
+;;    (let ((r1 (bvand (bvshl k1 #x0000000000000014) (bvlshr k0 #x000000000000002c))))
+;;    (let ((r2 (bvlshr k0 #x0000000000000014)))
+;;         input))))))))
 
-;; (define-sort felem () (_ BitVec 260))
-
-;; (define-fun uint64_to_felem ((b uint64)) felem
-;;   (concat #x0000000000000000000000000000000000000000000000000 b))
-
-;; (define-fun felem_to_uint64 ((b felem)) uint64
-;;   ((_ extract 63 0) b))
-
-   
-;; (define-fun felem_limb_eval ((input felem_limb)) felem
-;;    (let ((f0 (select input #b00)))
-;;    (let ((f1 (select input #b01)))
-;;    (let ((f2 (select input #b10)))
-;;      (bvurem       
-;;      (bvadd
-;;          (bvadd (uint64_to_felem f0)
-;; 		(bvshl (uint64_to_felem f1) (uint64_to_felem #x000000000000002c)))
-;; 	 (bvshl (uint64_to_felem f2) (uint64_to_felem #x0000000000000058)))
-;;      #x000000000000000000000000000000003ffffffffffffffffffffffffffffffff)))))
-
-;; (define-fun felem-add ((x felem) (y felem)) felem
-;;      (bvurem       
-;;        (bvadd x y)
-;;        #x000000000000000000000000000000003ffffffffffffffffffffffffffffffff))
-
-;; (define-fun felem-mul ((x felem) (y felem)) felem
-;;      (bvurem       
-;;        (bvmul x y)
-;;        #x000000000000000000000000000000003ffffffffffffffffffffffffffffffff))
-
-;; (assert (forall ((x felem_limb) (y felem_limb))
-;; 		(=>
-;; 		 (and
-;; 		 (and
-;; 		 (and (bvult (select x #b00) #x00000fffffffffff) (bvult (select y #b00) #x00000fffffffffff))
-;; 		 (and (bvult (select x #b01) #x00000fffffffffff) (bvult (select y #b01) #x00000fffffffffff)))
-;; 		 (and (bvult (select x #b10) #x00000fffffffffff) (bvult (select y #b10) #x00000fffffffffff)))
-;; 		(= (felem_limb_eval (fadd x y))
-;; 		   (felem-add (felem_limb_eval x) (felem_limb_eval y))))))
-
-;; (check-sat)
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; POLY1305 SPECIFICATION
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sort felem () Int)
 
@@ -187,31 +204,14 @@
 ;(define-fun bv2nat ((b uint64)) Int
 ;  (bv2int b))
 
-(declare-fun pow2 (Int) Int)
-(assert (= (pow2 64) 18446744073709551616))
-(declare-fun bv2natx (uint64) Int)
-(declare-fun nat2bvx (Int) uint64)
-(assert (forall ((b uint64))
-		(= (nat2bvx (bv2natx b)) b)))
-(assert (forall ((i Int))
-	    (=> (< i (- (pow2 64) 1))
-		(= (bv2natx (nat2bvx i)) i))))
-
-(assert (forall ((x uint64) (y uint64))
-		(= (bv2natx (bvadd x y)) (bv2natx (nat2bvx (+ (bv2natx x) (bv2natx y)))))))
-
-		       
-(define-fun uint64_to_felem ((b uint64)) felem
-   (bv2natx b))
-  
 (define-fun felem_limb_eval ((input felem_limb)) felem
    (let ((f0 (select input #b00)))
    (let ((f1 (select input #b01)))
    (let ((f2 (select input #b10)))
      (mod      
-         (+ (+ (uint64_to_felem f0)
-	       (* (uint64_to_felem f1) 17592186044416))
-	       (* (uint64_to_felem f2) 309485009821345068724781056))
+         (+ (+ f0
+	       (* f1 (pow2 44)))
+	       (* f2 (pow2 88)))
 	 1361129467683753853853498429727072845819)))))
 
 (define-fun felem-add ((x felem) (y felem)) felem
@@ -225,25 +225,89 @@
        (* x y)
 	 1361129467683753853853498429727072845819))
 
+(define-fun update ((acc felem) (len uint64) (block felem) (r felem)) felem
+   (let ((e (add128 (pow2 (* 8 len)) block)))
+     (felem-mul (felem-add acc e) r)))
 
-(assert (forall ((x uint64) (y uint64))
-		(=> 
- 		 (and (< (bv2natx x) (- (pow2 64) 1)) (< (bv2natx y) (- (pow2 64) 1)))
-		 (= (bv2natx (bvadd x y)) (+ (bv2natx x) (bv2natx y))))))
+(define-fun finish ((acc felem) (s felem)) felem
+  (mod (felem-add acc s) (pow2 128)))
 
-;; (assert (forall ((x felem_limb) (y felem_limb))
-;; 		(=>
-;; 		 (and
-;; 		 (and
-;; 		 (and (bvult (select x #b00) #x00000fffffffffff) (bvult (select y #b00) #x00000fffffffffff))
-;; 		 (and (bvult (select x #b01) #x00000fffffffffff) (bvult (select y #b01) #x00000fffffffffff)))
-;; 		 (and (bvult (select x #b10) #x00000fffffffffff) (bvult (select y #b10) #x00000fffffffffff)))
-;; 		(= (felem_limb_eval (fadd x y))
-;; 		   (felem-add (felem_limb_eval x) (felem_limb_eval y))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert (forall ((x uint64) (y uint64)) 
+		(=>
+		 (and (>= x 0)
+		 (and (< x (pow2 63))
+		 (and (>= y 0)
+		 (and (< y (pow2 63))))))
+		 (= (add64 x y) (+ x y)))))
 
 (check-sat)
 
+(assert (forall ((x felem_limb) (y felem_limb))
+		(=>
+		 (and (>= (select x #b00) 0)
+		 (and (< (select x #b00) (pow2 63))
+		 (and (>= (select y #b00) 0)
+  	         (and (< (select y #b00) (pow2 63))
+		 (and (>= (select x #b01) 0)
+		 (and (< (select x #b01) (pow2 63))
+		 (and (>= (select y #b01) 0)
+  	         (and (< (select y #b01) (pow2 63))
+		 (and (>= (select x #b10) 0)
+		 (and (< (select x #b10) (pow2 63))
+		 (and (>= (select y #b10) 0)
+  	         (and (< (select y #b10) (pow2 63))))))))))))))
+ 		(= (felem_limb_eval (fadd x y))
+ 		   (felem-add (felem_limb_eval x) (felem_limb_eval y))))))
 
+(check-sat)
+
+(assert (forall ((x felem_limb) (y felem_limb))
+		(=>
+		 (and (>= (select x #b00) 0)
+		 (and (< (select x #b00) (pow2 44))
+		 (and (>= (select y #b00) 0)
+  	         (and (< (select y #b00) (pow2 44))
+		 (and (>= (select x #b01) 0)
+		 (and (< (select x #b01) (pow2 44))
+		 (and (>= (select y #b01) 0)
+  	         (and (< (select y #b01) (pow2 44))
+		 (and (>= (select x #b10) 0)
+		 (and (< (select x #b10) (pow2 42))
+		 (and (>= (select y #b10) 0)
+  	         (and (< (select y #b10) (pow2 42))))))))))))))
+ 		(= (felem_limb_eval (fmul x y))
+ 		   (felem-mul (felem_limb_eval x) (felem_limb_eval y))))))
+
+(check-sat)
+
+(assert (forall ((x felem_limb) (y felem_limb) (z felem_limb))
+		(=>
+		 (and (>= (select x #b00) 0)
+		 (and (< (select x #b00) (pow2 44))
+		 (and (>= (select y #b00) 0)
+  	         (and (< (select y #b00) (pow2 44))
+		 (and (>= (select z #b00) 0)
+  	         (and (< (select z #b00) (pow2 44))
+		 (and (>= (select x #b01) 0)
+		 (and (< (select x #b01) (pow2 44))
+		 (and (>= (select y #b01) 0)
+  	         (and (< (select y #b01) (pow2 44))
+		 (and (>= (select z #b01) 0)
+  	         (and (< (select z #b01) (pow2 44))
+		 (and (>= (select x #b10) 0)
+		 (and (< (select x #b10) (pow2 42))
+		 (and (>= (select z #b10) 0)
+		 (and (< (select z #b10) (pow2 42))
+		 (and (>= (select y #b10) 0)
+  	         (and (< (select y #b10) (pow2 42))))))))))))))))))))
+ 		(= (felem_limb_eval (add_and_multiply x y z))
+ 		   (felem-mul (felem-add (felem_limb_eval x) (felem_limb_eval y)) (felem_limb_eval z))))))
+
+(check-sat)
 
     
     

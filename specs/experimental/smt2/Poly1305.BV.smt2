@@ -1,6 +1,7 @@
 ;(set-logic ABVNIA)
-(set-option :produce-models true)
-
+;(set-option :produce-models true)
+(set-option :auto-config false)
+(set-option :smt.mbqi false)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Poly1305: RFC 7539
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
