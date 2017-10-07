@@ -92,8 +92,8 @@ let idx = a:U32.t{U32.v a < 16}
 [@ "c_inline"]
 private
 val line:
-  st:state ->
   a:idx -> b:idx -> d:idx -> s:U32.t{0 < U32.v s && U32.v s < 32} ->
+  st:state ->
   Stack unit
     (requires (fun h -> live h st))
     (ensures (fun h0 _ h1 -> live h1 st /\ modifies_1 st h0 h1 /\ live h0 st
@@ -101,7 +101,7 @@ val line:
          let st0 = reveal_h32s (as_seq h0 st) in
          st1 == line (U32.v a) (U32.v b) (U32.v d) s st0)))
 [@ "c_inline"]
-let line st a b d s =
+let line a b d s st =
   let sa = st.(a) in let sb = st.(b) in let sd = st.(d) in
   let sbd = sb +%^ sd in
   let sbds = sbd <<< s in
@@ -111,20 +111,16 @@ let line st a b d s =
 [@ "c_inline"]
 private
 val quarter_round:
-  st:state ->
   a:idx -> b:idx -> c:idx -> d:idx ->
+  st:state ->
   Stack unit
     (requires (fun h -> live h st))
     (ensures (fun h0 _ h1 -> live h0 st /\ live h1 st /\ modifies_1 st h0 h1
       /\ (let s = reveal_h32s (as_seq h0 st) in let s' = reveal_h32s (as_seq h1 st) in
          s' == quarter_round (U32.v a) (U32.v b) (U32.v c) (U32.v d) s)))
 [@ "c_inline"]
-let quarter_round st a b c d =
-  line st b a d 7ul;
-  line st c b a 9ul;
-  line st d c b 13ul;
-  line st a d c 18ul
-
+let quarter_round a b c d = 
+  line  b a d 7ul
 
 [@ "substitute"]
 private

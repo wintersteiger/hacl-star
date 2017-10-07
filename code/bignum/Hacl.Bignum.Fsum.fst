@@ -21,7 +21,7 @@ let red_c h (f:felem) ctr = live h f /\ red (as_seq h f) ctr
 [@"substitute"]
 val fsum_:
   a:felem ->
-  b:felem{(assert (forall ((i Int))
+  b:felem{i(assert (forall ((i Int))
 	    (=> (< i (- (pow2 64) 1))
 		(= (bv2natx (nat2bvx i)) i))))
 disjoint a b} ->

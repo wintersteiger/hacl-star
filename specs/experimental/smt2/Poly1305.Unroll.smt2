@@ -7,10 +7,10 @@
 
 (declare-fun pow2 (Int) Int)
 
-(assert (= (pow2 0) 1))
-(assert (forall ((m Int))
-		(! (=> (>= m 0) (= (pow2 (+ m 1)) (* 2 (pow2 m))))
-		:pattern ((pow2 (+ m 1)) (>= m 0)))))
+;(assert (= (pow2 0) 1))
+;(assert (forall ((m Int))
+;		(! (=> (>= m 0) (= (pow2 (+ m 1)) (* 2 (pow2 m))))
+;		:pattern ((pow2 (+ m 1)) (>= m 0)))))
 
 ;(assert (forall ((m Int) (n Int))
 ;     (! (=> (and (and (>= m 0) (>= n 0)) (< m n)) (< (pow2 m) (pow2 n)))
@@ -32,13 +32,11 @@
 ;	       (! (=> (>= m n) (= (div (pow2 m) (pow2 n)) (pow2 (- m n))))
 ;		:pattern ((div (pow2 m) (pow2 n))))))
 
-(define-sort idx () (_ BitVec 2))
-(define-sort uint8 () (_ BitVec 8))
 (define-sort uint64 () Int)
-(define-sort uint64array () (Array idx uint64))
 (define-sort uint128 () Int)
-(define-sort felem_limb () (Array idx uint64))
-(define-sort felem_wide () (Array idx uint128))
+
+(declare-datatypes () ((felem_limb (limb3 (l0 uint64) (l1 uint64) (l2 uint64)))))
+(declare-datatypes () ((felem_wide (wide3 (l0 uint128) (l1 uint128) (l2 uint128)))))
 
 (define-fun shl64 ((b uint64) (s uint64)) uint64
   (* b (pow2 s)))
@@ -68,22 +66,31 @@
   (mod (* a b) (pow2 128)))
 
 (define-fun reduce ((b felem_limb)) felem_limb
-  (store b #b00 (add64 (shl64 (select b #b00) 4) (shl64 (select b #b00) 2))))
+  (let ((b0 (l0 b))
+	(b1 (l1 b))
+	(b2 (l2 b)))
+    (limb3 (add64 (shl64 b0 4) (shl64 b0 2)) b1 b2)))
+
+
 
 (define-fun carry_top ((b felem_limb)) felem_limb
-  (let ((b2 (select b #b10)))
-  (let ((b0 (select b #b00)))
+  (let ((b0 (l0 b))
+	(b1 (l1 b))
+	(b2 (l2 b)))
   (let ((b2_42 (shr64 b2 42)))
-  (let ((b (store b #b10 (mask64 b2 42))))
-  (store b #b00 (add64 (add64 (shl64 b2_42 2) b2_42) b0)))))))
+  (let ((b2 (mask64 b2 42)))
+  (let ((b0 (add64 (add64 (shl64 b2_42 2) b2_42) b0)))
+       (limb3 b0 b1 b2))))))      
 
 
 (define-fun carry_top_wide ((b felem_wide)) felem_wide
-  (let ((b2 (select b #b10)))
-  (let ((b0 (select b #b00)))
+  (let ((b0 (l0 b))
+	(b1 (l1 b))
+	(b2 (l2 b)))
   (let ((b2_42 (shr128 b2 42)))
-  (let ((b (store b #b10 (mask128 b2 42))))
-  (store b #b00 (add128 (add128 (shl128 b2_42 2) b2_42) b0)))))))
+  (let ((b2 (mask128 b2 42)))
+  (let ((b0 (add128 (add128 (shl128 b2_42 2) b2_42) b0)))
+      (wide3 b0 b1 b2))))))
 
 (define-fun uint64_to_uint128 ((b uint64)) uint128
   b)
@@ -95,68 +102,69 @@
 (declare-const felem_wide0 felem_wide)
 
 (define-fun copy_from_wide ((b felem_wide)) felem_limb
-  (let ((f (store felem_limb0 #b00 (uint128_to_uint64 (select b #b00)))))
-  (let ((f (store f #b01 (uint128_to_uint64 (select b #b01)))))
-  (let ((f (store f #b10 (uint128_to_uint64 (select b #b10)))))
-     f))))
+  (let ((w0 (l0 b))
+	(w1 (l1 b))
+	(w2 (l2 b)))
+  (let ((b0 (uint128_to_uint64 w0)))
+  (let ((b1 (uint128_to_uint64 w1)))
+  (let ((b2 (uint128_to_uint64 w2)))
+     (limb3 b0 b1 b2))))))
 
 (define-fun add_mul ((a uint128) (b uint64) (s uint64)) uint128
   (add128 a (mul128 (uint64_to_uint128 b) (uint64_to_uint128 s))))
 		      
 (define-fun sum_scalar_multiplication ((output felem_wide) (input felem_limb) (s uint64)) felem_wide
-  (let ((output (store output #b00 (add_mul (select output #b00) (select input #b00) s))))
-  (let ((output (store output #b01 (add_mul (select output #b01) (select input #b01) s))))
-  (let ((output (store output #b10 (add_mul (select output #b10) (select input #b10) s))))
-      output))))
+  (let ((o0 (l0 output))
+	(o1 (l1 output))
+	(o2 (l2 output))
+	(i0 (l0 input))
+	(i1 (l1 input))
+	(i2 (l2 input)))
+  (let ((o0 (add_mul o0 i0 s)))
+  (let ((o1 (add_mul o1 i1 s)))
+  (let ((o2 (add_mul o2 i2 s)))
+      (wide3 o0 o1 o2))))))
+
 
 (define-fun carry_wide ((tmp felem_wide)) felem_wide
-  (let ((tmp0 (select tmp #b00)))
-  (let ((tmp1 (select tmp #b01)))
-  (let ((tmp2 (select tmp #b10)))
+  (let ((tmp0 (l0 tmp))
+	(tmp1 (l1 tmp))
+	(tmp2 (l2 tmp)))
   (let ((tmp0n (mask128 tmp0 44)))
   (let ((tmp1n (add128 tmp1 (shr128 tmp0 44))))
   (let ((tmp1nn (mask128 tmp1n 44)))
   (let ((tmp2n (add128 tmp2 (shr128 tmp1n 44))))
-  (let ((tmp (store tmp #b00 tmp0n)))
-  (let ((tmp (store tmp #b01 tmp1nn)))
-  (let ((tmp (store tmp #b10 tmp2n)))
-      tmp)))))))))))
+    (wide3 tmp0n tmp1nn tmp2n)))))))
 
 
 (define-fun carry_limb ((tmp felem_limb)) felem_limb
-  (let ((tmp0 (select tmp #b00)))
-  (let ((tmp1 (select tmp #b01)))
-  (let ((tmp2 (select tmp #b10)))
+  (let ((tmp0 (l0 tmp))
+	(tmp1 (l1 tmp))
+	(tmp2 (l2 tmp)))
   (let ((tmp0n (mask64 tmp0 44)))
   (let ((tmp1n (add64 tmp1 (shr64 tmp0 44))))
   (let ((tmp1nn (mask64 tmp1n 44)))
   (let ((tmp2n (add64 tmp2 (shr64 tmp1n 44))))
-  (let ((tmp (store tmp #b00 tmp0n)))
-  (let ((tmp (store tmp #b01 tmp1nn)))
-  (let ((tmp (store tmp #b10 tmp2n)))
-    tmp)))))))))))
+     (limb3 tmp0n tmp1nn tmp2n)))))))
 
 
 (define-fun shift_reduce ((tmp felem_limb)) felem_limb
-  (let ((tmp0 (select tmp #b00)))
-  (let ((tmp1 (select tmp #b01)))
-  (let ((tmp2 (select tmp #b10)))
-  (let ((tmp (store tmp #b10 tmp1)))
-  (let ((tmp (store tmp #b01 tmp0)))
-  (let ((tmp (store tmp #b00 tmp2)))
-    (reduce tmp))))))))
+  (let ((tmp0 (l0 tmp))
+	(tmp1 (l1 tmp))
+	(tmp2 (l2 tmp)))
+    (reduce (limb3 tmp1 tmp0 tmp2))))
 
 
 (define-fun mul_shift_reduce ((output felem_wide) (input felem_limb) (input2 felem_limb)) felem_wide
-  (let ((i20 (select input2 #b00)))
-  (let ((i21 (select input2 #b01)))
-  (let ((i22 (select input2 #b10)))
+  (let ((i20 (l0 input2))
+	(i21 (l1 input2))
+	(i22 (l2 input2)))
   (let ((output (sum_scalar_multiplication output input i20)))      
   (let ((input (shift_reduce input)))
   (let ((output (sum_scalar_multiplication output input i21)))      
   (let ((input (shift_reduce input)))
   (let ((output (sum_scalar_multiplication output input i22)))
-       output)))))))))      
+       output)))))))
 
 (define-fun fmul ((input felem_limb) (input2 felem_limb)) felem_limb
   (let ((tmp input))
@@ -164,23 +172,27 @@
   (let ((t (carry_wide t)))
   (let ((t (carry_top_wide t)))
   (let ((output (copy_from_wide t)))
-  (let ((o0 (select output #b00)))
-  (let ((o1 (select output #b01)))
-  (let ((o2 (select output #b10)))
-  (let ((output (store output #b00 (mask64 o0 44))))
-  (let ((output (store output #b01 (add64 o1 (shr64 o0 44)))))
-       output)))))))))))
+  (let ((o0 (l0 output)))
+  (let ((o1 (l1 output)))
+  (let ((o2 (l2 output)))
+    (limb3 (mask64 o0 44) (add64 o1 (shr64 o0 44)) o2))))))))))
+
 
 (define-fun fadd ((input felem_limb) (input2 felem_limb)) felem_limb
-  (let ((acc felem_limb0))
-  (let ((acc (store acc #b00 (add64 (select input #b00) (select input2 #b00)))))
-  (let ((acc (store acc #b01 (add64 (select input #b01) (select input2 #b01)))))
-  (let ((acc (store acc #b10 (add64 (select input #b10) (select input2 #b10)))))
-       acc)))))      
+  (let ((x0 (l0 input))
+	(x1 (l1 input))
+	(x2 (l2 input)))
+  (let ((y0 (l0 input2))
+	(y1 (l1 input2))
+	(y2 (l2 input2)))
+  (let ((o0 (add64 x0 y0))
+	  (o1 (add64 x1 y1))
+	  (o2 (add64 x2 y2)))
+    (limb3 o0 o1 o2)))))
 
 (define-fun add_and_multiply ((acc felem_limb) (block felem_limb) (r felem_limb)) felem_limb
-  (let ((acc (fadd acc block)))
-    (fmul acc r)))
+   (let ((acc (fadd acc block)))
+     (fmul acc r)))
 
 ;; (define-fun update ((acc felem_limb) (len uint64) (block uint128) (r felem_limb)) felem_limb
 ;;   (let ((b0 (mask128 block 44)))
@@ -205,13 +217,12 @@
 
 (define-sort felem () Int)
 (declare-const p1305 Int)
-(assert (= p1305 1361129467683753853853498429727072845819))
-;(assert (> p1305 1))
+(assert (> p1305 1))
 
 (define-fun felem_limb_eval ((input felem_limb)) felem
-   (let ((f0 (select input #b00)))
-   (let ((f1 (select input #b01)))
-   (let ((f2 (select input #b10)))
+   (let ((f0 (l0 input)))
+   (let ((f1 (l1 input)))
+   (let ((f2 (l2 input)))
      (mod      
          (+ f0 (+
    	          (* f1 (pow2 44))
@@ -259,21 +270,11 @@
 
 (push)
 
-;(assert (= (pow2 63) 9223372036854775808))
-;(assert (= (pow2 64) 18446744073709551616))
-;(assert (= (pow2 44) 17592186044416))
-;(assert (= (pow2 88) 309485009821345068724781056))
-
-;(assert (forall ((a Int) (b Int))
-;	(! (=> (and (>= a 0) (>= b 0))
-;	       (= (* (+ a b) (pow2 44)) (+ (* a (pow2 44)) (* b (pow2 44)))))
-;	:pattern ((* (+ a b) (pow2 44)) (>= a 0) (>= b 0)))))
-
-
-;(assert (forall ((a Int) (b Int))
-;	(! (=> (and (>= a 0) (>= b 0))
-;	       (= (* (+ a b) (pow2 88)) (+ (* a (pow2 88)) (* b (pow2 88)))))
-;	:pattern ((* (+ a b) (pow2 88)) (>= a 0) (>= b 0)))))
+(assert (= (pow2 63) 9223372036854775808))
+(assert (= (pow2 64) 18446744073709551616))
+(assert (= (pow2 44) 17592186044416))
+(assert (= (pow2 88) 309485009821345068724781056))
+(assert (= p1305 1361129467683753853853498429727072845819))
 
 ;(assert (forall ((x uint64) (y uint64)) 
 ;	      (! (=>
@@ -289,12 +290,12 @@
 ;	   :pattern ((mod (+ (mod m p1305) (mod n p1305)) p1305)))))
 
 (assert (forall ((x felem_limb) (y felem_limb))
-		(let ((x0 (select x #b00))
-		      (y0 (select y #b00))
-		      (x1 (select x #b01))
-		      (y1 (select y #b01))
-		      (x2 (select x #b10))
-		      (y2 (select y #b10)))
+		(let ((x0 (l0 x))
+		      (y0 (l0 y))
+		      (x1 (l1 x))
+		      (y1 (l1 y))
+		      (x2 (l2 x))
+		      (y2 (l2 y)))
 		(=>
 		 (and (>= x0 0)
 		 (and (<  x0 (pow2 63))
@@ -302,7 +303,7 @@
   	         (and (<  y0 (pow2 63))
 		 (and (>= x1 0)
 		 (and (<  x1 (pow2 63))
-		 (and (>= y1 0)
+	 	 (and (>= y1 0)
   	         (and (<  y1 (pow2 63))
 		 (and (>= x2 0)
 		 (and (<  x2 (pow2 63))
@@ -315,25 +316,56 @@
 (pop)
 
 (push)
+
+;; (assert (= p1305 1361129467683753853853498429727072845819))
+
+;; (assert (= (pow2 0) 1))
+;; (assert (= (pow2 1) 2))
+;; (assert (= (pow2 4) 16))
+;; (assert (= (pow2 42) 4398046511104))
+;; (assert (= (pow2 44) 17592186044416))
+;; (assert (= (pow2 63) 9223372036854775808))
+;; (assert (= (pow2 64) 18446744073709551616))
+;; (assert (= (pow2 88) 309485009821345068724781056))
+(assert (> (pow2 42) 0))
+(assert (= (pow2 44) (* 4 (pow2 42))))
+(assert (= (pow2 63) (* 512 (pow2 44))))
+(assert (= (pow2 64) (* 2 (pow2 63))))
+
+
+(assert (forall ((x Int) (y Int))
+	(! (= (* (pow2 x) (pow2 y)) (pow2 (+ x y)))
+	   :pattern ((* (pow2 x) (pow2 y))))))
+(assert (forall ((x Int) (y Int))
+ 	(! (= (/ (pow2 x) (pow2 y)) (pow2 (- x y)))
+ 	   :pattern ((/ (pow2 x) (pow2 y))))))
+(assert (forall ((x Int) (y Int))
+ 		(! (= (mod (+ (* x (pow2 130)) y) p1305)
+ 		      (mod (+ (* x 5) y) p1305))
+ 		   :pattern ((mod (+ (* x (pow2 130)) y) p1305)))))
+
 (assert (forall ((x felem_limb) (y felem_limb))
+		(let ((x0 (l0 x))
+		      (y0 (l0 y))
+		      (x1 (l1 x))
+		      (y1 (l1 y))
+		      (x2 (l2 x))
+		      (y2 (l2 y)))
 		(=>
-		 (and (>= (select x #b00) 0)
-		 (and (< (select x #b00) (pow2 44))
-		 (and (>= (select y #b00) 0)
-  	         (and (< (select y #b00) (pow2 44))
-		 (and (>= (select x #b01) 0)
-		 (and (< (select x #b01) (pow2 44))
-		 (and (>= (select y #b01) 0)
-  	         (and (< (select y #b01) (pow2 44))
-		 (and (>= (select x #b10) 0)
-		 (and (< (select x #b10) (pow2 42))
-		 (and (>= (select y #b10) 0)
-  	         (and (< (select y #b10) (pow2 42))))))))))))))
+		 (and (>= x0 0)
+		 (and (<  x0 (pow2 44))
+		 (and (>= y0 0)
+  	         (and (<  y0 (pow2 44))
+		 (and (>= x1 0)
+		 (and (<  x1 (pow2 44))
+		 (and (>= y1 0)
+  	         (and (<  y1 (pow2 44))
+		 (and (>= x2 0)
+		 (and (<  x2 (pow2 42))
+		 (and (>= y2 0)
+  	         (and (<  y2 (pow2 42))))))))))))))
  		 (not (= (felem_limb_eval (fmul x y))
- 		   (felem-mul (felem_limb_eval x) (felem_limb_eval y)))))))
-(assert (< (pow2 63) (pow2 64)))
-(assert (= (* (pow2 44) (pow2 44)) (pow2 88)))
-(assert (= (* (pow2 44) (pow2 42)) (pow2 86)))
+ 		   (felem-mul (felem_limb_eval x) (felem_limb_eval y))))))))
 (check-sat)
 (pop)
 

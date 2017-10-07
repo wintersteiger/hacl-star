@@ -230,7 +230,7 @@
 (assert (forall ((x uint64) (y uint64))
 		(=> 
  		 (and (< (bv2natx x) (- (pow2 64) 1)) (< (bv2natx y) (- (pow2 64) 1)))
-		 (= (bv2natx (bvadd x y)) (+ (bv2natx x) (bv2natx y))))))
+		 (= (bv2natx (bvadd x y)) (+ (bv2natx x) (bv2naotx y))))))
 
 ;; (assert (forall ((x felem_limb) (y felem_limb))
 ;; 		(=>
