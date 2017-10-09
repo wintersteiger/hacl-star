@@ -341,11 +341,10 @@
 
 ;; Chacha20 Block Function RFC Test Vector
 (define-fun key2 () block (chacha20_block2 k n c))
-;(assert (= key2 #x10f1e7e4d13b5915500fdd1fa32071c4c7d1f4c733c068030422aa9ac3d46c4ed2826446079faa0914c2d705d98b02a2b5129cd1de164eb9cbd083e8a2503c4e))
+(assert (= key2 #x10f1e7e4d13b5915500fdd1fa32071c4c7d1f4c733c068030422aa9ac3d46c4ed2826446079faa0914c2d705d98b02a2b5129cd1de164eb9cbd083e8a2503c4e))
 (echo "Running vectorized chacha20_block2 RFC test:")
 (check-sat)
 (get-model)
-
 
 (assert (forall ((m state))
         (= (chacha20_block_state m) (chacha20_block2_state m))))
@@ -358,7 +357,6 @@
 (echo "Verifying chacha20_block = chacha_block2:")
 (check-sat)
 (get-model)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Vectorized Chacha20 (256-bit)
@@ -629,12 +627,13 @@
 	         (chacha20_block3_state (setup k n c)))
 
 ;; Chacha20 Block Function RFC Test Vector
+(push)
 (define-fun key3 () block ((_ extract 4095 3584) (chacha20_block3 k n c)))
-(assert (= key3 #x10f1e7e4d13b5915500fdd1fa32071c4c7d1f4c733c068030422aa9ac3d46c4ed2826446079faa0914c2d705d98b02a2b5129cd1de164eb9cbd083e8a2503c4e))
+(assert (not (= key3 #x10f1e7e4d13b5915500fdd1fa32071c4c7d1f4c733c068030422aa9ac3d46c4ed2826446079faa0914c2d705d98b02a2b5129cd1de164eb9cbd083e8a2503c4e)))
 (echo "Running vectorized chacha20_block3 RFC test:")
 (check-sat)
 (get-model)
-
+(pop)
 
 (assert (forall ((m state))
         (= (chacha20_block_state m) ((_ extract 4095 3584) (chacha20_block3_state m)))))
