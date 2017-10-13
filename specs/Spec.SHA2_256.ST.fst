@@ -117,7 +117,7 @@ let apply_read_write (k1:key) (k2:key{k1 <> k2})
     apply_write k2 (f (get_value st k1)) st
 
 
-let bind (f:stateful 'b) (g:'b -> stateful 'c) : stateful 'c = 
+unfold let bind (f:stateful 'b) (g:'b -> stateful 'c) : stateful 'c = 
   fun st -> let (b,s) = f st in g b s
 
 let return (x:'b): stateful 'b = fun st -> (x,st)
@@ -202,25 +202,24 @@ let rec ws (b:u32seq 16) (t:nat{t < 64}) : Tot u32 =
     (s1 +%^ (t7 +%^ (s0 +%^ t16)))
 *)
 
-let setup_ws0 : stateful unit = 
-  iteri 0 16 (fun i ->
+unfold let step_ws0 (i:nat{i >= 0 /\ i < 16}) : stateful unit = 
      x <-- read Data i ;
      let y:u32 = x in
-     write Ws i y)
+     write Ws i y
 
-let setup_ws1 : stateful unit = 
-  iteri 16 64 (fun i ->
+let step_ws1 (i:nat{i>=16 /\ i < 64}) : stateful unit = 
     t16 <-- read Ws (i - 16) ;
     t15 <-- read Ws (i - 15) ;
     t7  <-- read Ws (i - 7)  ;
     t2  <-- read Ws (i - 2)  ;
     let s1 = _sigma1 t2 in
     let s0 = _sigma0 t15 in
-    write Ws i (s1 +%^ (t7 +%^ (s0 +%^ t16))))
+    write Ws i (s1 +%^ (t7 +%^ (s0 +%^ t16)))
 
 let setup_ws : stateful unit = 
-  setup_ws0 ;;
-  setup_ws1
+  iteri 0 16 step_ws0 ;;
+  iteri 16 64 step_ws1
+
   
 let shuffle_core  (t:nat{t >= 0 /\ t < 64}) : stateful unit =
   a <-- read Whash 0 ;
@@ -418,6 +417,7 @@ let test_expected5 = [
 //
 // Main
 //
+#set-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 100"
 
 let test () =
   assert_norm(List.Tot.length test_plaintext1 = 3);

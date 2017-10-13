@@ -82,21 +82,20 @@ type stateful_st 'b =
 	      (ensures  (fun h0 r h1 -> state_post spec st h0 r h1))) ->
      stateful_st 'b
      
-unfold
+
 let read_st (i:idx) : stateful_st h32 = 
     MkStateful (Spec.read_st (idx_v i)) 
 	       (fun s -> let st = get_st s in 
 		       st.(i))
 
 
-unfold
 let write_st (i:idx) (v:h32) : stateful_st unit = 
     MkStateful (Spec.write_st (idx_v i) v) 
 	       (fun s -> let st = get_st s in
-		       let h0 = ST.get() in
-		       st.(i) <- v;
-		       let h1 = ST.get() in
-		       modifies_1_to_2_same_region_lemma h0 h1 s.st s.key_block)
+//		       let h0 = ST.get() in
+		       st.(i) <- v)
+//		       let h1 = ST.get() in
+//		       modifies_1_to_2_same_region_lemma h0 h1 s.st s.key_block)
 
 #reset-options "--max_fuel 0 --z3rlimit 50"
 unfold

@@ -96,18 +96,20 @@ let state_inv_st s h =
 
 (* STATEFUL FUNCTIONANS WITH FUNCTIONAL SPEC *)
 (*
+unfold
 type stateful 'b (spec:Spec.stateful 'b) = s:state -> Stack 'b
      (requires (fun h -> state_inv_st s h))
      (ensures (fun h0 r h1 -> state_inv_st s h1 /\
-			    modifies_1 s h0 h1 /\ 
-			    (r,as_spec h1 s) == spec (as_spec h0 s)))
+			    modifies_1 s h0 h1 
+			    /\  (r,as_spec h1 s) == spec (as_spec h0 s) 
+			    ))
 
 
-unfold let read (k:key) (x:u32{v x < seqlen k}) : stateful (Spec.value k) (Spec.read k (v x)) =
+let read (k:key) (x:u32{v x < seqlen k}) : stateful (Spec.value k) (Spec.read k (v x)) =
   fun st -> let b = get_buf st k in
 	  b.(x)
 
-unfold let write (k:key) (x:u32{v x < seqlen k}) (vl:value k) : stateful unit (Spec.write k (v x) vl) =
+let write (k:key) (x:u32{v x < seqlen k}) (vl:value k) : stateful unit (Spec.write k (v x) vl) =
   fun st -> let b = get_buf st k in
 	  b.(x) <- vl
 unfold let bind #s1 #s2 (f:stateful 'b s1) (g:x:'b -> stateful 'c (s2 x)) : stateful 'c (Spec.bind s1 s2) =
@@ -115,21 +117,38 @@ unfold let bind #s1 #s2 (f:stateful 'b s1) (g:x:'b -> stateful 'c (s2 x)) : stat
 	  g r st
 
 let return (x:'b): stateful 'b  (Spec.return x) = fun st -> x
-*)
 
+let as_seql h (b: buffer 'a) (l:nat{length b = l}) : GTot (Spec.Lib.seq_l 'a l) = as_seq h b
+
+let apply_write (k:key) (#s:Spec.Lib.seq1_st (value k) (seqlen k) 'b)
+    (f:b:buffer (value k) -> Stack 'b 
+	      (requires (fun h -> live h b /\ length b = seqlen k))
+	      (ensures (fun h0 r h1 -> live h1 b /\ modifies_1 b h0 h1 /\ length b = seqlen k /\
+			  (r,as_seql h1 b (seqlen k)) == s (as_seql h0 b (seqlen k)))))
+	      : stateful 'b (apply_write k s) =
+   fun st -> f (get_buf st k)
+
+assume val iteri:min:u32 -> max:u32{v min <= v max} -> 
+	  #s:(x:nat{x >= v min /\ x < v max} -> Spec.stateful unit) -> 
+	  f:(x:u32{v x >= v min /\ v x < v max} -> stateful unit (s (v x))) ->
+	   stateful unit (Spec.iteri (v min) (v max) s)
+
+*)
 (* IGNORING FUNC CORRECTNESS: ONLY MEM SAFETY  *)
+
 type stateful 'b = s:state -> Stack 'b
      (requires (fun h -> state_inv_st s h))
      (ensures (fun h0 r h1 -> state_inv_st s h1 /\ modifies_1 s h0 h1))
 
 
-unfold let read (k:key) (x:u32{v x < seqlen k}) : stateful (Spec.value k) =
+let read (k:key) (x:u32{v x < seqlen k}) : stateful (Spec.value k) =
   fun st -> let b = get_buf st k in
 	  b.(x)
 
-unfold let write (k:key) (x:u32{v x < seqlen k}) (vl:value k) : stateful unit =
+let write (k:key) (x:u32{v x < seqlen k}) (vl:value k) : stateful unit =
   fun st -> let b = get_buf st k in
 	  b.(x) <- vl
+
 unfold let bind (f:stateful 'b) (g:x:'b -> stateful 'c) : stateful 'c =
   fun st -> let r = f st in
 	  g r st
@@ -171,26 +190,23 @@ let setup_h0 : stateful unit = fun st -> hupd_8 (get_h0 st)
   (0x6a09e667ul) (0xbb67ae85ul) (0x3c6ef372ul) (0xa54ff53aul)
   (0x510e527ful) (0x9b05688cul) (0x1f83d9abul) (0x5be0cd19ul)
 
-let setup_ws0 : stateful unit =
-  iteri 0ul 16ul 
-  (fun i ->
+let step_ws0 (i:u32{v i >= 0 /\ v i < 16}) : stateful unit =
      x <-- read Data i ;
      let y:u32 = x in
-     write Ws i y)
+     write Ws i y 
 
-let setup_ws1 : stateful unit = 
-  iteri 16ul 64ul (fun i ->
+let step_ws1 (i:u32{v i >= 16 /\ v i < 64}) : stateful unit =
     t16 <-- read Ws (i -^ 16ul) ;
     t15 <-- read Ws (i -^ 15ul) ;
     t7  <-- read Ws (i -^ 7ul)  ;
     t2  <-- read Ws (i -^ 2ul)  ;
     let s1 = _sigma1 t2 in
     let s0 = _sigma0 t15 in
-    write Ws i (s1 +%^ (t7 +%^ (s0 +%^ t16))))
+    write Ws i (s1 +%^ (t7 +%^ (s0 +%^ t16)))
 
 let setup_ws : stateful unit = 
-  setup_ws0 ;;
-  setup_ws1
+  iteri 0ul 16ul step_ws0 ;;
+  iteri 16ul 64ul step_ws1
 
 
 let shuffle_core  (t:u32{v t >= 0 /\ v t < 64}) : stateful unit =
@@ -250,4 +266,5 @@ let rec update_multi (n:u32) (blocks:buffer u8{length blocks == FStar.Mul.(v n *
     let rem = Buffer.sub blocks 64ul ((n -^ 1ul) *^ 64ul) in
     update block st ;
     update_multi (n-^ 1ul) rem st
+
 
