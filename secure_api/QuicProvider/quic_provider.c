@@ -16,7 +16,7 @@
 #include "mitlsffi.h"
 #include "quic_provider.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
 typedef struct quic_key {
   Crypto_AEAD_Invariant_aead_state_______ st;
@@ -166,12 +166,44 @@ int quic_derive_plaintext_secrets(quic_secret *client_cleartext, quic_secret *se
   quic_secret s0;
   s0.hash = TLS_hash_SHA256;
   s0.ae = TLS_aead_AES_128_GCM;
+  char info[323] = {0};
+  size_t info_len;
+
+  #if DEBUG
+   printf("Extracting QUIC static secrets from salt: "); dump(salt, 20);
+   printf("and connection ID: "); dump(con_id, 8);
+  #endif
 
   if(!quic_crypto_hkdf_extract(s0.hash, s0.secret, salt, 20, con_id, 8))
     return 0;
 
-  quic_crypto_tls_derive_secret(client_cleartext, &s0, "QUIC client cleartext Secret");
-  quic_crypto_tls_derive_secret(server_cleartext, &s0, "QUIC server cleartext Secret");
+  #if DEBUG
+   printf("Extracted secret: "); dump(s0.secret, 32);
+  #endif
+
+  if(!quic_crypto_tls_label(s0.hash, info, &info_len, "QUIC client cleartext Secret", 32))
+    return 0;
+
+  client_cleartext->hash = s0.hash;
+  client_cleartext->ae = s0.ae;
+  if(!quic_crypto_hkdf_expand(s0.hash, client_cleartext->secret, 32, s0.secret, 32, info, info_len))
+    return 0;
+
+  #if DEBUG
+   printf("Client cleartext secret: "); dump(client_cleartext->secret, 32);
+  #endif
+
+  server_cleartext->hash = s0.hash;
+  server_cleartext->ae = s0.ae;
+  if(!quic_crypto_tls_label(s0.hash, info, &info_len, "QUIC server cleartext Secret", 32))
+    return 0;
+
+  if(!quic_crypto_hkdf_expand(s0.hash, server_cleartext->secret, 32, s0.secret, 32, info, info_len))
+    return 0;
+
+  #if DEBUG
+   printf("Server cleartext secret: "); dump(server_cleartext->secret, 32);
+  #endif
 
   return 1;
 }
@@ -204,7 +236,7 @@ int quic_crypto_derive_key(/*out*/quic_key **k, const quic_secret *secret)
   if(!quic_crypto_hkdf_expand(secret->hash, key->static_iv, 12, secret->secret, slen, info, info_len))
     return 0;
 
-#if DEBIG
+#if DEBUG
    printf("KEY: "); dump(dkey, klen);
    printf("IV: "); dump(key->static_iv, 12);
 #endif
