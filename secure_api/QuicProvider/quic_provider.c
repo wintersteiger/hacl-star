@@ -16,7 +16,7 @@
 #include "mitlsffi.h"
 #include "quic_provider.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 typedef struct quic_key {
   Crypto_AEAD_Invariant_aead_state_______ st;
@@ -261,8 +261,8 @@ int quic_crypto_encrypt(quic_key *key, char *cipher, uint64_t sn, const char *ad
   Crypto_AEAD_Encrypt_encrypt(key->id, key->st, n, ad_len, (uint8_t*)ad, plain_len, (uint8_t*)plain, cipher);
 
 #if DEBUG
-  printf("ENCRYPT\nIV="); dump(iv, 12);
-  printf("STATIC="); dump(key->static_iv, 12);
+  printf("ENCRYPT\nNONCE="); dump(iv, 12);
+  printf("IV="); dump(key->static_iv, 12);
   printf("AD="); dump(ad, ad_len);
   printf("PLAIN="); dump(plain, plain_len);
   printf("CIPHER="); dump(cipher, plain_len + 16);
@@ -285,8 +285,8 @@ int quic_crypto_decrypt(quic_key *key, char *plain, uint64_t sn, const char *ad,
   int r = Crypto_AEAD_Decrypt_decrypt(key->id, key->st, n, ad_len, (uint8_t*)ad, plain_len, plain, (uint8_t*)cipher);
 
 #if DEBUG
-  printf("DECRYPT %s\nIV=", r?"OK":"BAD"); dump(iv, 12);
-  printf("STATIC="); dump(key->static_iv, 12);
+  printf("DECRYPT %s\nNONCE=", r?"OK":"BAD"); dump(iv, 12);
+  printf("IV="); dump(key->static_iv, 12);
   printf("AD="); dump(ad, ad_len);
   printf("CIPHER="); dump(cipher, cipher_len);
   printf("PLAIN="); dump(plain, plain_len);
