@@ -74,11 +74,12 @@ let safeMac (i:I.id) = Flag.safeHS i && Flag.mac1 i
 let safeId  (i:I.id) = Flag.safeId i
 
 val aead_state : I.id -> I.rw -> Type0
-val aead_region: #i:_ -> #rw:_ -> aead_state i rw -> eternal_region
+val aead_region: #i:_ -> #rw:_ -> aead_state i rw -> eternal_region //CF/AR: GTot?
 
 (** setting up footprints **)
 
-//writer footprint is mod_set of aead_region
+//CF/AR: reader_footprint and writer_footprint
+//writer footprint is mod_set of aead_region: CF/AR: dynamic allocation of subregions?
 let write_footprint (#i:_) (#rw:_) (st:aead_state i rw) :GTot P.loc
   = P.loc_regions (HH.mod_set (Set.singleton (aead_region st)))
 
@@ -137,6 +138,10 @@ val lemma_frame_invariant_footprint (#i:_) (#rw:_) (st:aead_state i rw) (h0 h1:H
   :Lemma (requires (aead_invariant st h0 /\ P.unchanged (write_footprint st) h0 h1))
          (ensures  (aead_invariant st h1))
 
+//CF/AR: Same thing as above for log: log st h0 == log st h1
+
+//CF/AR: In StreamAE, each reader has local state (the read counter) and their own region
+
 //leaving this abstract for now; but it should imply Crypto.AEAD.Invariant.safelen i len (otp_offset i)
 val safelen: I.id -> plainLen -> bool  //AR: safelen is a plainLen?
 let ok_plain_len_32 (i:I.id) = l:UInt32.t{v l <= max_plain_len /\ safelen i (v l)}
@@ -144,7 +149,7 @@ let ok_plain_len_32 (i:I.id) = l:UInt32.t{v l <= max_plain_len /\ safelen i (v l
 (*** The main stateful API ***)
 
 (** Allocating a writer **)
-val gen (i:I.id) (rgn:eternal_region)
+val gen (i:I.id) (rgn:eternal_region)  //CF/AR: pass in the parent region and allocate yourself so that freshness is guaranteed, else caller has to guarantee freshness for it to be usable. This is what is done for all nesting allocations so far, so for uniformity reasons too.
   :ST (aead_state i I.Writer)
       (requires (fun h -> True))
       (ensures  (fun h0 s h1 ->
@@ -272,7 +277,7 @@ val decrypt
   (ensures (fun h0 verified h1 ->
             aead_invariant st h1 /\
             enc_dec_liveness st aad plain cipher_tag h1 /\
-            P.modifies (P.loc_union (read_footprint st)
+            P.modifies (P.loc_union (read_footprint st)  //CF/AR: Call it shared foorprint?
 	                            (loc_of_buffer (Plain.as_buffer plain))) h0 h1 /\
             (safeId i /\ verified ==> entry_for_nonce n st h1 == Some (entry_of n aad plain cipher_tag h1))))
 
