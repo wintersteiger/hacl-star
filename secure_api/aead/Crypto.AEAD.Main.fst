@@ -4,61 +4,105 @@ module ST = FStar.HyperStack.ST
 
 open FStar.HyperStack.All
 open FStar.UInt32
-open Crypto.AEAD
+open FStar.HyperStack.ST
 module HH = FStar.HyperHeap
 module HS = FStar.HyperStack
 module I = Crypto.Indexing
-module PRF = Crypto.Symmetric.PRF
+module Plain = Crypto.Plain
 
-let keylen i = PRF.keylen i
-let statelen i = PRF.statelen i
-let entry i = Invariant.aead_entry i
-let mk_entry #i n ad #l p c = Invariant.AEADEntry n ad l p c
-let entry_injective (#i:I.id)
-                    (n:nonce i) (n':nonce i)
-                    (ad:adata) (ad':adata)
-                    (#l:Plain.plainLen) (#l':Plain.plainLen)
-                    (p:Plain.plain i l) (p':Plain.plain i l')
-                    (c:cipher i (Seq.length (Plain.as_bytes p))) (c':cipher i (Seq.length (Plain.as_bytes p')))
-  : Lemma (let e  = mk_entry n ad p c in
-           let e' = mk_entry n' ad' p' c' in
-           (e == e' <==> (n == n' /\ ad == ad' /\ l == l' /\ p == p' /\ c == c')))
-  = ()
-let nonce_of_entry (#i:_) (e:entry i) = Crypto.AEAD.Invariant.AEADEntry?.nonce e
+module Bytes = Crypto.Symmetric.Bytes
 
-let aead_state i rw = Invariant.aead_state i rw
-let log_region #i #rw st = Invariant.AEADState?.log_region st
-let prf_region #i #rw st = Invariant.AEADState?.log_region st //TODO: FIXME!!
-let log #i #rw s h = HS.sel h (Invariant.st_ilog s)
+module P = FStar.Pointer
 
-let footprint #i #rw s = TSet.empty //TODO: FIXME!
-let hh_modifies_t (_:FStar.TSet.set HH.rid) (h0:HS.mem) (h1:HS.mem) = True //TODO: FIXME!
+//open the implementation files of AEAD
+open Crypto.AEAD
+open Crypto.AEAD.Invariant
+open Crypto.AEAD.Encrypt
+open Crypto.AEAD.Decrypt
 
-let safelen (i:I.id) (n:nat) = Invariant.safelen i n (Invariant.otp_offset i)
-let invariant #i #rw s h = Invariant.inv s h
-let frame_invariant #i #rw st h0 h1 = admit() //TODO: FIXME!
+let keylen i =
+  let aux = function
+    | I.AES128   -> 16ul
+    | I.AES256   -> 32ul
+    | I.CHACHA20 -> 32ul
+  in
+  aux (I.cipherAlg_of_id i)
 
-let gen i prf_rgn log_rgn =
-    assume false;
-    Crypto.AEAD.gen i log_rgn
+let statelen i =
+  let aux = function
+    | I.AES128   -> 432ul // 256 + 176
+    | I.AES256   -> 496ul // 256 + 240
+    | I.CHACHA20 -> 32ul
+  in
+  aux (I.cipherAlg_of_id i)
 
-let genReader #i st =
-    assume false;
-    Crypto.AEAD.genReader #i st
+let entry i = aead_entry i
 
-let coerce i rgn key =
-    assume false;
-    Crypto.AEAD.coerce i rgn key
+let mk_entry #i nonce ad #l p c = AEADEntry nonce ad l p c
 
-let leak #i st
-  = assume false;
-    Crypto.AEAD.leak #i st
+let entry_injective #i n n' ad ad' #l #l' p p' c c' = ()
+
+let nonce_of_entry #i e = AEADEntry?.nonce e
+
+let plain_of_entry #i e = (| AEADEntry?.l e, AEADEntry?.p e |)
+
+let aead_state i rw = aead_state i rw
+
+let aead_region #i #rw st = AEADState?.log_region st
+
+(* AR: keylen and statelen should be in the fsti, else how are the clients supposed to use them *)
+(* AR: also, they should be defined once in some file, and other modules in AEAD should use it from there *)
 
 
-let encrypt i st n aadlen aad plainlen plain cipher_tag
-  = assume false;
-    Crypto.AEAD.encrypt i st n aadlen aad plainlen plain cipher_tag
+// let keylen i = PRF.keylen i
+// let statelen i = PRF.statelen i
+// let entry i = Invariant.aead_entry i
+// let mk_entry #i n ad #l p c = Invariant.AEADEntry n ad l p c
+// let entry_injective (#i:I.id)
+//                     (n:nonce i) (n':nonce i)
+//                     (ad:adata) (ad':adata)
+//                     (#l:Plain.plainLen) (#l':Plain.plainLen)
+//                     (p:Plain.plain i l) (p':Plain.plain i l')
+//                     (c:cipher i (Seq.length (Plain.as_bytes p))) (c':cipher i (Seq.length (Plain.as_bytes p')))
+//   : Lemma (let e  = mk_entry n ad p c in
+//            let e' = mk_entry n' ad' p' c' in
+//            (e == e' <==> (n == n' /\ ad == ad' /\ l == l' /\ p == p' /\ c == c')))
+//   = ()
+// let nonce_of_entry (#i:_) (e:entry i) = Crypto.AEAD.Invariant.AEADEntry?.nonce e
 
-let decrypt i st n aadlen aad plainlen plain cipher_tag
-  = assume false;
-    Crypto.AEAD.Decrypt.decrypt i st n aadlen aad plainlen plain cipher_tag
+// let aead_state i rw = Invariant.aead_state i rw
+// let log_region #i #rw st = Invariant.AEADState?.log_region st
+// let prf_region #i #rw st = Invariant.AEADState?.log_region st //TODO: FIXME!!
+// let log #i #rw s h = HS.sel h (Invariant.st_ilog s)
+
+// let footprint #i #rw s = TSet.empty //TODO: FIXME!
+// let hh_modifies_t (_:FStar.TSet.set HH.rid) (h0:HS.mem) (h1:HS.mem) = True //TODO: FIXME!
+
+// let safelen (i:I.id) (n:nat) = Invariant.safelen i n (Invariant.otp_offset i)
+// let invariant #i #rw s h = Invariant.inv s h
+// let frame_invariant #i #rw st h0 h1 = admit() //TODO: FIXME!
+
+// let gen i prf_rgn log_rgn =
+//     assume false;
+//     Crypto.AEAD.gen i log_rgn
+
+// let genReader #i st =
+//     assume false;
+//     Crypto.AEAD.genReader #i st
+
+// let coerce i rgn key =
+//     assume false;
+//     Crypto.AEAD.coerce i rgn key
+
+// let leak #i st
+//   = assume false;
+//     Crypto.AEAD.leak #i st
+
+
+// let encrypt i st n aadlen aad plainlen plain cipher_tag
+//   = assume false;
+//     Crypto.AEAD.encrypt i st n aadlen aad plainlen plain cipher_tag
+
+// let decrypt i st n aadlen aad plainlen plain cipher_tag
+//   = assume false;
+//     Crypto.AEAD.Decrypt.decrypt i st n aadlen aad plainlen plain cipher_tag

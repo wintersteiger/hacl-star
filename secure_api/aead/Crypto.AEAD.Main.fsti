@@ -36,9 +36,10 @@ let aadmax =
 type aadlen_32 = l:UInt32.t {l <=^ aadmax}
 
 (* maximum plain length with which clients can call encrypt/decrypt *)
-val max_plain_len :nat
+(* AR: there is currently no bound in Crypto.Plain *)
+//val max_plain_len :nat
 
-type plainLen = n:Plain.plainLen{n <= max_plain_len}
+type plainLen = n:Plain.plainLen //{n <= max_plain_len}
 
 val keylen  :I.id -> UInt32.t
 val statelen:I.id -> UInt32.t
