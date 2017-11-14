@@ -49,19 +49,11 @@ type cipher (i:I.id) (l:nat) = lbytes (l + v taglen)
 val entry :i:I.id -> Type0
 let nonce (i:I.id) = iv (I.cipherAlg_of_id i)
 
-val mk_entry (#i:I.id):
-  nonce:nonce i ->
-  ad:adata ->
-  #l:plainLen ->
-  p:Plain.plain i l ->
-  c:cipher i l ->
-  entry i
+val mk_entry (#i:I.id): nonce:nonce i -> ad:adata -> #l:plainLen -> p:Plain.plain i l -> c:cipher i l -> entry i
 
 val entry_injective (#i:I.id)
-                    (n:nonce i) (n':nonce i)
-                    (ad:adata) (ad':adata)
-                    (#l:plainLen) (#l':plainLen)
-                    (p:Plain.plain i l) (p':Plain.plain i l')
+                    (n:nonce i) (n':nonce i) (ad:adata) (ad':adata)
+                    (#l:plainLen) (#l':plainLen) (p:Plain.plain i l) (p':Plain.plain i l')
                     (c:cipher i l) (c':cipher i l')
   :Lemma (let e  = mk_entry n ad p c in
           let e' = mk_entry n' ad' p' c' in
@@ -74,21 +66,29 @@ let safeMac (i:I.id) = Flag.safeHS i && Flag.mac1 i
 let safeId  (i:I.id) = Flag.safeId i
 
 val aead_state : I.id -> I.rw -> Type0
-val aead_region: #i:_ -> #rw:_ -> aead_state i rw -> eternal_region //CF/AR: GTot?
+
+(* AR: CF suggested if this could be GTot *)
+val aead_region: #i:_ -> #rw:_ -> aead_state i rw -> GTot eternal_region
 
 (** setting up footprints **)
 
-//CF/AR: reader_footprint and writer_footprint
-//writer footprint is mod_set of aead_region: CF/AR: dynamic allocation of subregions?
-let write_footprint (#i:_) (#rw:_) (st:aead_state i rw) :GTot P.loc
+(*
+ * writer footprint is mod_set of aead_region
+ * CF/AR: dynamic allocation of subregions?
+ * this talks about all subregions, irrespective of whether they are allocated/alive
+ *)
+let writer_footprint (#i:_) (#rw:_) (st:aead_state i rw) :GTot P.loc
   = P.loc_regions (HH.mod_set (Set.singleton (aead_region st)))
 
-//reader footprint is abstract
-val read_footprint (#i:_) (#rw:_) (st:aead_state i rw) :GTot P.loc
+(*
+ * shared reader writer footprint is abstract
+ * it is the PRF table ref, which we don't want to expose to the clients
+ *)
+val shared_rw_footprint (#i:_) (#rw:_) (st:aead_state i rw) :GTot P.loc
 
-//writer footprint inclues reader footprint
-val lemma_write_fp_inclues_read_fp (#i:_) (#rw:_) (st:aead_state i rw)
-  :Lemma (requires True) (ensures (P.loc_includes (write_footprint st) (read_footprint st)))
+//writer footprint includes shared_rw_footprint
+val lemma_writer_fp_inclues_reader_fp (#i:_) (#rw:_) (st:aead_state i rw)
+  :Lemma (requires True) (ensures (P.loc_includes (writer_footprint st) (shared_rw_footprint st)))
 
 (** aead log, monotonicity, and framing w.r.t. read footprint **)
 
@@ -97,22 +97,7 @@ val log: #i:_ -> #rw:_ -> s:aead_state i rw{safeMac i} -> HS.mem -> GTot (Seq.se
 (*****)
 let is_prefix_of (#a:Type) (s1:Seq.seq a) (s2:Seq.seq a) :Type0
   = Seq.length s1 <= Seq.length s2 /\
-    (forall (i:nat). i < Seq.length s1 ==> Seq.index s1 i == Seq.index s2 i)
-
-let is_subseq_of (#a:Type) (s1:Seq.seq a) (s2:Seq.seq a) :Type0
-  = exists (i:nat) (j:nat). i <= j /\ j <= Seq.length s2 /\ Seq.slice s2 i j == s1
-
-val seq_map:
-  #a:Type -> #b:Type -> f:(a -> b) -> s:Seq.seq a
-  -> (r:Seq.seq b{Seq.length s = Seq.length r /\
-                 (forall (i:nat).{:pattern (Seq.index r i)} i < Seq.length s ==> Seq.index r i == f (Seq.index s i))})
-
-val lemma_seq_map_commutes_with_prefix:
-  #a:Type -> #b:Type -> f:(a -> b) -> s1:Seq.seq a -> s2:Seq.seq a
-  -> Lemma (requires (s1 `is_prefix_of` s2))
-          (ensures  (seq_map f s1 `is_prefix_of` seq_map f s2))
-	  [SMTPat (s1 `is_prefix_of` s2); SMTPat (seq_map f s1); SMTPat (seq_map f s2)]
-
+    (forall (i:nat).{:pattern (Seq.index s1 i) \/ (Seq.index s2 i)} i < Seq.length s1 ==> Seq.index s1 i == Seq.index s2 i)  //AR: note the pattern
 (*****)
 
 val log_prefix (#i:_) (#rw:_) (s:aead_state i rw{safeMac i}) (es:Seq.seq (entry i)) :Type0
@@ -126,21 +111,25 @@ val recall_log (#i:_) (#rw:_) (s:aead_state i rw{safeMac i}) (es:Seq.seq (entry 
            (ensures  (fun h0 _ h1 -> h0 == h1 /\ es `is_prefix_of` (log s h0)))
 
 //reader does not write to the AEAD log
-val lemma_frame_log_read_footprint (#i:_) (#rw:_) (st:aead_state i rw{safeMac i}) (h0 h1:HS.mem)
-  :Lemma (requires (P.modifies (read_footprint st) h0 h1))
+val lemma_frame_log_shared_rw_footprint (#i:_) (#rw:_) (st:aead_state i rw{safeMac i}) (h0 h1:HS.mem)
+  :Lemma (requires (P.modifies (shared_rw_footprint st) h0 h1))
          (ensures  (log st h0 == log st h1))
 
 //abstract invariant
 val aead_invariant: #i:_ -> #rw:_ -> aead_state i rw -> HS.mem -> Type0
 
-//invariant only depends on the footprint
-val lemma_frame_invariant_footprint (#i:_) (#rw:_) (st:aead_state i rw) (h0 h1:HS.mem)
-  :Lemma (requires (aead_invariant st h0 /\ P.unchanged (write_footprint st) h0 h1))
-         (ensures  (aead_invariant st h1))
+(*
+ * AR: move to Pointers
+ *)
+val unchanged (loc:P.loc) (h0 h1:HS.mem) :Type0
 
-//CF/AR: Same thing as above for log: log st h0 == log st h1
-
-//CF/AR: In StreamAE, each reader has local state (the read counter) and their own region
+(*
+ * invariant only depends on the footprint
+ * adding log invariance per CF's suggestion
+ *)
+val lemma_frame_invariant_and_log_writer_footprint (#i:_) (#rw:_) (st:aead_state i rw) (h0 h1:HS.mem)
+  :Lemma (requires (aead_invariant st h0 /\ unchanged (writer_footprint st) h0 h1))
+         (ensures  (aead_invariant st h1 /\ (safeMac i ==> log st h0 == log st h1)))
 
 //leaving this abstract for now; but it should imply Crypto.AEAD.Invariant.safelen i len (otp_offset i)
 val safelen: I.id -> plainLen -> bool  //AR: safelen is a plainLen?
@@ -149,14 +138,23 @@ let ok_plain_len_32 (i:I.id) = l:UInt32.t{v l <= max_plain_len /\ safelen i (v l
 (*** The main stateful API ***)
 
 (** Allocating a writer **)
-val gen (i:I.id) (rgn:eternal_region)  //CF/AR: pass in the parent region and allocate yourself so that freshness is guaranteed, else caller has to guarantee freshness for it to be usable. This is what is done for all nesting allocations so far, so for uniformity reasons too.
+(*
+ * CF/AR: pass in the parent region and allocate yourself so that
+ * freshness is guaranteed, else caller has to guarantee freshness for
+ * it to be usable. This is what is done for all nesting allocations so
+ * far, so for uniformity reasons too.
+ *)
+val gen (i:I.id) (parent_rgn:eternal_region)
   :ST (aead_state i I.Writer)
       (requires (fun h -> True))
       (ensures  (fun h0 s h1 ->
-                 aead_region s == rgn                       /\  //aead region is the input region
-		 P.modifies (write_footprint s) h0 h1       /\  //only modifes the rgn transitiviely
-                 (safeMac i ==> log s h1 == Seq.createEmpty) /\  //log is empty initially
-                 aead_invariant s h1))                          //invariant holds
+                 let r = aead_region s in
+                 (r <> HH.root                                 /\  //seems overhead ...
+		  HH.parent r == parent_rgn                   /\  //aead region is a child of the input region
+		  stronger_fresh_region (aead_region s) h0 h1 /\  //aead region is fresh
+		  P.modifies (writer_footprint s) h0 h1       /\  //only modifes the rgn transitiviely
+                  (safeMac i ==> log s h1 == Seq.createEmpty) /\  //log is empty initially
+                  aead_invariant s h1)))                         //invariant holds
 
 (** building a reader from a writer **)
 
@@ -166,7 +164,7 @@ val genReader (#i: I.id) (wr: aead_state i I.Writer)
   (ensures  (fun h0 rd h1 ->
              h0 == h1                               /\  //AR: check
              aead_region rd == aead_region wr       /\
-	     read_footprint rd == read_footprint wr))
+	     shared_rw_footprint rd == shared_rw_footprint wr))
 
 (** [coerce]: only needed for modeling the adversary *)
 val coerce (i: I.id) (rgn: eternal_region) (key: lbuffer (v (keylen i)))
@@ -253,7 +251,7 @@ val encrypt
              aead_invariant st h /\
              (safeMac i ==> fresh_nonce n st h)))
   (ensures (fun h0 _ h1 ->
-            P.modifies (P.loc_union (write_footprint st)
+            P.modifies (P.loc_union (writer_footprint st)
 	                            (loc_of_buffer cipher_tag)) h0 h1 /\
             enc_dec_liveness st aad plain cipher_tag h1 /\
             aead_invariant st h1 /\
@@ -277,7 +275,7 @@ val decrypt
   (ensures (fun h0 verified h1 ->
             aead_invariant st h1 /\
             enc_dec_liveness st aad plain cipher_tag h1 /\
-            P.modifies (P.loc_union (read_footprint st)  //CF/AR: Call it shared foorprint?
+            P.modifies (P.loc_union (shared_rw_footprint st)
 	                            (loc_of_buffer (Plain.as_buffer plain))) h0 h1 /\
             (safeId i /\ verified ==> entry_for_nonce n st h1 == Some (entry_of n aad plain cipher_tag h1))))
 
