@@ -20,6 +20,12 @@ open Crypto.AEAD.Invariant
 open Crypto.AEAD.Encrypt
 open Crypto.AEAD.Decrypt
 
+open Crypto.Symmetric.PRF
+module PRF = Crypto.Symmetric.PRF
+
+(* AR: keylen and statelen should be in the fsti, else how are the clients supposed to use them *)
+(* AR: also, they should be defined once in some file, and other modules in AEAD should use it from there *)
+
 let keylen i =
   let aux = function
     | I.AES128   -> 16ul
@@ -50,9 +56,23 @@ let aead_state i rw = aead_state i rw
 
 let aead_region #i #rw st = AEADState?.log_region st
 
-(* AR: keylen and statelen should be in the fsti, else how are the clients supposed to use them *)
-(* AR: also, they should be defined once in some file, and other modules in AEAD should use it from there *)
+let shared_rw_footprint #i #rw st =
+  let fp = P.loc_regions (Set.singleton st.prf.mac_rgn) in
+  if Flag.prf i then P.loc_union fp (P.loc_addresses st.prf.mac_rgn (Set.singleton (HS.as_addr (PRF.itable i st.prf))))
+  else fp
 
+let lemma_writer_fp_inclues_reader_fp #i #rw st = ()
+
+let log #i #rw st h = HS.sel h (st_ilog st)
+
+(* AR: admitting the monotonicity of the AEAD log, since needs changes in the underlying files *)
+let log_prefix #i #rw st es = admit ()
+
+let witness_log #i #rw st = admit ()
+
+let recall_log #i #rw st es = admit ()
+
+let lemma_frame_log_shared_rw_footprint #i #rw st h0 h1 = ()
 
 // let keylen i = PRF.keylen i
 // let statelen i = PRF.statelen i
