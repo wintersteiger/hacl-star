@@ -134,7 +134,7 @@ val lemma_frame_invariant_and_log_writer_footprint (#i:_) (#rw:_) (st:aead_state
 
 //leaving this abstract for now; but it should imply Crypto.AEAD.Invariant.safelen i len (otp_offset i)
 val safelen: I.id -> plainLen -> bool  //AR: safelen is a plainLen?
-let ok_plain_len_32 (i:I.id) = l:UInt32.t{v l <= max_plain_len /\ safelen i (v l)}
+let ok_plain_len_32 (i:I.id) = l:UInt32.t{safelen i (v l)}
 
 (*** The main stateful API ***)
 

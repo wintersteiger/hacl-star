@@ -72,7 +72,18 @@ let witness_log #i #rw st = admit ()
 
 let recall_log #i #rw st es = admit ()
 
-let lemma_frame_log_shared_rw_footprint #i #rw st h0 h1 = ()
+(* AR: the disjointness lemmas in Pointer don't seem to be taking into account heterogenous locs like the shared_fp *)
+(* Also, the modifies lemma that we want to trigger might need some liveness conditions in the precondition *)
+let lemma_frame_log_shared_rw_footprint #i #rw st h0 h1 = admit ()
+
+let aead_invariant #i #rw st h = Crypto.AEAD.Invariant.inv st h
+
+(* AR: following two need notion of unchanged in the loc *)
+let unchanged loc h0 h1 = admit ()
+
+let lemma_frame_invariant_and_log_writer_footprint #i #rw st h0 h1 = admit ()
+
+
 
 // let keylen i = PRF.keylen i
 // let statelen i = PRF.statelen i
