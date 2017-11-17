@@ -141,6 +141,18 @@ val gen (i:I.id) (aead_parent_rgn:eternal_region) (rw_shared_parent_region:etern
 		 aead_invariant s h1                                         /\
                  (safeMac i ==> log s h1 == Seq.createEmpty)))
 
+let gen1 (i:I.id) (parent_rgn:eternal_region)
+  :ST (aead_state i I.Writer) (requires (fun h -> True))
+      (ensures  (fun h0 s h1 ->
+                 fresh (aead_region s) h0 h1                                 /\
+		 fresh (rw_shared_region s) h0 h1                            /\
+                 parent_rgn `is_parent_of` (aead_region s)                   /\
+		 parent_rgn `is_parent_of` (rw_shared_region s)              /\
+		 P.modifies (writer_footprint s) h0 h1                       /\
+		 aead_invariant s h1                                         /\
+                 (safeMac i ==> log s h1 == Seq.createEmpty)))
+  = gen i parent_rgn parent_rgn
+
 (* building a reader from a writer *)
 val genReader (#i: I.id) (st: aead_state i I.Writer)
  : ST (aead_state i I.Reader)
