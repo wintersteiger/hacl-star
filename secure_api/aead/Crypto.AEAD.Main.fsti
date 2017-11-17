@@ -112,7 +112,24 @@ val lemma_frame_invariant (#i:_) (#rw:_) (st:aead_state i rw) (fp:P.loc) (h0 h1:
   :Lemma (requires (aead_invariant st h0 /\ P.loc_disjoint (writer_footprint st) fp /\ P.modifies fp h0 h1))
          (ensures  (aead_invariant st h1))
 
+(* Build StraemAE and StAE on top of it *)
+
+(* Can StreamAE log be just a view of AEAD log? *)
+
+(* Switch from buffers to bytes -- right now it is in AEADProvider, instead do it in ... may be StreamAE? *)
+
+(* Defining low-level variant of StreamAE in secure_api/, should exercise the AEAD interface *)
+
+(* StraemAE has local state for both the reader and the writer *)
+
 (* allocate a writer *)
+(* CF: use an abstract interface instead of I.id *)
+(* CF: we want I to become ghost, IPkg for I.id *) //--we cannot use I to get to the algorithms, so extra arg. for algorithm, I to algorithm will be ghost
+(* CF: new model for safety, instead of safeMac something else *)
+(* safe I = honest i /\ ideal, using interface of I. ideal is the global flag *)
+(* honest i is a witnessed property, an abstract predicate. gen will call "getHonest i", a stateful function that returns a boolean *)
+(* getHonest gives a witness of honesty as a witnessed predicate *)
+(* Style: cache the honesty of I in AEAD state *)
 val gen (i:I.id) (aead_parent_rgn:eternal_region) (rw_shared_parent_region:eternal_region)
   :ST (aead_state i I.Writer) (requires (fun h -> True))
       (ensures  (fun h0 s h1 ->
@@ -120,7 +137,7 @@ val gen (i:I.id) (aead_parent_rgn:eternal_region) (rw_shared_parent_region:etern
 		 fresh (rw_shared_region s) h0 h1                            /\
                  aead_parent_rgn `is_parent_of` (aead_region s)              /\
 		 rw_shared_parent_region `is_parent_of` (rw_shared_region s) /\
-		 P.modifies (writer_footprint s) h0 h1                       /\
+		 P.modifies (writer_footprint s) h0 h1                       /\  //CF/AR: can we claim we modify nothing?
 		 aead_invariant s h1                                         /\
                  (safeMac i ==> log s h1 == Seq.createEmpty)))
 

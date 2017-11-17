@@ -130,7 +130,8 @@ let aead_log_as_ref (#r:rgn) (#i:id) (x:aead_log r i{safeMac i})
 
 (*+ aead_state: the type of aead keys, also encapsulating their ideal state *)
 noeq type aead_state (i:id) (rw:rw) =
-  | AEADState:
+  | AEADState:  //CF/AR: two booleans: one for safety and one for safeMac with refinement recording honesty and flags
+                //or single flag for model which if on has two booleans and the log -- easier for extraction
       #log_region: rgn -> // this is the *writer* region; the reader allocates nothing
       log: aead_log log_region i ->
       prf: PRF.state i {prf.rgn == log_region /\ //TODO: PRF state will move to the TLS region
