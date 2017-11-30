@@ -181,7 +181,7 @@ int quic_derive_plaintext_secrets(quic_secret *client_cleartext, quic_secret *se
    printf("Extracted secret: "); dump(s0.secret, 32);
   #endif
 
-  if(!quic_crypto_tls_label(s0.hash, info, &info_len, "QUIC client cleartext Secret", 32))
+  if(!quic_crypto_tls_label(s0.hash, info, &info_len, "QUIC client handshake secret", 32))
     return 0;
 
   client_cleartext->hash = s0.hash;
@@ -190,19 +190,19 @@ int quic_derive_plaintext_secrets(quic_secret *client_cleartext, quic_secret *se
     return 0;
 
   #if DEBUG
-   printf("Client cleartext secret: "); dump(client_cleartext->secret, 32);
+   printf("Client handshake secret: "); dump(client_cleartext->secret, 32);
   #endif
 
   server_cleartext->hash = s0.hash;
   server_cleartext->ae = s0.ae;
-  if(!quic_crypto_tls_label(s0.hash, info, &info_len, "QUIC server cleartext Secret", 32))
+  if(!quic_crypto_tls_label(s0.hash, info, &info_len, "QUIC server handshake secret", 32))
     return 0;
 
   if(!quic_crypto_hkdf_expand(s0.hash, server_cleartext->secret, 32, s0.secret, 32, info, info_len))
     return 0;
 
   #if DEBUG
-   printf("Server cleartext secret: "); dump(server_cleartext->secret, 32);
+   printf("Server handshake secret: "); dump(server_cleartext->secret, 32);
   #endif
 
   return 1;
