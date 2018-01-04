@@ -241,7 +241,7 @@ int quic_crypto_derive_key(/*out*/quic_key **k, const quic_secret *secret)
    printf("IV: "); dump(key->static_iv, 12);
 #endif
 
-  key->st = Crypto_AEAD_coerce(key->id, (uint8_t*)dkey);
+  key->st = Crypto_AEAD_coerce(key->id, 0, (uint8_t*)dkey);
   return 1;
 }
 
@@ -298,8 +298,11 @@ int quic_crypto_decrypt(quic_key *key, char *plain, uint64_t sn, const char *ad,
 int quic_crypto_free_key(quic_key *key)
 {
   // ADL: the PRF stats is allocated with Buffer.screate
+  // ADL: the PRF sk0 is also allocated with screate
   // TODO switch to caller allocated style in Crypto.AEAD
   if(key && key->st.prf.key)
     free(key->st.prf.key);
+  if(key && key->st.ak.tag == FStar_Pervasives_Native_Some)
+    free(key->st.ak.case_Some.v);
   if(key) free(key);
 }
