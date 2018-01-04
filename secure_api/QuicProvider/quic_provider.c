@@ -299,10 +299,13 @@ int quic_crypto_free_key(quic_key *key)
 {
   // ADL: the PRF stats is allocated with Buffer.screate
   // ADL: the PRF sk0 is also allocated with screate
-  // TODO switch to caller allocated style in Crypto.AEAD
-  if(key && key->st.prf.key)
+  if(key)
+  {
     free(key->st.prf.key);
-  if(key && key->st.ak.tag == FStar_Pervasives_Native_Some)
-    free(key->st.ak.case_Some.v);
-  if(key) free(key);
+    if(key->st.ak.tag == FStar_Pervasives_Native_Some)
+    {
+      free(key->st.ak.case_Some.v);
+    }
+    free(key);
+  }
 }
