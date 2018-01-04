@@ -161,7 +161,7 @@ int quic_crypto_tls_derive_secret(quic_secret *derived, const quic_secret *secre
   return 1;
 }
 
-int quic_derive_plaintext_secrets(quic_secret *client_cleartext, quic_secret *server_cleartext, const char *con_id, const char *salt)
+int quic_crypto_derive_plaintext_secrets(quic_secret *client_cleartext, quic_secret *server_cleartext, const char *con_id, const char *salt)
 {
   quic_secret s0;
   s0.hash = TLS_hash_SHA256;
