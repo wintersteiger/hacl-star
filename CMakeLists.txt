@@ -25,6 +25,7 @@ set(SOURCE_FILES_VERIFIED
    snapshots/hacl-c/Hacl_SHA2_512.c
    snapshots/hacl-c/Hacl_HMAC_SHA2_256.c
    snapshots/hacl-c/Hacl_Salsa20.c
+   snapshots/hacl-c/Hacl_RSAPSS.c
    snapshots/hacl-c/NaCl.c)
 
 # Experimental Files
