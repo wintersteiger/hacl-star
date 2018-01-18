@@ -12,6 +12,57 @@
 /* #include <openssl/rsa.h> */
 
 bool
+gen_sgnt(
+  uint32_t modBits,
+  uint8_t *n1,
+  uint32_t pkeyBits,
+  uint8_t *e,
+  uint32_t skeyBits,
+  uint8_t *d,
+  uint32_t msgLen,
+  uint8_t *msg,
+  uint32_t saltLen,
+  uint8_t *salt,
+  uint8_t *sgnt
+)
+{
+  uint32_t nLen = (modBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
+  uint32_t eLen = (pkeyBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
+  uint32_t dLen = (skeyBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
+  uint32_t pkeyLen = nLen + eLen;
+  uint32_t skeyLen = pkeyLen + dLen;
+  KRML_CHECK_SIZE((uint64_t)0U, skeyLen);
+  uint64_t skey[skeyLen];
+  memset(skey, 0U, skeyLen * sizeof skey[0U]);
+  uint64_t *nNat = skey;
+  uint64_t *eNat = skey + nLen;
+  uint64_t *dNat = skey + nLen + eLen;
+  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((modBits - (uint32_t)1U)
+      / (uint32_t)8U
+      + (uint32_t)1U),
+    (modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
+    n1,
+    nNat);
+  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((pkeyBits - (uint32_t)1U)
+      / (uint32_t)8U
+      + (uint32_t)1U),
+    (pkeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
+    e,
+    eNat);
+  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((skeyBits - (uint32_t)1U)
+      / (uint32_t)8U
+      + (uint32_t)1U),
+    (skeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
+    d,
+    dNat);
+  uint64_t *pkey = skey;
+  uint32_t nTLen = (modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
+  KRML_CHECK_SIZE((uint8_t)0U, nTLen);
+  Hacl_RSAPSS_rsa_pss_sign(modBits, pkeyBits, skeyBits, skey, saltLen, salt, msgLen, msg, sgnt);
+  return 0;
+}
+
+bool
 ctest(
   uint32_t modBits,
   uint8_t *n1,
@@ -59,19 +110,16 @@ ctest(
   uint32_t nTLen = (modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
   KRML_CHECK_SIZE((uint8_t)0U, nTLen);
   Hacl_RSAPSS_rsa_pss_sign(modBits, pkeyBits, skeyBits, skey, saltLen, salt, msgLen, msg, sgnt);
-  /* bool check_sgnt = Hacl_Impl_Lib_eq_b(FStar_UInt32_v(nTLen), nTLen, sgnt, sgnt_expected); *\/ */
-  /* bool */
-  /* verify_sgnt = Hacl_RSAPSS_rsa_pss_verify(modBits, pkeyBits, pkey, saltLen, sgnt, msgLen, msg); */
-  /* bool res = check_sgnt && verify_sgnt; */
+  //bool verify_sgnt = Hacl_RSAPSS_rsa_pss_verify(modBits, pkeyBits, pkey, saltLen, sgnt, msgLen, msg);
   return 0;
 }
 
-int perf_openssl(uint8_t* msg, uint32_t msg_len, uint8_t* kN, const uint32_t kN_len, uint8_t* kE, uint32_t kE_len, uint8_t* kD, uint32_t kD_len){
+int perf_openssl(uint8_t* msg, uint32_t msg_len, uint8_t* kN, const uint32_t kN_len, uint8_t* kE, uint32_t kE_len, uint8_t* kD, uint32_t kD_len, uint8_t* pSignature){
     int status = 0;
     unsigned char pDigest[32];
     unsigned char EM[kN_len];
-    unsigned char pSignature[kN_len];
-
+    unsigned char pDecrypted[kN_len];
+    
     RSA* pRsaKey = RSA_new();
     BIGNUM *n = BN_new();
     BIGNUM *e = BN_new();
@@ -88,14 +136,14 @@ int perf_openssl(uint8_t* msg, uint32_t msg_len, uint8_t* kN, const uint32_t kN_
 
     /* compute the PSS padded data */
     status = RSA_padding_add_PKCS1_PSS(pRsaKey, EM, pDigest, EVP_sha256(), 0 /* maximum salt length*/);
-    /* if (!status) */
-    /*   printf("RSA_padding_add_PKCS1_PSS failed with error %s\n", ERR_error_string(ERR_get_error(), NULL)); */
 
     /* perform digital signature */
-    status = RSA_private_encrypt(kN_len, EM, pSignature, pRsaKey, RSA_NO_PADDING);
-    /* if (status == -1) */
-    /*     printf("RSA_private_encrypt failed with error %s\n", ERR_error_string(ERR_get_error(), NULL)); */
+    status = RSA_private_encrypt(kN_len, EM, pSignature, pRsaKey, RSA_NO_PADDING);    
 
+    //status = RSA_public_decrypt(kN_len, pSignature, pDecrypted, pRsaKey, RSA_NO_PADDING);
+    /* verify the data */
+    //status = RSA_verify_PKCS1_PSS(pRsaKey, pDigest, EVP_sha256(), pDecrypted, -2 /* salt length recovered from signature*/);
+    return status;
 }
 
 
@@ -104,7 +152,7 @@ int main() {
 
   // Message
   const size_t msg_len = 256;
-  uint8_t msg[msg_len] = {0};
+  uint8_t msg[msg_len];
   random_bytes(msg,msg_len);
 
   /* for (int i = 0; i < msg_len; i++) { */
@@ -112,16 +160,11 @@ int main() {
   /* } */
   /* printf("\n"); */
 
-  // Salt
-  const size_t salt_len = 32;
-  uint8_t salt[salt_len] = {0};
-  random_bytes(salt,salt_len);
-
-  /* for (int i = 0; i < salt_len; i++) { */
-  /*   printf("%02X", salt[i]); */
-  /* } */
-  /* printf("\n"); */
-
+  // Sgnt
+  const size_t s_len = 256;
+  uint8_t sgnt[s_len];
+  //random_bytes(sgnt,s_len);
+  
   uint8_t
   n1[256U] =
     {
@@ -225,10 +268,12 @@ int main() {
 
   uint32_t modBits = (uint32_t)2048U;
   (void)((modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U);
+  
+  //uint8_t sgnt[256U];
+  //memset(sgnt, 0U, 256U * sizeof sgnt[0U]);
 
-  uint8_t sgnt[256U];
-  memset(sgnt, 0U, 256U * sizeof sgnt[0U]);
-
+  //gen_sgnt(modBits, n1, pkeyBits, e, skeyBits, d, msg_len, msg, 0, NULL, sgnt);
+  
   TestLib_cycles t0,t1,t2,t3;
   t0 = TestLib_cpucycles_begin();
   for (int i = 0; i < 100; i++){
@@ -238,20 +283,28 @@ int main() {
 
   TestLib_print_cycles_per_round(t0, t1, 100);
 
+  //uint8_t sgnt1[256U];
+  
+  //unsigned char pSignature[256U];
   t2 = TestLib_cpucycles_begin();
   for (int i = 0; i < 100; i++){
-    perf_openssl(msg, msg_len, n1, 256U, e, 3U, d, 256U);
-    //    int perf_openssl(uint8_t* msg, uint32_t msg_len, uint8_t* kN, const uint32_t kN_len, uint8_t* kE, uint32_t kE_len, uint8_t* kD, uint32_t kD_len)
+    perf_openssl(msg, msg_len, n1, 256U, e, 3U, d, 256U, sgnt);
   }
   t3 = TestLib_cpucycles_end();
 
   TestLib_print_cycles_per_round(t2, t3, 100);
 
-  /* printf("\nSignature: "); */
+  printf("\nSignature HACL: \n");
+  for (int i = 0; i < 256U; i++) {
+    printf("%02X", sgnt[i]);
+  }
+  printf(" \n");
+
+  /* printf("\nSignature OpenSSL: \n"); */
   /* for (int i = 0; i < 256U; i++) { */
-  /*   printf("%02X", sgnt[i]); */
+  /*   printf("%02X", sgnt1[i]); */
   /* } */
-  /* printf("\n"); */
+  /* printf(" \n"); */
 
   return 0;
 }

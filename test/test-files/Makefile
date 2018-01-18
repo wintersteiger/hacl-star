@@ -1,5 +1,5 @@
-OPENSSL_LIB=/usr/local/Cellar/openssl@1.1/1.1.0g/lib
-OPENSSL_INCLUDE=/usr/local/Cellar/openssl@1.1/1.1.0g/include
+OPENSSL_LIB=$(HACL_HOME)/other_providers/openssl
+OPENSSL_INCLUDE=$(HACL_HOME)/other_providers/openssl/include
 
 
 all:
