@@ -2,10 +2,11 @@ include ../../../Makefile.include
 
 # Override to get cross-compilation
 MARCH?=$(shell uname -m)
-UNAME?=$(shell uname | cut -c 1-6)
+UNAME?=$(shell uname)
+UNAME_SHORT=$(shell echo $(UNAME) | cut -c 1-6)
 SED?=$(shell which gsed >/dev/null 2>&1 && echo gsed || echo sed)
 
-ifeq ($(UNAME),CYGWIN)
+ifeq ($(UNAME_SHORT),CYGWIN)
   CC=$(MARCH)-w64-mingw32-gcc
   AR=x86_64-w64-mingw32-ar
 else ifeq ($(MARCH),i686)
