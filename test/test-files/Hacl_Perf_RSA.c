@@ -107,55 +107,6 @@ uint32_t pkeyBits = (uint32_t)24U;
 uint32_t modBits = (uint32_t)2048U;
 
 bool
-gen_sgnt(
-  uint32_t modBits,
-  uint8_t *n1,
-  uint32_t pkeyBits,
-  uint8_t *e,
-  uint32_t skeyBits,
-  uint8_t *d,
-  uint32_t msgLen,
-  uint8_t *msg,
-  uint32_t saltLen,
-  uint8_t *salt,
-  uint8_t *sgnt
-)
-{
-  uint32_t nLen = (modBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
-  uint32_t eLen = (pkeyBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
-  uint32_t dLen = (skeyBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
-  uint32_t pkeyLen = nLen + eLen;
-  uint32_t skeyLen = pkeyLen + dLen;
-  KRML_CHECK_SIZE((uint64_t)0U, skeyLen);
-  uint64_t skey[skeyLen];
-  memset(skey, 0U, skeyLen * sizeof skey[0U]);
-  uint64_t *nNat = skey;
-  uint64_t *eNat = skey + nLen;
-  uint64_t *dNat = skey + nLen + eLen;
-  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((modBits - (uint32_t)1U)
-      / (uint32_t)8U
-      + (uint32_t)1U),
-    (modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
-    n1,
-    nNat);
-  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((pkeyBits - (uint32_t)1U)
-      / (uint32_t)8U
-      + (uint32_t)1U),
-    (pkeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
-    e,
-    eNat);
-  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((skeyBits - (uint32_t)1U)
-      / (uint32_t)8U
-      + (uint32_t)1U),
-    (skeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
-    d,
-    dNat);
-  uint64_t *pkey = skey;
-  Hacl_RSAPSS_rsa_pss_sign(saltLen, msgLen, 64, modBits, pkeyBits, skeyBits, skey, saltLen, salt, msgLen, msg, sgnt);
-  return 1;
-}
-
-bool
 test_rsapss()
 {
   uint32_t nLen = (modBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
@@ -310,7 +261,7 @@ test_rsapss()
 }
 
 bool
-perf_hacl(
+hacl_sign(
   uint32_t modBits,
   uint8_t *n1,
   uint32_t pkeyBits,
@@ -356,17 +307,51 @@ perf_hacl(
   uint64_t *pkey = skey;
   
   Hacl_RSAPSS_rsa_pss_sign(saltLen, msgLen, 64, modBits, pkeyBits, skeyBits, skey, saltLen, salt, msgLen, msg, sgnt);
-  bool verify_sgnt = Hacl_RSAPSS_rsa_pss_verify(saltLen, msgLen, 64, modBits, pkeyBits, pkey, saltLen, sgnt, msgLen, msg);
+  //bool verify_sgnt = Hacl_RSAPSS_rsa_pss_verify(saltLen, msgLen, 64, modBits, pkeyBits, pkey, saltLen, sgnt, msgLen, msg);
   return 1;
 }
 
-int perf_openssl(uint8_t* msg, uint32_t msg_len, uint8_t* kN, const uint32_t kN_len, uint8_t* kE, uint32_t kE_len, uint8_t* kD, uint32_t kD_len, uint8_t* pSignature){
+bool
+hacl_verify(
+  uint32_t modBits,
+  uint8_t *n1,
+  uint32_t pkeyBits,
+  uint8_t *e,
+  uint32_t msgLen,
+  uint8_t *msg,
+  uint32_t saltLen,
+  uint8_t *salt,
+  uint8_t *sgnt
+)
+{
+  uint32_t nLen = (modBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
+  uint32_t eLen = (pkeyBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
+  uint32_t pkeyLen = nLen + eLen;
+  uint64_t pkey[pkeyLen];
+  memset(pkey, 0U, pkeyLen * sizeof pkey[0U]);
+  uint64_t *nNat = pkey;
+  uint64_t *eNat = pkey + nLen;
+  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((modBits - (uint32_t)1U)
+      / (uint32_t)8U
+      + (uint32_t)1U),
+    (modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
+    n1,
+    nNat);
+  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((pkeyBits - (uint32_t)1U)
+      / (uint32_t)8U
+      + (uint32_t)1U),
+    (pkeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
+    e,
+    eNat);
+ 
+  bool verify_sgnt = Hacl_RSAPSS_rsa_pss_verify(saltLen, msgLen, 64, modBits, pkeyBits, pkey, saltLen, sgnt, msgLen, msg);
+  return verify_sgnt;
+}
+
+int openssl_sign(uint8_t* msg, uint32_t msg_len, uint8_t* kN, const uint32_t kN_len, uint8_t* kE, uint32_t kE_len, uint8_t* kD, uint32_t kD_len, uint8_t* pSignature){
     int status = 0;
-    unsigned char pDigest[32];
-    unsigned char pDigest1[32];
-    
+    unsigned char pDigest[32];    
     unsigned char EM[kN_len];
-    unsigned char pDecrypted[kN_len];
     
     RSA* pRsaKey = RSA_new();
     BIGNUM *n = BN_new();
@@ -386,14 +371,31 @@ int perf_openssl(uint8_t* msg, uint32_t msg_len, uint8_t* kN, const uint32_t kN_
     status = RSA_padding_add_PKCS1_PSS(pRsaKey, EM, pDigest, EVP_sha256(), 0 /* maximum salt length*/);
 
     /* perform digital signature */
-    status = RSA_private_encrypt(kN_len, EM, pSignature, pRsaKey, RSA_NO_PADDING);    
+    status = RSA_private_encrypt(kN_len, EM, pSignature, pRsaKey, RSA_NO_PADDING);
+    return status;
+}
+
+int openssl_verify(uint8_t* msg, uint32_t msg_len, uint8_t* kN, const uint32_t kN_len, uint8_t* kE, uint32_t kE_len, uint8_t* pSignature){
+    int status = 0;
+    unsigned char pDigest[32];    
+    unsigned char EM[kN_len];
+    unsigned char pDecrypted[kN_len];
+    
+    RSA* pRsaKey = RSA_new();
+    BIGNUM *n = BN_new();
+    BIGNUM *e = BN_new();
+
+    BN_bin2bn(kN, kN_len, n);
+    BN_bin2bn(kE, kE_len, e);
+
+    RSA_set0_key(pRsaKey, n, e, NULL);
 
     /* hash the message */
-    SHA256(msg, msg_len, pDigest1);
+    SHA256(msg, msg_len, pDigest);
     
     status = RSA_public_decrypt(kN_len, pSignature, pDecrypted, pRsaKey, RSA_NO_PADDING);
     /* verify the data */
-    status = RSA_verify_PKCS1_PSS(pRsaKey, pDigest1, EVP_sha256(), pDecrypted, -2 /* salt length recovered from signature*/);
+    status = RSA_verify_PKCS1_PSS(pRsaKey, pDigest, EVP_sha256(), pDecrypted, -2 /* salt length recovered from signature*/);
     return status;
 }
 
@@ -407,12 +409,11 @@ int perf_rsapss() {
   uint8_t sgnt[256U];
   memset(sgnt, 0U, 256U * sizeof sgnt[0U]);
 
-  //gen_sgnt(modBits, n1, pkeyBits, e, skeyBits, d, msg_len, msg, 0, NULL, sgnt);
-
+  printf("\n SIGNATURE: \n");
   TestLib_cycles t0,t1,t2,t3;
   t0 = TestLib_cpucycles_begin();
   for (int i = 0; i < 100; i++){
-    perf_hacl(modBits, n1, pkeyBits, e, skeyBits, d, msg_len, msg, 0, NULL, sgnt);
+    hacl_sign(modBits, n1, pkeyBits, e, skeyBits, d, msg_len, msg, 0, NULL, sgnt);
   }
   t1 = TestLib_cpucycles_end();
 
@@ -423,7 +424,7 @@ int perf_rsapss() {
   
   t2 = TestLib_cpucycles_begin();
   for (int i = 0; i < 100; i++){
-    perf_openssl(msg, msg_len, n1, 256U, e, 3U, d, 256U, sgnt1);
+    openssl_sign(msg, msg_len, n1, 256U, e, 3U, d, 256U, sgnt1);
   }
   t3 = TestLib_cpucycles_end();
 
@@ -441,6 +442,24 @@ int perf_rsapss() {
   }
   printf(" \n");
 
+  printf("\n VERIFICATION: \n");
+
+  t0 = TestLib_cpucycles_begin();
+  for (int i = 0; i < 100; i++){
+    hacl_verify(modBits, n1, pkeyBits, e, msg_len, msg, 0, NULL, sgnt);
+  }
+  t1 = TestLib_cpucycles_end();
+
+  TestLib_print_cycles_per_round(t0, t1, 100);
+  
+  t2 = TestLib_cpucycles_begin();
+  for (int i = 0; i < 100; i++){
+    openssl_verify(msg, msg_len, n1, 256U, e, 3U, sgnt1);
+  }
+  t3 = TestLib_cpucycles_end();
+
+  TestLib_print_cycles_per_round(t2, t3, 100);
+  
   return 0;
 }
 
