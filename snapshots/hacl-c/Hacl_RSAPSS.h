@@ -17,27 +17,36 @@ K___uint64_t_uint64_t;
 
 extern void Hacl_Impl_MGF_hash_sha256(Prims_nat x0, uint8_t *x1, uint32_t x2, uint8_t *x3);
 
+typedef enum { Hacl_Impl_Multiplication_Positive, Hacl_Impl_Multiplication_Negative }
+Hacl_Impl_Multiplication_sign;
+
 void
 Hacl_RSAPSS_rsa_pss_sign(
+  Prims_nat sLen,
+  Prims_nat msgLen,
+  uint32_t iLen,
   uint32_t modBits,
   uint32_t eBits,
   uint32_t dBits,
   uint64_t *skey,
-  uint32_t sLen,
+  uint32_t ssLen,
   uint8_t *salt,
-  uint32_t msgLen,
+  uint32_t mmsgLen,
   uint8_t *msg,
   uint8_t *sgnt
 );
 
 bool
 Hacl_RSAPSS_rsa_pss_verify(
+  Prims_nat sLen,
+  Prims_nat msgLen,
+  uint32_t iLen,
   uint32_t modBits,
   uint32_t eBits,
   uint64_t *pkey,
-  uint32_t sLen,
+  uint32_t ssLen,
   uint8_t *sgnt,
-  uint32_t msgLen,
+  uint32_t mmsgLen,
   uint8_t *msg
 );
 #endif
