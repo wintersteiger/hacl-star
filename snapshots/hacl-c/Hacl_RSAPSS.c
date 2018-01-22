@@ -516,7 +516,7 @@ Hacl_Impl_Multiplication_karatsuba_(
   uint32_t aaLen2 = aaLen + aaLen;
   uint32_t aaLen0 = aaLen / (uint32_t)2U;
   Hacl_Impl_Lib_fill(Prims_op_Multiply((krml_checked_int_t)2, aLen), aaLen2, res, (uint64_t)0U);
-  if (aaLen < (uint32_t)100U)
+  if (aaLen < (uint32_t)9U)
     Hacl_Impl_Multiplication_bn_mul(aLen, aLen, aaLen, a, aaLen, b, res);
   else
   {
