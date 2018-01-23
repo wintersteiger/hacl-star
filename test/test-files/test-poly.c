@@ -7,8 +7,9 @@
 #include "tweetnacl.h"
 #include "hacl_test_utils.h"
 
-#define PLAINLEN (16*1024)
-#define ROUNDS 1000
+#define PLAINLEN (1024*1024)
+#define ROUNDS 10000
+#define TWEETROUNDS 100
 #define MACSIZE 16
 
 void ossl_poly1305(uint8_t* mac, uint8_t* plain, int len, uint8_t* key){
@@ -225,7 +226,7 @@ int32_t perf_poly() {
 
   t1 = clock();
   a = TestLib_cpucycles_begin();
-  for (int i = 0; i < ROUNDS; i++){
+  for (int i = 0; i < TWEETROUNDS; i++){
     tweet_crypto_onetimeauth(macs + MACSIZE * i, plain, len, key);
   }
   b = TestLib_cpucycles_end();
@@ -233,8 +234,8 @@ int32_t perf_poly() {
   tweet_cy = (double)b - a;
   tweet_utime = (double)t2 - t1;
   print_results("TweetNacl Poly1305 speed", (double)t2-t1,
-		(double) b - a, ROUNDS, PLAINLEN);
-  for (int i = 0; i < ROUNDS; i++) res += (uint64_t)*(macs+MACSIZE*i) + (uint64_t)*(macs+MACSIZE*i+8)
+		(double) b - a, TWEETROUNDS, PLAINLEN);
+  for (int i = 0; i < TWEETROUNDS; i++) res += (uint64_t)*(macs+MACSIZE*i) + (uint64_t)*(macs+MACSIZE*i+8)
 				     + (uint64_t)*(macs+MACSIZE*i+16) + (uint64_t)*(macs+MACSIZE*i+24);
   printf("Composite result (ignore): %" PRIx64 "\n", res);
 
