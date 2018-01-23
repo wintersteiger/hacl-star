@@ -54,6 +54,7 @@ typedef uint8_t *Hacl_Impl_Poly1305_64_State_wordB_16;
 typedef struct 
 {
   uint64_t *r;
+  uint64_t *r5;
   uint64_t *h;
 }
 Hacl_Impl_Poly1305_64_State_poly1305_state;
@@ -79,7 +80,7 @@ typedef uint8_t *Hacl_Poly1305_64_key;
 typedef Hacl_Impl_Poly1305_64_State_poly1305_state Hacl_Poly1305_64_state;
 
 Hacl_Impl_Poly1305_64_State_poly1305_state
-Hacl_Poly1305_64_mk_state(uint64_t *r, uint64_t *acc);
+Hacl_Poly1305_64_mk_state(uint64_t *r, uint64_t *acc, uint64_t *r5);
 
 void Hacl_Poly1305_64_init(Hacl_Impl_Poly1305_64_State_poly1305_state st, uint8_t *k1);
 
