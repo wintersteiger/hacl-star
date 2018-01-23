@@ -28,11 +28,6 @@ static void Hacl_Impl_Lib_fill(Prims_nat len, uint32_t clen, uint64_t *b, uint64
     b[i] = z;
 }
 
-static FStar_UInt128_t Hacl_Impl_Lib_mul_wide(uint64_t a, uint64_t b)
-{
-  return FStar_UInt128_mul_wide(a, b);
-}
-
 static bool
 Hacl_Impl_Lib_eq_b_(Prims_nat len, uint32_t clen, uint8_t *b1, uint8_t *b2, uint32_t i)
 {
@@ -238,6 +233,51 @@ Hacl_Impl_Comparison_bn_is_less(Prims_nat len, uint32_t clen, uint64_t *a, uint6
   return Hacl_Impl_Comparison_bn_is_less_(len, clen, a, b, clen);
 }
 
+static bool
+Hacl_Impl_Comparison_bn_is_less_ds_(
+  Prims_nat a0Len,
+  Prims_nat a1Len,
+  uint32_t aa0Len,
+  uint64_t *a0,
+  uint32_t aa1Len,
+  uint64_t *a1,
+  uint32_t i
+)
+{
+  if (i > (uint32_t)0U)
+  {
+    uint32_t i1 = i - (uint32_t)1U;
+    uint64_t t1 = a0[i1];
+    uint64_t t2;
+    if (i1 < aa1Len)
+      t2 = a1[i1];
+    else
+      t2 = (uint64_t)0U;
+    if (!(t1 == t2))
+      if (t1 < t2)
+        return true;
+      else
+        return false;
+    else
+      return Hacl_Impl_Comparison_bn_is_less_ds_(a0Len, a1Len, aa0Len, a0, aa1Len, a1, i1);
+  }
+  else
+    return false;
+}
+
+static bool
+Hacl_Impl_Comparison_bn_is_less_ds(
+  Prims_nat a0Len,
+  Prims_nat a1len,
+  uint32_t aa0Len,
+  uint64_t *a0,
+  uint32_t aa1Len,
+  uint64_t *a1
+)
+{
+  return Hacl_Impl_Comparison_bn_is_less_ds_(a0Len, a1len, aa0Len, a0, aa1Len, a1, aa0Len);
+}
+
 static void
 Hacl_Impl_Convert_text_to_nat_(
   Prims_nat len,
@@ -356,12 +396,12 @@ Hacl_Impl_Multiplication_bn_mult_by_limb_addj(
     K___uint64_t_uint64_t
     uu____253 =
       {
-        .fst = FStar_UInt128_uint128_to_uint64(FStar_UInt128_shift_right(FStar_UInt128_add(FStar_UInt128_add(Hacl_Impl_Lib_mul_wide(uu____258,
+        .fst = FStar_UInt128_uint128_to_uint64(FStar_UInt128_shift_right(FStar_UInt128_add(FStar_UInt128_add(FStar_UInt128_mul_wide(uu____258,
                   l),
                 FStar_UInt128_uint64_to_uint128(carry)),
               FStar_UInt128_uint64_to_uint128(res_ij)),
             (uint32_t)64U)),
-        .snd = FStar_UInt128_uint128_to_uint64(FStar_UInt128_add(FStar_UInt128_add(Hacl_Impl_Lib_mul_wide(uu____258,
+        .snd = FStar_UInt128_uint128_to_uint64(FStar_UInt128_add(FStar_UInt128_add(FStar_UInt128_mul_wide(uu____258,
                 l),
               FStar_UInt128_uint64_to_uint128(carry)),
             FStar_UInt128_uint64_to_uint128(res_ij)))
@@ -446,26 +486,28 @@ Hacl_Impl_Multiplication_bn_mul(
 static void
 Hacl_Impl_Multiplication_abs(
   Prims_nat aLen,
+  Prims_nat bLen,
   uint32_t aaLen,
   uint64_t *a,
+  uint32_t bbLen,
   uint64_t *b,
   uint64_t *res
 )
 {
-  bool uu____1505 = Hacl_Impl_Comparison_bn_is_less(aLen, aaLen, a, b);
-  if (uu____1505)
-    Hacl_Impl_Addition_bn_sub(aLen, aLen, aaLen, b, aaLen, a, res);
+  bool uu____1531 = Hacl_Impl_Comparison_bn_is_less_ds(aLen, aLen, aaLen, a, bbLen, b);
+  if (uu____1531)
+    Hacl_Impl_Addition_bn_sub(aLen, aLen, bbLen, b, aaLen, a, res);
   else
-    Hacl_Impl_Addition_bn_sub(aLen, aLen, aaLen, a, aaLen, b, res);
+    Hacl_Impl_Addition_bn_sub(aLen, aLen, aaLen, a, bbLen, b, res);
 }
 
 static void
 Hacl_Impl_Multiplication_add_sign(
-  Prims_nat aLen,
-  Prims_nat cLen,
+  Prims_nat a0Len,
+  Prims_nat a1Len,
   Prims_nat resLen,
-  uint32_t aaLen,
-  uint32_t ccLen,
+  uint32_t aa0Len,
+  uint32_t aa1Len,
   uint32_t rresLen,
   uint64_t *c0,
   uint64_t *c1,
@@ -479,32 +521,54 @@ Hacl_Impl_Multiplication_add_sign(
   uint64_t *res
 )
 {
-  bool uu____2517 = Hacl_Impl_Comparison_bn_is_less(aLen, aaLen, a0, a1);
+  uint32_t c0Len = aa0Len + aa0Len;
+  uint32_t c1Len = aa1Len + aa1Len;
+  bool uu____2539 = Hacl_Impl_Comparison_bn_is_less_ds(a0Len, a1Len, aa0Len, a0, aa1Len, a1);
   Hacl_Impl_Multiplication_sign sa2;
-  if (uu____2517)
+  if (uu____2539)
     sa2 = Hacl_Impl_Multiplication_Negative;
   else
     sa2 = Hacl_Impl_Multiplication_Positive;
-  bool uu____2598 = Hacl_Impl_Comparison_bn_is_less(aLen, aaLen, b0, b1);
+  bool uu____2624 = Hacl_Impl_Comparison_bn_is_less_ds(a0Len, a1Len, aa0Len, b0, aa1Len, b1);
   Hacl_Impl_Multiplication_sign sb2;
-  if (uu____2598)
+  if (uu____2624)
     sb2 = Hacl_Impl_Multiplication_Negative;
   else
     sb2 = Hacl_Impl_Multiplication_Positive;
-  Hacl_Impl_Addition_bn_add_carry(cLen, cLen, ccLen, c0, ccLen, c1, res);
+  Hacl_Impl_Addition_bn_add_carry(Prims_op_Addition(a0Len, a0Len),
+    Prims_op_Addition(a1Len, a1Len),
+    c0Len,
+    c0,
+    c1Len,
+    c1,
+    res);
   if
   (sa2
   == Hacl_Impl_Multiplication_Positive
   && sb2 == Hacl_Impl_Multiplication_Positive
   || sa2 == Hacl_Impl_Multiplication_Negative && sb2 == Hacl_Impl_Multiplication_Negative)
-    Hacl_Impl_Addition_bn_sub(FStar_UInt32_v(rresLen), cLen, rresLen, res, ccLen, c2, res);
+    Hacl_Impl_Addition_bn_sub(FStar_UInt32_v(rresLen),
+      Prims_op_Addition(a0Len, a0Len),
+      rresLen,
+      res,
+      c0Len,
+      c2,
+      res);
   else
-    Hacl_Impl_Addition_bn_add(FStar_UInt32_v(rresLen), cLen, rresLen, res, ccLen, c2, res);
+    Hacl_Impl_Addition_bn_add(FStar_UInt32_v(rresLen),
+      Prims_op_Addition(a0Len, a0Len),
+      rresLen,
+      res,
+      c0Len,
+      c2,
+      res);
 }
 
 static void
 Hacl_Impl_Multiplication_karatsuba_(
   Prims_nat aLen,
+  uint32_t pow2_i,
+  uint32_t iLen,
   uint32_t aaLen,
   uint64_t *a,
   uint64_t *b,
@@ -512,37 +576,78 @@ Hacl_Impl_Multiplication_karatsuba_(
   uint64_t *res
 )
 {
-  (void)((uint32_t)4U * aaLen);
+  uint32_t tmpLen = (uint32_t)4U * pow2_i;
   uint32_t aaLen2 = aaLen + aaLen;
-  uint32_t aaLen0 = aaLen / (uint32_t)2U;
-  Hacl_Impl_Lib_fill(Prims_op_Multiply((krml_checked_int_t)2, aLen), aaLen2, res, (uint64_t)0U);
+  uint32_t pow2_i0 = pow2_i / (uint32_t)2U;
+  uint32_t pow2_i1 = pow2_i0 - iLen;
+  Hacl_Impl_Lib_fill(Prims_op_Multiply((krml_checked_int_t)4, FStar_UInt32_v(pow2_i)),
+    tmpLen,
+    tmp,
+    (uint64_t)0U);
+  Hacl_Impl_Lib_fill(Prims_op_Addition(aLen, aLen), aaLen2, res, (uint64_t)0U);
   if (aaLen < (uint32_t)9U)
     Hacl_Impl_Multiplication_bn_mul(aLen, aLen, aaLen, a, aaLen, b, res);
   else
   {
     uint64_t *a0 = a;
-    uint64_t *a1 = a + aaLen0;
+    uint64_t *a1 = a + pow2_i0;
     uint64_t *b0 = b;
-    uint64_t *b1 = b + aaLen0;
+    uint64_t *b1 = b + pow2_i0;
     uint64_t *tmp0 = tmp;
     uint64_t *c0 = res;
-    uint64_t *c1 = res + aaLen;
-    Hacl_Impl_Multiplication_karatsuba_(FStar_UInt32_v(aaLen0), aaLen0, a0, b0, tmp0, c0);
-    Hacl_Impl_Multiplication_karatsuba_(FStar_UInt32_v(aaLen0), aaLen0, a1, b1, tmp0, c1);
+    Hacl_Impl_Multiplication_karatsuba_(FStar_UInt32_v(pow2_i0),
+      pow2_i0,
+      (uint32_t)0U,
+      pow2_i0,
+      a0,
+      b0,
+      tmp0,
+      c0);
+    if (pow2_i0 / (uint32_t)2U <= iLen)
+      (void)(iLen - pow2_i0 / (uint32_t)2U);
+    uint64_t *tmp01 = tmp;
+    uint64_t *c1 = res + (uint32_t)2U * pow2_i0;
+    Hacl_Impl_Multiplication_karatsuba_(FStar_UInt32_v(pow2_i1),
+      pow2_i0,
+      iLen,
+      pow2_i1,
+      a1,
+      b1,
+      tmp01,
+      c1);
     uint64_t *a2 = tmp;
-    uint64_t *b2 = tmp + aaLen0;
-    uint64_t *c2 = tmp + aaLen;
-    uint64_t *tmp01 = tmp + aaLen2;
-    Hacl_Impl_Multiplication_abs(FStar_UInt32_v(aaLen0), aaLen0, a0, a1, a2);
-    Hacl_Impl_Multiplication_abs(FStar_UInt32_v(aaLen0), aaLen0, b0, b1, b2);
-    Hacl_Impl_Multiplication_karatsuba_(FStar_UInt32_v(aaLen0), aaLen0, a2, b2, tmp01, c2);
-    uint32_t tmp1Len = aaLen + (uint32_t)1U;
-    uint64_t *tmp1 = tmp + aaLen2;
-    Hacl_Impl_Multiplication_add_sign(FStar_UInt32_v(aaLen0),
-      FStar_UInt32_v(aaLen),
+    uint64_t *b2 = tmp + pow2_i0;
+    Hacl_Impl_Multiplication_abs(FStar_UInt32_v(pow2_i0),
+      FStar_UInt32_v(pow2_i1),
+      pow2_i0,
+      a0,
+      pow2_i1,
+      a1,
+      a2);
+    Hacl_Impl_Multiplication_abs(FStar_UInt32_v(pow2_i0),
+      FStar_UInt32_v(pow2_i1),
+      pow2_i0,
+      b0,
+      pow2_i1,
+      b1,
+      b2);
+    uint64_t *c2 = tmp + (uint32_t)2U * pow2_i0;
+    uint64_t *tmp02 = tmp + (uint32_t)4U * pow2_i0;
+    Hacl_Impl_Multiplication_karatsuba_(FStar_UInt32_v(pow2_i0),
+      pow2_i0,
+      (uint32_t)0U,
+      pow2_i0,
+      a2,
+      b2,
+      tmp02,
+      c2);
+    uint32_t tmp1Len = pow2_i + (uint32_t)1U;
+    uint64_t *tmp1 = tmp + (uint32_t)4U * pow2_i0;
+    Hacl_Impl_Multiplication_add_sign(FStar_UInt32_v(pow2_i0),
+      FStar_UInt32_v(pow2_i1),
       FStar_UInt32_v(tmp1Len),
-      aaLen0,
-      aaLen,
+      pow2_i0,
+      pow2_i1,
       tmp1Len,
       c0,
       c1,
@@ -554,8 +659,8 @@ Hacl_Impl_Multiplication_karatsuba_(
       b1,
       b2,
       tmp1);
-    uint32_t res1Len = aaLen0 + aaLen;
-    uint64_t *res1 = res + aaLen0;
+    uint32_t res1Len = pow2_i0 + pow2_i1 + pow2_i1;
+    uint64_t *res1 = res + pow2_i0;
     Hacl_Impl_Addition_bn_add(FStar_UInt32_v(res1Len),
       FStar_UInt32_v(tmp1Len),
       res1Len,
@@ -569,45 +674,21 @@ Hacl_Impl_Multiplication_karatsuba_(
 static void
 Hacl_Impl_Multiplication_karatsuba(
   Prims_nat aLen,
+  uint32_t pow2_i,
   uint32_t iLen,
   uint32_t aaLen,
   uint64_t *a,
   uint64_t *b,
-  uint64_t *st_mult
+  uint64_t *st_mult,
+  uint64_t *res
 )
 {
-  (void)(aaLen + aaLen);
-  (void)((uint32_t)4U * iLen);
-  uint32_t stLen = (uint32_t)8U * iLen;
-  Hacl_Impl_Lib_fill(Prims_op_Multiply((krml_checked_int_t)8, FStar_UInt32_v(iLen)),
-    stLen,
-    st_mult,
-    (uint64_t)0U);
+  uint32_t aaLen2 = aaLen + aaLen;
+  Hacl_Impl_Lib_fill(Prims_op_Addition(aLen, aLen), aaLen2, res, (uint64_t)0U);
   if (aaLen < (uint32_t)9U)
-  {
-    uint64_t *res = st_mult;
     Hacl_Impl_Multiplication_bn_mul(aLen, aLen, aaLen, a, aaLen, b, res);
-  }
   else
-  {
-    uint64_t *res_ = st_mult;
-    uint64_t *a_ = st_mult + iLen + iLen;
-    uint64_t *b_ = st_mult + (uint32_t)3U * iLen;
-    uint64_t *tmp = st_mult + (uint32_t)4U * iLen;
-    uint64_t *a__ = a_;
-    uint64_t *b__ = b_;
-    for (uint32_t i = (uint32_t)0U; i < aaLen; i = i + (uint32_t)1U)
-    {
-      uint64_t src_i = a[i];
-      a__[i] = src_i;
-    }
-    for (uint32_t i = (uint32_t)0U; i < aaLen; i = i + (uint32_t)1U)
-    {
-      uint64_t src_i = b[i];
-      b__[i] = src_i;
-    }
-    Hacl_Impl_Multiplication_karatsuba_(FStar_UInt32_v(iLen), iLen, a_, b_, tmp, res_);
-  }
+    Hacl_Impl_Multiplication_karatsuba_(aLen, pow2_i, iLen, aaLen, a, b, st_mult, res);
 }
 
 static uint64_t Hacl_Impl_Shift_bn_tbit = (uint64_t)0x8000000000000000U;
@@ -949,6 +1030,7 @@ Hacl_Impl_Montgomery_from_mont(
 static void
 Hacl_Impl_Exponentiation_mul_mod_mont(
   Prims_nat rLen,
+  uint32_t pow2_i,
   uint32_t iLen,
   uint32_t exp_r,
   uint32_t rrLen,
@@ -959,11 +1041,13 @@ Hacl_Impl_Exponentiation_mul_mod_mont(
   uint64_t *resM
 )
 {
-  (void)((uint32_t)8U * iLen);
   uint32_t cLen = rrLen + rrLen;
+  uint32_t stKLen = (uint32_t)4U * pow2_i;
+  (void)(cLen + stKLen);
   uint64_t *c = st_kara;
+  uint64_t *st_k = st_kara + cLen;
   uint64_t *st = st_kara + cLen;
-  Hacl_Impl_Multiplication_karatsuba(rLen, iLen, rrLen, aM, bM, st_kara);
+  Hacl_Impl_Multiplication_karatsuba(rLen, pow2_i, iLen, rrLen, aM, bM, st_k, c);
   Hacl_Impl_Montgomery_mont_reduction(rLen,
     FStar_UInt32_v(cLen),
     exp_r,
@@ -979,6 +1063,7 @@ static void
 Hacl_Impl_Exponentiation_mod_exp_(
   Prims_nat rLen,
   Prims_nat bLen,
+  uint32_t pow2_i,
   uint32_t iLen,
   uint32_t exp_r,
   uint32_t rrLen,
@@ -995,9 +1080,10 @@ Hacl_Impl_Exponentiation_mod_exp_(
   uint64_t *accM = st_exp + rrLen;
   if (count1 < bBits)
   {
-    bool uu____1046 = Hacl_Impl_Lib_bn_is_bit_set(bLen, bbLen, b, count1);
-    if (uu____1046)
+    bool uu____1069 = Hacl_Impl_Lib_bn_is_bit_set(bLen, bbLen, b, count1);
+    if (uu____1069)
       Hacl_Impl_Exponentiation_mul_mod_mont(rLen,
+        pow2_i,
         iLen,
         exp_r,
         rrLen,
@@ -1006,9 +1092,19 @@ Hacl_Impl_Exponentiation_mod_exp_(
         aM,
         accM,
         accM);
-    Hacl_Impl_Exponentiation_mul_mod_mont(rLen, iLen, exp_r, rrLen, st_mont, st_kara, aM, aM, aM);
+    Hacl_Impl_Exponentiation_mul_mod_mont(rLen,
+      pow2_i,
+      iLen,
+      exp_r,
+      rrLen,
+      st_mont,
+      st_kara,
+      aM,
+      aM,
+      aM);
     Hacl_Impl_Exponentiation_mod_exp_(rLen,
       bLen,
+      pow2_i,
       iLen,
       exp_r,
       rrLen,
@@ -1026,6 +1122,7 @@ static void
 Hacl_Impl_Exponentiation_mod_exp_mont(
   Prims_nat rLen,
   Prims_nat stLen,
+  uint32_t pow2_i,
   uint32_t iLen,
   uint32_t bBits,
   uint64_t *b,
@@ -1045,6 +1142,7 @@ Hacl_Impl_Exponentiation_mod_exp_mont(
   uint64_t *res1 = st + (uint32_t)8U * rrLen;
   uint64_t *st_mont = st;
   uint64_t *st_exp = st + (uint32_t)6U * rrLen;
+  (void)((uint32_t)2U * rrLen + (uint32_t)4U * pow2_i);
   uint64_t *st_kara = st + (uint32_t)9U * rrLen;
   uint64_t *st_t = st + (uint32_t)9U * rrLen;
   uint64_t *st_f = st + (uint32_t)9U * rrLen;
@@ -1052,6 +1150,7 @@ Hacl_Impl_Exponentiation_mod_exp_mont(
   Hacl_Impl_Montgomery_to_mont(rLen, exp_r, rrLen, st_mont, st_t, r2, acc, accM);
   Hacl_Impl_Exponentiation_mod_exp_(rLen,
     FStar_UInt32_v((bBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U),
+    pow2_i,
     iLen,
     exp_r,
     rrLen,
@@ -1068,6 +1167,7 @@ Hacl_Impl_Exponentiation_mod_exp_mont(
 static void
 Hacl_Impl_Exponentiation_mod_exp(
   Prims_nat nLen,
+  uint32_t pow2_i,
   uint32_t iLen,
   uint32_t modBits,
   uint32_t nnLen,
@@ -1081,7 +1181,7 @@ Hacl_Impl_Exponentiation_mod_exp(
   uint32_t exp_r = modBits + (uint32_t)2U;
   uint32_t rBits = modBits + (uint32_t)3U;
   uint32_t rLen = (rBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
-  uint32_t stLenKara = (uint32_t)8U * iLen;
+  uint32_t stLenKara = (uint32_t)2U * rLen + (uint32_t)4U * pow2_i;
   uint32_t stLen_ = (uint32_t)9U * rLen;
   uint32_t stLen = stLenKara + stLen_;
   (void)((uint32_t)3U * rLen);
@@ -1115,6 +1215,7 @@ Hacl_Impl_Exponentiation_mod_exp(
   Hacl_Impl_Montgomery_mont_inverse(FStar_UInt32_v(rLen), rLen, n11, exp_r, nInv);
   Hacl_Impl_Exponentiation_mod_exp_mont(FStar_UInt32_v(rLen),
     FStar_UInt32_v(stLen),
+    pow2_i,
     iLen,
     bBits,
     b,
@@ -1135,7 +1236,6 @@ void Hacl_Impl_MGF_hash_sha256(Prims_nat x0, uint8_t *mHash, uint32_t len, uint8
 {
   Hacl_SHA2_256_hash(mHash, m, len);
 }
-
 
 static void
 Hacl_Impl_MGF_mgf_(
@@ -1449,6 +1549,7 @@ void
 Hacl_RSAPSS_rsa_pss_sign(
   Prims_nat sLen,
   Prims_nat msgLen,
+  uint32_t pow2_i,
   uint32_t iLen,
   uint32_t modBits,
   uint32_t eBits,
@@ -1490,6 +1591,7 @@ Hacl_RSAPSS_rsa_pss_sign(
   uint64_t *s = buf1 + nLen;
   Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v(k), k, buf, m);
   Hacl_Impl_Exponentiation_mod_exp(FStar_UInt32_v(nLen),
+    pow2_i,
     iLen,
     modBits,
     nLen,
@@ -1510,6 +1612,7 @@ bool
 Hacl_RSAPSS_rsa_pss_verify(
   Prims_nat sLen,
   Prims_nat msgLen,
+  uint32_t pow2_i,
   uint32_t iLen,
   uint32_t modBits,
   uint32_t eBits,
@@ -1543,11 +1646,12 @@ Hacl_RSAPSS_rsa_pss_verify(
   uint64_t *s1 = buf + nLen;
   uint64_t *n1 = pkey;
   uint64_t *e = pkey + nLen;
-  bool uu____5831 = Hacl_Impl_Comparison_bn_is_less(FStar_UInt32_v(nLen), nLen, s1, n1);
+  bool uu____5833 = Hacl_Impl_Comparison_bn_is_less(FStar_UInt32_v(nLen), nLen, s1, n1);
   bool res;
-  if (uu____5831)
+  if (uu____5833)
   {
     Hacl_Impl_Exponentiation_mod_exp(FStar_UInt32_v(nLen),
+      pow2_i,
       iLen,
       modBits,
       nLen,

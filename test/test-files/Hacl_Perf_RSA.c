@@ -106,6 +106,9 @@ uint32_t skeyBits = (uint32_t)2048U;
 uint32_t pkeyBits = (uint32_t)24U;
 uint32_t modBits = (uint32_t)2048U;
 
+uint32_t iLen = 31U;
+uint32_t pow2_i = 64U;
+
 bool
 test_rsapss()
 {
@@ -120,21 +123,21 @@ test_rsapss()
   uint64_t *nNat = skey;
   uint64_t *eNat = skey + nLen;
   uint64_t *dNat = skey + nLen + eLen;
-  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((modBits - (uint32_t)1U)
+  Hacl_Impl_Convert_text_to_nat((modBits - (uint32_t)1U)
       / (uint32_t)8U
-      + (uint32_t)1U),
+      + (uint32_t)1U,
     (modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
     n1,
     nNat);
-  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((pkeyBits - (uint32_t)1U)
+  Hacl_Impl_Convert_text_to_nat((pkeyBits - (uint32_t)1U)
       / (uint32_t)8U
-      + (uint32_t)1U),
+      + (uint32_t)1U,
     (pkeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
     e,
     eNat);
-  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((skeyBits - (uint32_t)1U)
+  Hacl_Impl_Convert_text_to_nat((skeyBits - (uint32_t)1U)
       / (uint32_t)8U
-      + (uint32_t)1U),
+      + (uint32_t)1U,
     (skeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
     d,
     dNat);
@@ -229,9 +232,9 @@ test_rsapss()
       (uint8_t)0x95U, (uint8_t)0x4bU, (uint8_t)0x2dU, (uint8_t)0x57U
     };
   
-  uint32_t iLen = 64U;
-  Hacl_RSAPSS_rsa_pss_sign(FStar_UInt32_v(saltLen),
-    FStar_UInt32_v(msgLen),
+  Hacl_RSAPSS_rsa_pss_sign(saltLen,
+    msgLen,
+    pow2_i,			   
     iLen,
     modBits,
     pkeyBits,
@@ -242,11 +245,12 @@ test_rsapss()
     msgLen,
     msg,
     sgnt);
-  bool check_sgnt = Hacl_Impl_Lib_eq_b(FStar_UInt32_v(nTLen), nTLen, sgnt, sgnt_expected);
+  bool check_sgnt = Hacl_Impl_Lib_eq_b(nTLen, nTLen, sgnt, sgnt_expected);
   bool
   verify_sgnt =
-    Hacl_RSAPSS_rsa_pss_verify(FStar_UInt32_v(saltLen),
-      FStar_UInt32_v(msgLen),
+    Hacl_RSAPSS_rsa_pss_verify(saltLen,
+      msgLen,
+      pow2_i,
       iLen,
       modBits,
       pkeyBits,
@@ -286,28 +290,27 @@ hacl_sign(
   uint64_t *nNat = skey;
   uint64_t *eNat = skey + nLen;
   uint64_t *dNat = skey + nLen + eLen;
-  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((modBits - (uint32_t)1U)
+  Hacl_Impl_Convert_text_to_nat((modBits - (uint32_t)1U)
       / (uint32_t)8U
-      + (uint32_t)1U),
+      + (uint32_t)1U,
     (modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
     n1,
     nNat);
-  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((pkeyBits - (uint32_t)1U)
+  Hacl_Impl_Convert_text_to_nat((pkeyBits - (uint32_t)1U)
       / (uint32_t)8U
-      + (uint32_t)1U),
+      + (uint32_t)1U,
     (pkeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
     e,
     eNat);
-  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((skeyBits - (uint32_t)1U)
+  Hacl_Impl_Convert_text_to_nat((skeyBits - (uint32_t)1U)
       / (uint32_t)8U
-      + (uint32_t)1U),
+      + (uint32_t)1U,
     (skeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
     d,
     dNat);
   uint64_t *pkey = skey;
   
-  Hacl_RSAPSS_rsa_pss_sign(saltLen, msgLen, 64, modBits, pkeyBits, skeyBits, skey, saltLen, salt, msgLen, msg, sgnt);
-  //bool verify_sgnt = Hacl_RSAPSS_rsa_pss_verify(saltLen, msgLen, 64, modBits, pkeyBits, pkey, saltLen, sgnt, msgLen, msg);
+  Hacl_RSAPSS_rsa_pss_sign(saltLen, msgLen, pow2_i, iLen, modBits, pkeyBits, skeyBits, skey, saltLen, salt, msgLen, msg, sgnt);
   return 1;
 }
 
@@ -331,20 +334,20 @@ hacl_verify(
   memset(pkey, 0U, pkeyLen * sizeof pkey[0U]);
   uint64_t *nNat = pkey;
   uint64_t *eNat = pkey + nLen;
-  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((modBits - (uint32_t)1U)
+  Hacl_Impl_Convert_text_to_nat((modBits - (uint32_t)1U)
       / (uint32_t)8U
-      + (uint32_t)1U),
+      + (uint32_t)1U,
     (modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
     n1,
     nNat);
-  Hacl_Impl_Convert_text_to_nat(FStar_UInt32_v((pkeyBits - (uint32_t)1U)
+  Hacl_Impl_Convert_text_to_nat((pkeyBits - (uint32_t)1U)
       / (uint32_t)8U
-      + (uint32_t)1U),
+      + (uint32_t)1U,
     (pkeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
     e,
     eNat);
  
-  bool verify_sgnt = Hacl_RSAPSS_rsa_pss_verify(saltLen, msgLen, 64, modBits, pkeyBits, pkey, saltLen, sgnt, msgLen, msg);
+  bool verify_sgnt = Hacl_RSAPSS_rsa_pss_verify(saltLen, msgLen, pow2_i, iLen, modBits, pkeyBits, pkey, saltLen, sgnt, msgLen, msg);
   return verify_sgnt;
 }
 

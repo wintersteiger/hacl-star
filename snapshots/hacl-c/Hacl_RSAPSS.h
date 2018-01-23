@@ -24,6 +24,7 @@ void
 Hacl_RSAPSS_rsa_pss_sign(
   Prims_nat sLen,
   Prims_nat msgLen,
+  uint32_t pow2_i,
   uint32_t iLen,
   uint32_t modBits,
   uint32_t eBits,
@@ -40,6 +41,7 @@ bool
 Hacl_RSAPSS_rsa_pss_verify(
   Prims_nat sLen,
   Prims_nat msgLen,
+  uint32_t pow2_i,
   uint32_t iLen,
   uint32_t modBits,
   uint32_t eBits,
