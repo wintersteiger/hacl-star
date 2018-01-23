@@ -81,8 +81,12 @@ let upd_5 b b0 b1 b2 b3 b4 =
 
 
 inline_for_extraction private
-let clamp_mask : cm:Hacl.UInt128.t{Hacl.UInt128.v cm = 0x0ffffffc0ffffffc0ffffffc0fffffff} =
-  Hacl.Spec.Poly1305_32.hload128 (0x0ffffffc0ffffffcuL) (0x0ffffffc0fffffffuL)
+let clamp_mask0 : cm:Hacl.UInt64.t{Hacl.UInt64.v cm = 0x0ffffffc0fffffff} =
+  0x0ffffffc0fffffffuL
+
+inline_for_extraction private
+let clamp_mask1 : cm:Hacl.UInt64.t{Hacl.UInt64.v cm = 0x0ffffffc0ffffffc} =
+  0x0ffffffc0ffffffcuL
 
 
 [@"substitute"]
@@ -98,21 +102,18 @@ val poly1305_encode_r:
 [@"substitute"]
 let poly1305_encode_r r key =
   let h0 = ST.get() in
-  let k = hload128_le key in
-  let k_clamped = Hacl.UInt128.(k &^ clamp_mask) in
-  // let r0 = Limb.(sint128_to_sint64 k_clamped &^ Hacl.Spec.Poly1305_32.mask_26) in
-  // let r1 = Limb.(sint128_to_sint64 (Wide.(k_clamped >>^ 44ul)) &^ Hacl.Spec.Poly1305_32.mask_26) in
-  // let r2 = Limb.(sint128_to_sint64 (Wide.(k_clamped >>^ 88ul))) in
-  // let r0 = Limb.(sint128_to_sint64 k_clamped &^ Hacl.Spec.Poly1305_32.mask_26) in
-  // let r1 = Limb.(sint128_to_sint64 (Wide.(k_clamped >>^ 44ul)) &^ Hacl.Spec.Poly1305_32.mask_26) in
-  // let r2 = Limb.(sint128_to_sint64 (Wide.(k_clamped >>^ 88ul))) in  
-  // Hacl.Spec.Poly1305_32.lemma_encode_r k_clamped;
-  let open Hacl.Spec.Poly1305_32 in
-  let r0 = shift_mask' k_clamped in
-  let r1 = shift_mask k_clamped 26ul in
-  let r2 = shift_mask k_clamped 52ul in
-  let r3 = shift_mask k_clamped 78ul in
-  let r4 = shift_mask k_clamped 104ul in  
+//  let k = hload128_le key in
+  let k0 = hload64_le key in
+  let k1 = hload64_le (Buffer.sub key 8ul 8ul) in
+  let k0_clamped = Hacl.UInt64.(k0 &^ clamp_mask0) in
+  let k1_clamped = Hacl.UInt64.(k1 &^ clamp_mask1) in
+  let open Hacl.UInt32 in
+  let r0 = (sint64_to_sint32 k0_clamped) &^ mask_26 in
+  let r1 = (sint64_to_sint32 Hacl.UInt64.(k0_clamped >>^ 26ul)) &^ mask_26 in
+  let r2 = ((sint64_to_sint32 Hacl.UInt64.(k0_clamped >>^ 52ul)) ^^
+	    (sint64_to_sint32 Hacl.UInt64.(k1_clamped <<^ 12ul)))	&^ mask_26 in
+  let r3 = (sint64_to_sint32 Hacl.UInt64.(k1_clamped >>^ 14ul)) &^ mask_26 in
+  let r4 = (sint64_to_sint32 Hacl.UInt64.(k1_clamped >>^ 40ul)) in
   // assert_norm(pow2 44 = 0x100000000000);
   // assert_norm(pow2 40 = 0x10000000000);
   upd_5 r r0 r1 r2 r3 r4
