@@ -51,4 +51,18 @@ Hacl_RSAPSS_rsa_pss_verify(
   uint32_t mmsgLen,
   uint8_t *msg
 );
+
+void
+Hacl_Impl_Exponentiation_mod_exp(
+  Prims_nat nLen,
+  uint32_t pow2_i,
+  uint32_t iLen,
+  uint32_t modBits,
+  uint32_t nnLen,
+  uint64_t *n1,
+  uint64_t *a,
+  uint32_t bBits,
+  uint64_t *b,
+  uint64_t *res
+);
 #endif

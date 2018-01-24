@@ -3,7 +3,7 @@
 #ifndef __Hacl_RSAPSS_H
 #define __Hacl_RSAPSS_H
 
-bool Hacl_Impl_Lib_eq_b(Prims_nat len, uint32_t clen, uint8_t *b1, uint8_t *b2);
+bool Hacl_Impl_Lib_eq_b(Prims_nat len, uint32_t clen, uint64_t *b1, uint64_t *b2);
 
 typedef struct 
 {

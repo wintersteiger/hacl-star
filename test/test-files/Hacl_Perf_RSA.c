@@ -412,26 +412,31 @@ int perf_rsapss() {
   uint8_t sgnt[256U];
   memset(sgnt, 0U, 256U * sizeof sgnt[0U]);
 
+  uint8_t res = 1;
   printf("\n SIGNATURE: \n");
   TestLib_cycles t0,t1,t2,t3;
   t0 = TestLib_cpucycles_begin();
-  for (int i = 0; i < 100; i++){
+  for (int i = 0; i < 1000; i++){
     hacl_sign(modBits, n1, pkeyBits, e, skeyBits, d, msg_len, msg, 0, NULL, sgnt);
-  }
+    res = res ^ sgnt[0];
+    }
   t1 = TestLib_cpucycles_end();
-
-  TestLib_print_cycles_per_round(t0, t1, 100);
+  printf("sh: %d", res);
+  
+  TestLib_print_cycles_per_round(t0, t1, 1000);
 
   uint8_t sgnt1[256U];
   memset(sgnt1, 0U, 256U * sizeof sgnt1[0U]);
   
   t2 = TestLib_cpucycles_begin();
-  for (int i = 0; i < 100; i++){
+  for (int i = 0; i < 1000; i++){
     openssl_sign(msg, msg_len, n1, 256U, e, 3U, d, 256U, sgnt1);
-  }
+    res = res ^ sgnt1[0];
+   }
   t3 = TestLib_cpucycles_end();
-
-  TestLib_print_cycles_per_round(t2, t3, 100);
+  printf("so: %d", res);
+  
+  TestLib_print_cycles_per_round(t2, t3, 1000);
 
   printf("\nSignature HACL: \n");
   for (int i = 0; i < 256U; i++) {
@@ -448,20 +453,24 @@ int perf_rsapss() {
   printf("\n VERIFICATION: \n");
 
   t0 = TestLib_cpucycles_begin();
-  for (int i = 0; i < 100; i++){
-    hacl_verify(modBits, n1, pkeyBits, e, msg_len, msg, 0, NULL, sgnt);
+  for (int i = 0; i < 10000; i++){
+    int r = hacl_verify(modBits, n1, pkeyBits, e, msg_len, msg, 0, NULL, sgnt);
+    res = res ^ r;
   }
   t1 = TestLib_cpucycles_end();
-
-  TestLib_print_cycles_per_round(t0, t1, 100);
+  printf("vh: %d", res);
+  
+  TestLib_print_cycles_per_round(t0, t1, 10000);
   
   t2 = TestLib_cpucycles_begin();
-  for (int i = 0; i < 100; i++){
-    openssl_verify(msg, msg_len, n1, 256U, e, 3U, sgnt1);
+  for (int i = 0; i < 10000; i++){
+    int r = openssl_verify(msg, msg_len, n1, 256U, e, 3U, sgnt1);
+    res = res ^ r;
   }
   t3 = TestLib_cpucycles_end();
-
-  TestLib_print_cycles_per_round(t2, t3, 100);
+  printf("vo: %d", res);
+  
+  TestLib_print_cycles_per_round(t2, t3, 10000);
   
   return 0;
 }

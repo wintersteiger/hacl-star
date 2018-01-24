@@ -28,7 +28,7 @@ static void Hacl_Impl_Lib_fill(Prims_nat len, uint32_t clen, uint64_t *b, uint64
 }
 
 static bool
-Hacl_Impl_Lib_eq_b_(Prims_nat len, uint32_t clen, uint8_t *b1, uint8_t *b2, uint32_t i)
+Hacl_Impl_Lib_eq_b_(Prims_nat len, uint32_t clen, uint64_t *b1, uint64_t *b2, uint32_t i)
 {
   if (i < clen)
   {
@@ -44,7 +44,7 @@ Hacl_Impl_Lib_eq_b_(Prims_nat len, uint32_t clen, uint8_t *b1, uint8_t *b2, uint
     return true;
 }
 
-bool Hacl_Impl_Lib_eq_b(Prims_nat len, uint32_t clen, uint8_t *b1, uint8_t *b2)
+bool Hacl_Impl_Lib_eq_b(Prims_nat len, uint32_t clen, uint64_t *b1, uint64_t *b2)
 {
   return Hacl_Impl_Lib_eq_b_(len, clen, b1, b2, (uint32_t)0U);
 }
