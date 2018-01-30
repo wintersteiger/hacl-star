@@ -207,6 +207,42 @@ Hacl_Impl_Addition_bn_add_carry(
   res[caLen] = carry;
 }
 
+static void
+Hacl_Impl_Addition_bn_sub_u64_(
+  Prims_nat aLen,
+  uint32_t aaLen,
+  uint64_t *a,
+  uint64_t carry,
+  uint32_t i,
+  uint64_t *res
+)
+{
+  if (i < aaLen)
+  {
+    uint64_t t1 = a[i];
+    uint64_t res_i = t1 - carry;
+    res[i] = res_i;
+    uint64_t carry1;
+    if (t1 < carry)
+      carry1 = (uint64_t)1U;
+    else
+      carry1 = (uint64_t)0U;
+    Hacl_Impl_Addition_bn_sub_u64_(aLen, aaLen, a, carry1, i + (uint32_t)1U, res);
+  }
+}
+
+static void
+Hacl_Impl_Addition_bn_sub_u64(
+  Prims_nat aLen,
+  uint32_t aaLen,
+  uint64_t *a,
+  uint64_t b,
+  uint64_t *res
+)
+{
+  Hacl_Impl_Addition_bn_sub_u64_(aLen, aaLen, a, b, (uint32_t)0U, res);
+}
+
 static bool
 Hacl_Impl_Comparison_bn_is_less_(
   Prims_nat len,
@@ -1823,7 +1859,10 @@ Hacl_RSAPSS_rsa_pss_sign(
   uint32_t modBits,
   uint32_t eBits,
   uint32_t dBits,
+  uint32_t pLen,
+  uint32_t qLen,
   uint64_t *skey,
+  uint64_t rBlind,
   uint32_t ssLen,
   uint8_t *salt,
   uint32_t mmsgLen,
@@ -1834,10 +1873,12 @@ Hacl_RSAPSS_rsa_pss_sign(
   uint32_t nLen = (modBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
   uint32_t eLen = (eBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
   uint32_t dLen = (dBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
-  (void)(nLen + eLen + dLen);
+  (void)(nLen + eLen + dLen + pLen + qLen);
   uint32_t k = (modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
   uint32_t msBits = (modBits - (uint32_t)1U) % (uint32_t)8U;
   uint32_t n2Len = nLen + nLen;
+  uint32_t pqLen = pLen + qLen;
+  uint32_t stLen = n2Len + pqLen + pqLen + (uint32_t)1U;
   KRML_CHECK_SIZE((uint8_t)0U, k);
   uint8_t buf[k];
   memset(buf, 0U, k * sizeof buf[0U]);
@@ -1851,14 +1892,32 @@ Hacl_RSAPSS_rsa_pss_sign(
     msg,
     k,
     buf);
-  KRML_CHECK_SIZE((uint64_t)0U, n2Len);
-  uint64_t buf1[n2Len];
-  memset(buf1, 0U, n2Len * sizeof buf1[0U]);
+  KRML_CHECK_SIZE((uint64_t)0U, stLen);
+  uint64_t buf1[stLen];
+  memset(buf1, 0U, stLen * sizeof buf1[0U]);
   uint64_t *n1 = skey;
   uint64_t *d = skey + nLen + eLen;
+  uint64_t *p = skey + nLen + eLen + dLen;
+  uint64_t *q = skey + nLen + eLen + dLen + pLen;
   uint64_t *m = buf1;
   uint64_t *s = buf1 + nLen;
+  uint64_t *phi_n = buf1 + n2Len;
+  uint64_t *p1 = buf1 + n2Len + pqLen;
+  uint64_t *q1 = buf1 + n2Len + pqLen + pLen;
+  uint32_t dLen_ = pLen + qLen + (uint32_t)1U;
+  uint64_t *d_ = buf1 + n2Len + pqLen;
   Hacl_Impl_Convert_text_to_nat((k), k, buf, m);
+  Hacl_Impl_Addition_bn_sub_u64((pLen), pLen, p, (uint64_t)1U, p1);
+  Hacl_Impl_Addition_bn_sub_u64((qLen), qLen, q, (uint64_t)1U, q1);
+  Hacl_Impl_Multiplication_bn_mul((pLen),
+    (qLen),
+    pLen,
+    p1,
+    qLen,
+    q1,
+    phi_n);
+  Hacl_Impl_Multiplication_bn_mul_u64((pqLen), pqLen, phi_n, rBlind, d_);
+  Hacl_Impl_Addition_bn_add((dLen_), (dLen), dLen_, d_, dLen, d, d_);
   Hacl_Impl_Exponentiation_mod_exp((nLen),
     pow2_i,
     iLen,
@@ -1866,8 +1925,8 @@ Hacl_RSAPSS_rsa_pss_sign(
     nLen,
     n1,
     m,
-    dBits,
-    d,
+    dLen_ * (uint32_t)64U,
+    d_,
     s);
   Hacl_Impl_Convert_nat_to_text(((modBits - (uint32_t)1U)
       / (uint32_t)8U
@@ -1915,9 +1974,9 @@ Hacl_RSAPSS_rsa_pss_verify(
   uint64_t *s1 = buf + nLen;
   uint64_t *n1 = pkey;
   uint64_t *e = pkey + nLen;
-  bool uu____5833 = Hacl_Impl_Comparison_bn_is_less((nLen), nLen, s1, n1);
+  bool uu____5968 = Hacl_Impl_Comparison_bn_is_less((nLen), nLen, s1, n1);
   bool res;
-  if (uu____5833)
+  if (uu____5968)
   {
     Hacl_Impl_Exponentiation_mod_exp((nLen),
       pow2_i,

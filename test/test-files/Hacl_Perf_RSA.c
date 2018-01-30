@@ -102,12 +102,67 @@ uint8_t d[256U] =
       (uint8_t)0x12U, (uint8_t)0xf7U, (uint8_t)0x04U, (uint8_t)0x8fU
     };
 
+uint8_t p[128U] =
+    {
+      (uint8_t)0xcfU, (uint8_t)0xd5U, (uint8_t)0x02U, (uint8_t)0x83U, (uint8_t)0xfeU, (uint8_t)0xeeU,
+      (uint8_t)0xb9U, (uint8_t)0x7fU, (uint8_t)0x6fU, (uint8_t)0x08U, (uint8_t)0xd7U, (uint8_t)0x3cU,
+      (uint8_t)0xbcU, (uint8_t)0x7bU, (uint8_t)0x38U, (uint8_t)0x36U, (uint8_t)0xf8U, (uint8_t)0x2bU,
+      (uint8_t)0xbcU, (uint8_t)0xd4U, (uint8_t)0x99U, (uint8_t)0x47U, (uint8_t)0x9fU, (uint8_t)0x5eU,
+      (uint8_t)0x6fU, (uint8_t)0x76U, (uint8_t)0xfdU, (uint8_t)0xfcU, (uint8_t)0xb8U, (uint8_t)0xb3U,
+      (uint8_t)0x8cU, (uint8_t)0x4fU, (uint8_t)0x71U, (uint8_t)0xdcU, (uint8_t)0x9eU, (uint8_t)0x88U,
+      (uint8_t)0xbdU, (uint8_t)0x6aU, (uint8_t)0x6fU, (uint8_t)0x76U, (uint8_t)0x37U, (uint8_t)0x1aU,
+      (uint8_t)0xfdU, (uint8_t)0x65U, (uint8_t)0xd2U, (uint8_t)0xafU, (uint8_t)0x18U, (uint8_t)0x62U,
+      (uint8_t)0xb3U, (uint8_t)0x2aU, (uint8_t)0xfbU, (uint8_t)0x34U, (uint8_t)0xa9U, (uint8_t)0x5fU,
+      (uint8_t)0x71U, (uint8_t)0xb8U, (uint8_t)0xb1U, (uint8_t)0x32U, (uint8_t)0x04U, (uint8_t)0x3fU,
+      (uint8_t)0xfeU, (uint8_t)0xbeU, (uint8_t)0x3aU, (uint8_t)0x95U, (uint8_t)0x2bU, (uint8_t)0xafU,
+      (uint8_t)0x75U, (uint8_t)0x92U, (uint8_t)0x44U, (uint8_t)0x81U, (uint8_t)0x48U, (uint8_t)0xc0U,
+      (uint8_t)0x3fU, (uint8_t)0x9cU, (uint8_t)0x69U, (uint8_t)0xb1U, (uint8_t)0xd6U, (uint8_t)0x8eU,
+      (uint8_t)0x4cU, (uint8_t)0xe5U, (uint8_t)0xcfU, (uint8_t)0x32U, (uint8_t)0xc8U, (uint8_t)0x6bU,
+      (uint8_t)0xafU, (uint8_t)0x46U, (uint8_t)0xfeU, (uint8_t)0xd3U, (uint8_t)0x01U, (uint8_t)0xcaU,
+      (uint8_t)0x1aU, (uint8_t)0xb4U, (uint8_t)0x03U, (uint8_t)0x06U, (uint8_t)0x9bU, (uint8_t)0x32U,
+      (uint8_t)0xf4U, (uint8_t)0x56U, (uint8_t)0xb9U, (uint8_t)0x1fU, (uint8_t)0x71U, (uint8_t)0x89U,
+      (uint8_t)0x8aU, (uint8_t)0xb0U, (uint8_t)0x81U, (uint8_t)0xcdU, (uint8_t)0x8cU, (uint8_t)0x42U,
+      (uint8_t)0x52U, (uint8_t)0xefU, (uint8_t)0x52U, (uint8_t)0x71U, (uint8_t)0x91U, (uint8_t)0x5cU,
+      (uint8_t)0x97U, (uint8_t)0x94U, (uint8_t)0xb8U, (uint8_t)0xf2U, (uint8_t)0x95U, (uint8_t)0x85U,
+      (uint8_t)0x1dU, (uint8_t)0xa7U, (uint8_t)0x51U, (uint8_t)0x0fU, (uint8_t)0x99U, (uint8_t)0xcbU,
+      (uint8_t)0x73U, (uint8_t)0xebU
+    };
+
+uint8_t q[128U] =
+    {
+      (uint8_t)0xccU, (uint8_t)0x4eU, (uint8_t)0x90U, (uint8_t)0xd2U, (uint8_t)0xa1U, (uint8_t)0xb3U,
+      (uint8_t)0xa0U, (uint8_t)0x65U, (uint8_t)0xd3U, (uint8_t)0xb2U, (uint8_t)0xd1U, (uint8_t)0xf5U,
+      (uint8_t)0xa8U, (uint8_t)0xfcU, (uint8_t)0xe3U, (uint8_t)0x1bU, (uint8_t)0x54U, (uint8_t)0x44U,
+      (uint8_t)0x75U, (uint8_t)0x66U, (uint8_t)0x4eU, (uint8_t)0xabU, (uint8_t)0x56U, (uint8_t)0x1dU,
+      (uint8_t)0x29U, (uint8_t)0x71U, (uint8_t)0xb9U, (uint8_t)0x9fU, (uint8_t)0xb7U, (uint8_t)0xbeU,
+      (uint8_t)0xf8U, (uint8_t)0x44U, (uint8_t)0xe8U, (uint8_t)0xecU, (uint8_t)0x1fU, (uint8_t)0x36U,
+      (uint8_t)0x0bU, (uint8_t)0x8cU, (uint8_t)0x2aU, (uint8_t)0xc8U, (uint8_t)0x35U, (uint8_t)0x96U,
+      (uint8_t)0x92U, (uint8_t)0x97U, (uint8_t)0x1eU, (uint8_t)0xa6U, (uint8_t)0xa3U, (uint8_t)0x8fU,
+      (uint8_t)0x72U, (uint8_t)0x3fU, (uint8_t)0xccU, (uint8_t)0x21U, (uint8_t)0x1fU, (uint8_t)0x5dU,
+      (uint8_t)0xbcU, (uint8_t)0xb1U, (uint8_t)0x77U, (uint8_t)0xa0U, (uint8_t)0xfdU, (uint8_t)0xacU,
+      (uint8_t)0x51U, (uint8_t)0x64U, (uint8_t)0xa1U, (uint8_t)0xd4U, (uint8_t)0xffU, (uint8_t)0x7fU,
+      (uint8_t)0xbbU, (uint8_t)0x4eU, (uint8_t)0x82U, (uint8_t)0x99U, (uint8_t)0x86U, (uint8_t)0x35U,
+      (uint8_t)0x3cU, (uint8_t)0xb9U, (uint8_t)0x83U, (uint8_t)0x65U, (uint8_t)0x9aU, (uint8_t)0x14U,
+      (uint8_t)0x8cU, (uint8_t)0xddU, (uint8_t)0x42U, (uint8_t)0x0cU, (uint8_t)0x7dU, (uint8_t)0x31U,
+      (uint8_t)0xbaU, (uint8_t)0x38U, (uint8_t)0x22U, (uint8_t)0xeaU, (uint8_t)0x90U, (uint8_t)0xa3U,
+      (uint8_t)0x2bU, (uint8_t)0xe4U, (uint8_t)0x6cU, (uint8_t)0x03U, (uint8_t)0x0eU, (uint8_t)0x8cU,
+      (uint8_t)0x17U, (uint8_t)0xe1U, (uint8_t)0xfaU, (uint8_t)0x0aU, (uint8_t)0xd3U, (uint8_t)0x78U,
+      (uint8_t)0x59U, (uint8_t)0xe0U, (uint8_t)0x6bU, (uint8_t)0x0aU, (uint8_t)0xa6U, (uint8_t)0xfaU,
+      (uint8_t)0x3bU, (uint8_t)0x21U, (uint8_t)0x6dU, (uint8_t)0x9cU, (uint8_t)0xbeU, (uint8_t)0x6cU,
+      (uint8_t)0x0eU, (uint8_t)0x22U, (uint8_t)0x33U, (uint8_t)0x97U, (uint8_t)0x69U, (uint8_t)0xc0U,
+      (uint8_t)0xa6U, (uint8_t)0x15U, (uint8_t)0x91U, (uint8_t)0x3eU, (uint8_t)0x5dU, (uint8_t)0xa7U,
+      (uint8_t)0x19U, (uint8_t)0xcfU
+    };
+
 uint32_t skeyBits = (uint32_t)2048U;
 uint32_t pkeyBits = (uint32_t)24U;
 uint32_t modBits = (uint32_t)2048U;
+uint32_t pTLen = (uint32_t)128U;
+uint32_t qTLen = (uint32_t)128U;
 
 uint32_t iLen = 31U;
 uint32_t pow2_i = 64U;
+uint64_t rBlind = 8906967415916878848U;
 
 bool
 test_rsapss()
@@ -115,14 +170,19 @@ test_rsapss()
   uint32_t nLen = (modBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
   uint32_t eLen = (pkeyBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
   uint32_t dLen = (skeyBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
+  uint32_t pLen = (pTLen - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
+  uint32_t qLen = (qTLen - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
+  
   uint32_t pkeyLen = nLen + eLen;
-  uint32_t skeyLen = pkeyLen + dLen;
+  uint32_t skeyLen = pkeyLen + dLen + pLen + qLen;
   KRML_CHECK_SIZE((uint64_t)0U, skeyLen);
   uint64_t skey[skeyLen];
   memset(skey, 0U, skeyLen * sizeof skey[0U]);
   uint64_t *nNat = skey;
   uint64_t *eNat = skey + nLen;
   uint64_t *dNat = skey + nLen + eLen;
+  uint64_t *pNat = skey + pkeyLen + dLen;
+  uint64_t *qNat = skey + pkeyLen + dLen + pLen;  
   Hacl_Impl_Convert_text_to_nat((modBits - (uint32_t)1U)
       / (uint32_t)8U
       + (uint32_t)1U,
@@ -141,6 +201,9 @@ test_rsapss()
     (skeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
     d,
     dNat);
+  Hacl_Impl_Convert_text_to_nat(pTLen, pTLen, p, pNat);
+  Hacl_Impl_Convert_text_to_nat(qTLen, qTLen, q, qNat);
+  
   uint64_t *pkey = skey;
   
   uint32_t nTLen = (modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
@@ -231,20 +294,24 @@ test_rsapss()
       (uint8_t)0xf4U, (uint8_t)0x31U, (uint8_t)0xecU, (uint8_t)0x40U, (uint8_t)0x6aU, (uint8_t)0x42U,
       (uint8_t)0x95U, (uint8_t)0x4bU, (uint8_t)0x2dU, (uint8_t)0x57U
     };
-  
+
   Hacl_RSAPSS_rsa_pss_sign(saltLen,
     msgLen,
-    pow2_i,			   
+    pow2_i,
     iLen,
     modBits,
     pkeyBits,
     skeyBits,
+    pLen,
+    qLen,
     skey,
+    rBlind,
     saltLen,
     salt,
     msgLen,
     msg,
     sgnt);
+
   bool check_sgnt = Hacl_Impl_Lib_eq_b(nTLen, nTLen, sgnt, sgnt_expected);
   bool
   verify_sgnt =
@@ -282,14 +349,19 @@ hacl_sign(
   uint32_t nLen = (modBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
   uint32_t eLen = (pkeyBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
   uint32_t dLen = (skeyBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
+  uint32_t pLen = (pTLen - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
+  uint32_t qLen = (qTLen - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
+  
   uint32_t pkeyLen = nLen + eLen;
-  uint32_t skeyLen = pkeyLen + dLen;
+  uint32_t skeyLen = pkeyLen + dLen + pLen + qLen;
   KRML_CHECK_SIZE((uint64_t)0U, skeyLen);
   uint64_t skey[skeyLen];
   memset(skey, 0U, skeyLen * sizeof skey[0U]);
   uint64_t *nNat = skey;
   uint64_t *eNat = skey + nLen;
   uint64_t *dNat = skey + nLen + eLen;
+  uint64_t *pNat = skey + pkeyLen + dLen;
+  uint64_t *qNat = skey + pkeyLen + dLen + pLen;  
   Hacl_Impl_Convert_text_to_nat((modBits - (uint32_t)1U)
       / (uint32_t)8U
       + (uint32_t)1U,
@@ -308,9 +380,10 @@ hacl_sign(
     (skeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U,
     d,
     dNat);
-  uint64_t *pkey = skey;
-  
-  Hacl_RSAPSS_rsa_pss_sign(saltLen, msgLen, pow2_i, iLen, modBits, pkeyBits, skeyBits, skey, saltLen, salt, msgLen, msg, sgnt);
+  Hacl_Impl_Convert_text_to_nat(pTLen, pTLen, p, pNat);
+  Hacl_Impl_Convert_text_to_nat(qTLen, qTLen, q, qNat);
+
+  Hacl_RSAPSS_rsa_pss_sign(saltLen, msgLen, pow2_i, iLen, modBits, pkeyBits, skeyBits, pLen, qLen, skey, rBlind, saltLen, salt, msgLen, msg, sgnt);
   return 1;
 }
 
