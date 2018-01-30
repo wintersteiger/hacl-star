@@ -20,14 +20,14 @@ test-unit-rsapss: test-rsapss.exe
 test-perf-rsapss: test-rsapss.exe
 	LD_LIBRARY_PATH=$(HACL_HOME)/build-experimental DYLD_LIBRARY_PATH=$(HACL_HOME)/build-experimental ./test-rsapss.exe perf
 
-test.exe:
+test-mult.exe:
 	$(CC) $(CFLAGS) -c $(KREMLIN_HOME)/kremlib/testlib.c -o testlib.o -I$(KREMLIN_HOME)/kremlib
 	$(CC) $(CFLAGS) -c Hacl_Mult.c -o Hacl_Mult.o -I$(KREMLIN_HOME)/kremlib
 	$(CC) $(CFLAGS) -c Hacl_Perf_Mult.c -o Hacl_Perf_Mult.o  -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
-	$(CC) $(CFLAGS) -o test.exe  testlib.o Hacl_Mult.o Hacl_Perf_Mult.o -lhacl -lcrypto -L$(HACL_HOME)/build-experimental -I/opt/kremlin/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
+	$(CC) $(CFLAGS) -o test-mult.exe  testlib.o Hacl_Mult.o Hacl_Perf_Mult.o -lhacl -lcrypto -L$(HACL_HOME)/build-experimental -I/opt/kremlin/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
 
-test: test.exe
-	LD_LIBRARY_PATH=$(HACL_HOME)/build-experimental DYLD_LIBRARY_PATH=$(HACL_HOME)/build-experimental ./test.exe
+test-mult: test-mult.exe
+	LD_LIBRARY_PATH=$(HACL_HOME)/build-experimental DYLD_LIBRARY_PATH=$(HACL_HOME)/build-experimental ./test-mult.exe
 
 test-exp.exe:
 	$(CC) $(CFLAGS) -c $(KREMLIN_HOME)/kremlib/testlib.c -o testlib.o -I$(KREMLIN_HOME)/kremlib
@@ -43,7 +43,7 @@ build:
 	$(MAKE) -C ../.. clean
 	$(MAKE) -C ../.. build-experimental
 	$(MAKE) clean
-	$(MAKE) test.exe
+	$(MAKE) test-mult.exe
 
 clean:
 	rm -rf *~ *.exe *.o

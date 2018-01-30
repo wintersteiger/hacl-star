@@ -109,21 +109,6 @@ uint32_t modBits = (uint32_t)2048U;
 uint32_t iLen = 31U;
 uint32_t pow2_i = 64U;
 
-/*
-Hacl_Impl_Exponentiation_mod_exp(
-  Prims_nat nLen,
-  uint32_t pow2_i,
-  uint32_t iLen,
-  uint32_t modBits,
-  uint32_t nnLen,
-  uint64_t *n1,
-  uint64_t *a,
-  uint32_t bBits,
-  uint64_t *b,
-  uint64_t *res
-)
-*/
-
 //sngt = (msg ^ e) % n1
 bool
 hacl_exp(
@@ -189,10 +174,6 @@ int perf_exp() {
     msg,
     msgNat);
 
-  //printf("\neNat: \n");
-  //printf("%llu ", eNat[0]);
-  //printf(" \n");
-
   // Sgnt
   uint64_t sgnt[32U];
   memset(sgnt, 0U, 32U * sizeof sgnt[0U]);
@@ -200,28 +181,27 @@ int perf_exp() {
   uint8_t res = 1;
   TestLib_cycles t0,t1,t2,t3;
   t0 = TestLib_cpucycles_begin();
-  for (int i = 0; i < 10000; i++){
+  for (int i = 0; i < 1000; i++){
     int r = hacl_exp(nLen, nNat, pkeyBits, eNat, msgLen, msgNat, sgnt);
     res = res ^ r;
   }
   t1 = TestLib_cpucycles_end();
   printf("vh: %d \n", res);
 
-  TestLib_print_cycles_per_round(t0, t1, 10000);
+  TestLib_print_cycles_per_round(t0, t1, 1000);
 
   uint64_t sgnt1[32U];
   memset(sgnt1, 0U, 32U * sizeof sgnt1[0U]);
 
   t2 = TestLib_cpucycles_begin();
-  for (int i = 0; i < 10000; i++){
+  for (int i = 0; i < 1000; i++){
     int r = hacl_exp(nLen, nNat, skeyBits, dNat, msgLen, msgNat, sgnt1);
-    //int r = hacl_exp(nLen, nNat, pkeyBits, eNat, msgLen, msgNat, sgnt1);
     res = res ^ r;
   }
   t3 = TestLib_cpucycles_end();
   printf("vh: %d \n", res);
 
-  TestLib_print_cycles_per_round(t2, t3, 10000);
+  TestLib_print_cycles_per_round(t2, t3, 1000);
   
   printf("\nResult: \n");
   for (int i = 0; i < nLen; i++) {

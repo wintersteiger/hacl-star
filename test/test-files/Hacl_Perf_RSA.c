@@ -421,7 +421,7 @@ int perf_rsapss() {
     res = res ^ sgnt[0];
     }
   t1 = TestLib_cpucycles_end();
-  printf("sh: %d", res);
+  printf("\n sh: %d \n", res);
   
   TestLib_print_cycles_per_round(t0, t1, 1000);
 
@@ -434,10 +434,13 @@ int perf_rsapss() {
     res = res ^ sgnt1[0];
    }
   t3 = TestLib_cpucycles_end();
-  printf("so: %d", res);
+  printf("\n so: %d \n", res);
   
   TestLib_print_cycles_per_round(t2, t3, 1000);
 
+  double ratio1 = (double) (t1 - t0) / (t3 - t2);
+  printf("\n Ratio =  %lf\n", ratio1);
+  
   printf("\nSignature HACL: \n");
   for (int i = 0; i < 256U; i++) {
     printf("%02X", sgnt[i]);
@@ -458,7 +461,7 @@ int perf_rsapss() {
     res = res ^ r;
   }
   t1 = TestLib_cpucycles_end();
-  printf("vh: %d", res);
+  printf("\n vh: %d \n", res);
   
   TestLib_print_cycles_per_round(t0, t1, 10000);
   
@@ -468,10 +471,13 @@ int perf_rsapss() {
     res = res ^ r;
   }
   t3 = TestLib_cpucycles_end();
-  printf("vo: %d", res);
+  printf("\n vo: %d \n", res);
   
   TestLib_print_cycles_per_round(t2, t3, 10000);
-  
+
+  double ratio2 = (double) (t1 - t0) / (t3 - t2);
+  printf("\n Ratio =  %lf \n", ratio2);
+ 
   return 0;
 }
 
