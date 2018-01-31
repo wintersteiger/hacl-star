@@ -3,7 +3,7 @@ OPENSSL_INCLUDE=$(HACL_HOME)/other_providers/openssl/include
 
 .PHONY=build
 
-CC=gcc-7 -Ofast -flto
+CC=gcc-7 -Ofast -flto -march=native -mtune=native
 #CC=gcc-7 -pg
 #CFLAGS=-Ofast -march=native -mtune=native -m64 -fwrapv -fomit-frame-pointer -funroll-loops -flto
 
