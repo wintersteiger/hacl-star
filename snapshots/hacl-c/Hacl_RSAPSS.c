@@ -126,8 +126,8 @@ Hacl_Impl_Addition_bn_add_(
   uint64_t *res
 )
 {
-  if (i < caLen)
-  {
+  uint8_t carry2 = carry;
+  for(int i = 0; i < caLen; i++) {
     uint64_t t1 = a[i];
     uint64_t t2;
     if (i < cbLen)
@@ -135,22 +135,10 @@ Hacl_Impl_Addition_bn_add_(
     else
       t2 = (uint64_t)0U;
     uint64_t t3 = 0;
-    uint8_t carry2 = _addcarry_u64(carry,a[i],t2,&t3);
+    carry2 = _addcarry_u64(carry2,a[i],t2,&t3);
     res[i] = t3;
-    
-    return
-      Hacl_Impl_Addition_bn_add_(aLen,
-        bLen,
-        caLen,
-        a,
-        cbLen,
-        b,
-        i + (uint32_t)1U,
-        carry2,
-        res);
   }
-  else
-    return carry;
+  return carry2;
 }
 
 static void
