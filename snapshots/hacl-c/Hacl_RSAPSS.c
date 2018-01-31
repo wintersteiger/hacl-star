@@ -5,7 +5,7 @@
 #include <x86intrin.h>
 #include "Hacl_SHA2_256.h"
 
-static bool
+inline static bool
 Hacl_Impl_Lib_bn_is_bit_set(Prims_nat len, uint32_t clen, uint64_t *input, uint32_t ind)
 {
   uint32_t i = ind / (uint32_t)64U;
@@ -15,7 +15,7 @@ Hacl_Impl_Lib_bn_is_bit_set(Prims_nat len, uint32_t clen, uint64_t *input, uint3
   return x0 == (uint64_t)1U;
 }
 
-static void
+inline static void
 Hacl_Impl_Lib_bn_set_bit(Prims_nat len, uint32_t clen, uint64_t *input, uint32_t ind)
 {
   uint32_t i = ind / (uint32_t)64U;
@@ -25,13 +25,13 @@ Hacl_Impl_Lib_bn_set_bit(Prims_nat len, uint32_t clen, uint64_t *input, uint32_t
 }
 
 
-static void Hacl_Impl_Lib_fill(Prims_nat len, uint32_t clen, uint64_t *b, uint64_t z)
+inline static void Hacl_Impl_Lib_fill(Prims_nat len, uint32_t clen, uint64_t *b, uint64_t z)
 {
   for (uint32_t i = (uint32_t)0U; i < clen; i = i + (uint32_t)1U)
     b[i] = z;
 }
 
-static bool
+inline static bool
 Hacl_Impl_Lib_eq_b_(Prims_nat len, uint32_t clen, uint8_t *b1, uint8_t *b2, uint32_t i)
 {
   if (i < clen)
@@ -48,7 +48,7 @@ Hacl_Impl_Lib_eq_b_(Prims_nat len, uint32_t clen, uint8_t *b1, uint8_t *b2, uint
     return true;
 }
 
-bool Hacl_Impl_Lib_eq_b(Prims_nat len, uint32_t clen, uint8_t *b1, uint8_t *b2)
+inline bool Hacl_Impl_Lib_eq_b(Prims_nat len, uint32_t clen, uint8_t *b1, uint8_t *b2)
 {
   return Hacl_Impl_Lib_eq_b_(len, clen, b1, b2, (uint32_t)0U);
 }
@@ -150,7 +150,7 @@ Hacl_Impl_Addition_bn_add(
     res);
 }
 
-static void
+inline static void
 Hacl_Impl_Addition_bn_add_carry(
   Prims_nat aLen,
   Prims_nat bLen,
@@ -176,7 +176,7 @@ Hacl_Impl_Addition_bn_add_carry(
   res[caLen] = carry;
 }
 
-static void
+inline static void
 Hacl_Impl_Addition_bn_sub_u64_(
   Prims_nat aLen,
   uint32_t aaLen,
@@ -200,7 +200,7 @@ Hacl_Impl_Addition_bn_sub_u64_(
   }
 }
 
-static void
+inline static void
 Hacl_Impl_Addition_bn_sub_u64(
   Prims_nat aLen,
   uint32_t aaLen,
@@ -212,7 +212,7 @@ Hacl_Impl_Addition_bn_sub_u64(
   Hacl_Impl_Addition_bn_sub_u64_(aLen, aaLen, a, b, (uint32_t)0U, res);
 }
 
-static bool
+inline static bool
 Hacl_Impl_Comparison_bn_is_less_(
   Prims_nat len,
   uint32_t clen,
@@ -221,21 +221,16 @@ Hacl_Impl_Comparison_bn_is_less_(
   uint32_t i
 )
 {
-  if (i > (uint32_t)0U)
-  {
-    uint32_t i1 = i - (uint32_t)1U;
-    uint64_t t1 = a[i1];
-    uint64_t t2 = b[i1];
+  for (int j = i-1; j >= 0; j--) {
+    uint64_t t1 = a[j];
+    uint64_t t2 = b[j];
     if (!(t1 == t2))
       if (t1 < t2)
         return true;
       else
         return false;
-    else
-      return Hacl_Impl_Comparison_bn_is_less_(len, clen, a, b, i1);
   }
-  else
-    return false;
+  return false;
 }
 
 static bool
