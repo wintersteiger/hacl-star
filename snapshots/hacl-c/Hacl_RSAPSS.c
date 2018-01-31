@@ -53,7 +53,12 @@ bool Hacl_Impl_Lib_eq_b(Prims_nat len, uint32_t clen, uint8_t *b1, uint8_t *b2)
   return Hacl_Impl_Lib_eq_b_(len, clen, b1, b2, (uint32_t)0U);
 }
 
-static void
+static inline uint64_t bval(uint32_t cbLen, uint64_t* b, uint32_t i) {
+  return (i < cbLen? b[i]: 0);
+}
+
+
+inline static void
 Hacl_Impl_Addition_bn_sub_(
   Prims_nat aLen,
   Prims_nat bLen,
@@ -66,40 +71,23 @@ Hacl_Impl_Addition_bn_sub_(
   uint64_t *res
 )
 {
-  if (i < caLen)
-  {
-    uint64_t t1 = a[i];
-    uint64_t t2;
-    if (i < cbLen)
-      t2 = b[i];
-    else
-      t2 = (uint64_t)0U;
-    uint64_t res_i = t1 - t2 - carry;
-    res[i] = res_i;
-    uint64_t carry1;
-    if (carry == (uint64_t)1U)
-    {
-      uint64_t ite;
-      if (t1 <= t2)
-        ite = (uint64_t)1U;
-      else
-        ite = (uint64_t)0U;
-      carry1 = ite;
-    }
-    else
-    {
-      uint64_t ite;
-      if (t1 < t2)
-        ite = (uint64_t)1U;
-      else
-        ite = (uint64_t)0U;
-      carry1 = ite;
-    }
-    Hacl_Impl_Addition_bn_sub_(aLen, bLen, caLen, a, cbLen, b, i + (uint32_t)1U, carry1, res);
+  uint8_t carry2 = carry;
+  /*
+  int mul4 = (caLen / 4) * 4;
+  for(int i = 0; i < mul4; i=i+4) {
+    carry2 = _subborrow_u64(carry2,bval(cbLen,b,i),a[i],&res[i]);
+    carry2 = _subborrow_u64(carry2,bval(cbLen,b,i+1),a[i+1],&res[i+1]);
+    carry2 = _subborrow_u64(carry2,bval(cbLen,b,i+2),a[i+2],&res[i+2]);
+    carry2 = _subborrow_u64(carry2,bval(cbLen,b,i+3),a[i+3],&res[i+3]);
   }
+  */
+  for(int i = 0; i < caLen; i++) {
+    carry2 = _subborrow_u64(carry2,bval(cbLen,b,i),a[i],&res[i]);
+  }
+  return carry2;
 }
 
-static void
+inline static void
 Hacl_Impl_Addition_bn_sub(
   Prims_nat aLen,
   Prims_nat bLen,
@@ -113,7 +101,7 @@ Hacl_Impl_Addition_bn_sub(
   Hacl_Impl_Addition_bn_sub_(aLen, bLen, caLen, a, cbLen, b, (uint32_t)0U, (uint64_t)0U, res);
 }
 
-static uint64_t
+inline static uint64_t
 Hacl_Impl_Addition_bn_add_(
   Prims_nat aLen,
   Prims_nat bLen,
@@ -127,21 +115,20 @@ Hacl_Impl_Addition_bn_add_(
 )
 {
   uint8_t carry2 = carry;
-  for(int i = 0; i < caLen; i++) {
-    uint64_t t1 = a[i];
-    uint64_t t2;
-    if (i < cbLen)
-      t2 = b[i];
-    else
-      t2 = (uint64_t)0U;
-    uint64_t t3 = 0;
-    carry2 = _addcarry_u64(carry2,a[i],t2,&t3);
-    res[i] = t3;
+  int mul4 = (caLen / 4) * 4;
+  for(int i = 0; i < mul4; i=i+4) {
+    carry2 = _addcarry_u64(carry2,a[i],bval(cbLen,b,i),&res[i]);
+    carry2 = _addcarry_u64(carry2,a[i+1],bval(cbLen,b,i+1),&res[i+1]);
+    carry2 = _addcarry_u64(carry2,a[i+2],bval(cbLen,b,i+2),&res[i+2]);
+    carry2 = _addcarry_u64(carry2,a[i+3],bval(cbLen,b,i+3),&res[i+3]);
+  }
+  for(int i = mul4; i < caLen; i++) {
+    carry2 = _addcarry_u64(carry2,a[i],bval(cbLen,b,i),&res[i]);
   }
   return carry2;
 }
 
-static void
+inline static void
 Hacl_Impl_Addition_bn_add(
   Prims_nat aLen,
   Prims_nat bLen,

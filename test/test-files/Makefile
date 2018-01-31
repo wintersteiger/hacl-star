@@ -14,7 +14,7 @@ test-rsapss.exe:
 	$(CC) $(CFLAGS) -c $(HACL_HOME)/snapshots/hacl-c/Hacl_SHA2_256.c -o Hacl_SHA2_256.o -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
 	$(CC) $(CFLAGS) -c $(HACL_HOME)/snapshots/hacl-c/Hacl_RSAPSS.c -o Hacl_RSAPSS.o -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
 	$(CC) $(CFLAGS) -c Hacl_Perf_RSA.c -o Hacl_Perf_RSA.o -L$(OPENSSL_LIB) -I$(OPENSSL_INCLUDE) -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
-	$(CC) $(CFLAGS) -o test-rsapss.exe  random.o kremlib.o testlib.o Hacl_SHA2_256.o Hacl_RSAPSS.o  Hacl_Perf_RSA.o -lcrypto -L$(OPENSSL_LIB) -I$(OPENSSL_INCLUDE) -I/opt/kremlin/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
+	$(CC) $(CFLAGS) -o test-rsapss.exe  random.o kremlib.o testlib.o Hacl_SHA2_256.o Hacl_RSAPSS.o  Hacl_Perf_RSA.o -L$(OPENSSL_LIB) -I$(OPENSSL_INCLUDE) -I/opt/kremlin/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental -lcrypto
 
 test-unit-rsapss: test-rsapss.exe
 	./test-rsapss.exe unit-test
