@@ -30,6 +30,8 @@ module H512 = Hacl.Hash.SHA2_512
 
 module Spec_HMAC256 = Spec.HMAC.SHA2_256
 
+include Crypto.Hash 
+
 private let uint8_t  = FStar.UInt8.t
 private let uint32_t = FStar.UInt32.t
 private let uint32_p = Buffer.buffer uint32_t
@@ -48,21 +50,6 @@ private let uint64_p = Buffer.buffer uint64_t
 let xor_bytes_inplace a b len =
   C.Loops.in_place_map2 a b len (fun x y -> U8.logxor x y)
 
-type alg =
-  | SHA256
-  | SHA384
-  | SHA512
-
-//#reset-options "--initial_ifuel 2 --initial_fuel 0 --z3rlimit 20"
-let block_size : alg -> Tot uint32_t = function
-  | SHA256 -> H256.size_block
-  | SHA384 -> H384.size_block
-  | SHA512 -> H512.size_block
-
-let hash_size: alg -> Tot uint32_t = function
-  | SHA256 -> H256.size_hash
-  | SHA384 -> H384.size_hash_final // Note that `size_hash` is 64, not 48
-  | SHA512 -> H512.size_hash
 
 // FIXME(adl): hash state allocation
 // The type of state a is a buffer of uint32 for SHA256
@@ -75,12 +62,6 @@ inline_for_extraction let state_size: alg -> Tot uint32_t = function
   | SHA384 -> U32.mul 2ul H384.size_state
   | SHA512 -> U32.mul 2ul H512.size_state
 
-//#reset-options "--initial_ifuel 2 --initial_fuel 2 --z3rlimit 30"
-noextract let max_byte_length : alg -> Tot nat = function
-  | SHA256 -> Spec_H256.max_input_len_8
-  | SHA384 -> Spec_H384.max_input_len_8
-  | SHA512 -> Spec_H512.max_input_len_8
-
 //#reset-options "--initial_fuel 0 --initial_ifuel 0 --z3rlimit 20"
 let correct_wrap_key (a:alg)
   (key:Seq.seq uint8_t{Seq.length key < max_byte_length a})
@@ -90,15 +71,7 @@ let correct_wrap_key (a:alg)
   | SHA384 -> True // Spec missing
   | SHA512 -> True // Spec missing
 
-let correct_agile_hash (a:alg)
-  (input:Seq.seq uint8_t{Seq.length input < max_byte_length a})
-  (digest:Seq.seq uint8_t{Seq.length digest = v (hash_size a)})
-  : GTot Type =
-  match a with
-  | SHA256 -> Spec_H256.hash input == digest
-  | SHA384 -> Spec_H384.hash input == digest
-  | SHA512 -> Spec_H512.hash input == digest
-
+//#reset-options "--max_fuel 0  --z3rlimit 250"
 [@"substitute"]
 val wrap_key:
   a      : alg ->
@@ -112,22 +85,6 @@ val wrap_key:
       /\ modifies_1 output h0 h1
       /\ as_seq h0 output == Seq.create (v (block_size a)) 0uy
       /\ correct_wrap_key a (as_seq h0 key) (as_seq h1 output)))
-
-let agile_hash (a:alg) (output:uint8_p{length output = v (hash_size a)})
-  (input:uint8_p{length input < max_byte_length a /\ disjoint output input})
-  (len:uint32_t{v len = length output})
-  : Stack unit
-  (requires fun h -> live h input /\ live h output
-    /\ (as_seq h output) == Seq.create (v (hash_size a)) 0uy)
-  (ensures fun h0 () h1 -> live h1 output /\ live h1 input
-    /\ modifies_1 output h0 h1
-    /\ as_seq h1 input == as_seq h0 input
-    /\ correct_agile_hash a (as_seq h1 input) (as_seq h1 output))
-  =
-  match a with
-  | SHA256 -> H256.hash output input len
-  | SHA384 -> H384.hash output input len
-  | SHA512 -> H512.hash output input len
 
 //#reset-options "--max_fuel 0  --z3rlimit 250"
 [@"substitute"]

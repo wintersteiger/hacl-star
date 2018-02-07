@@ -8,7 +8,7 @@
 #include <time.h>
 
 #include "kremlib.h"
-#include "Crypto_HKDF_Crypto_HMAC.h"
+#include "Crypto_HKDF_Crypto_HMAC_Crypto_Hash.h"
 #include "Crypto_AEAD_Main_Crypto_Indexing.h"
 #include "Crypto_Symmetric_Bytes.h"
 #include "quic_provider.h"
@@ -16,7 +16,7 @@
 #define DEBUG 0
 
 // FIXME!!
-#define Crypto_Symmetric_MAC_taglen 16
+#define Crypto_Symmetric_HMAC_taglen 16
 
 typedef struct quic_key {
   Crypto_AEAD_Invariant_aead_state st;
@@ -51,13 +51,14 @@ void dump_secret(quic_secret *s)
 }
 #endif
 
+// duplicating code in tls/src/Hashing, not in scope here
 #define CONVERT_ALG(a) \
-  (a == TLS_hash_SHA256 ? Crypto_HMAC_SHA256 : \
-    (a == TLS_hash_SHA384 ? Crypto_HMAC_SHA384 : Crypto_HMAC_SHA512))
+  (a == TLS_hash_SHA256 ? Crypto_Hash_SHA256 : \
+    (a == TLS_hash_SHA384 ? Crypto_Hash_SHA384 : Crypto_Hash_SHA512))
 
 int quic_crypto_hash(quic_hash a, /*out*/ char *hash, const char *data, size_t len){
   if(a < TLS_hash_SHA256) return 0;
-  Crypto_HMAC_agile_hash(CONVERT_ALG(a), (uint8_t*) hash, (uint8_t*)data, len);
+  Crypto_Hash_agile_hash(CONVERT_ALG(a), (uint8_t*) hash, (uint8_t*)data, len);
   return 1;
 }
 
@@ -246,11 +247,11 @@ int quic_crypto_decrypt(quic_key *key, char *plain, uint64_t sn, const char *ad,
   memcpy(iv, key->static_iv, 12);
   sn_to_iv(iv, sn);
 
-  if(cipher_len < Crypto_Symmetric_MAC_taglen)
+  if(cipher_len < Crypto_Symmetric_HMAC_taglen)
     return 0;
 
   FStar_UInt128_t n = Crypto_Symmetric_Bytes_load_uint128(12, (uint8_t*)iv);
-  uint32_t plain_len = cipher_len - Crypto_Symmetric_MAC_taglen;
+  uint32_t plain_len = cipher_len - Crypto_Symmetric_HMAC_taglen;
   int r = Crypto_AEAD_Main_decrypt(key->id, key->st, n, ad_len, (uint8_t*)ad, plain_len, (uint8_t*)plain, (uint8_t*)cipher);
 
 #if DEBUG

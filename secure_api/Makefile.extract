@@ -75,7 +75,7 @@ abstract: $(CRYPTO_DIR)/Crypto_AEAD_Main.h base
 
 concrete: $(CRYPTO_DIR)/Crypto_AEAD_Main_Crypto_Indexing.h base
 
-base: $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC.h $(CRYPTO_DIR)/Crypto_Symmetric_Bytes.h
+base: $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC.h $(CRYPTO_DIR)/Crypto_HKDF_Crypto_Hash.h $(CRYPTO_DIR)/Crypto_Symmetric_Bytes.h
 
 %.test: %
 	./$<
@@ -150,8 +150,11 @@ $(CRYPTO_DIR)/%.h $(CRYPTO_DIR)/%.c: $(filter-out $(OUTPUT_DIR)/prims.krml,$(ALL
 $(CRYPTO_DIR)/Crypto_AEAD_Main_Crypto_Indexing.c \
   $(CRYPTO_DIR)/Crypto_AEAD_Main_Crypto_Indexing.h: BUNDLE=Crypto_AEAD_Main+Crypto_Indexing
 
+$(CRYPTO_DIR)/Crypto_HKDF_Crypto_Hash.h \
+$(CRYPTO_DIR)/Crypto_HKDF_Crypto_Hash.c \
+$(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC.h \
 $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC.c \
-  $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC.h: BUNDLE=Crypto_HKDF+Crypto_HMAC
+: BUNDLE=Crypto_HKDF+Crypto_HMAC+Crypto_Hash
 
 # This is without the indexing id.
 $(CRYPTO_DIR)/Crypto_AEAD_Main.h: EXTRA = -add-include '"testlib.h"' -add-include '"Crypto_Indexing.h"' -drop Crypto.Indexing
@@ -235,6 +238,7 @@ $(VALE_DIR)/sha256_main_i.o: $(DIST_DIR)/uint128/FStar_UInt128.h
 $(VALE_DIR)/Vale_Hash_SHA2_256.o: $(DIST_DIR)/uint128/FStar_UInt128.h
 $(CRYPTO_DIR)/Crypto_AEAD_Main_Crypto_Indexing.o: $(DIST_DIR)/uint128/FStar_UInt128.h
 $(CRYPTO_DIR)/Crypto_Symmetric_Bytes.o: $(DIST_DIR)/uint128/FStar_UInt128.h
+$(CRYPTO_DIR)/Crypto_HKDF_Crypto_Hash.o: $(DIST_DIR)/uint128/FStar_UInt128.h
 $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC.o: $(DIST_DIR)/uint128/FStar_UInt128.h
 
 # Note: we don't use gcc -MM because this would need to happen after KreMLin
@@ -305,7 +309,8 @@ $(QUICPROVIDER_DIR)/test.o: $(HEADERS)
 
 $(DIST_DIR)/libquicprovider.$(SO): $(VALE_OBJ) $(QUICPROVIDER_DIR)/quic_provider.o \
   $(CRYPTO_DIR)/Crypto_AEAD_Main_Crypto_Indexing.o \
-  $(CRYPTO_DIR)/Crypto_Symmetric_Bytes.o $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC.o \
+  $(CRYPTO_DIR)/Crypto_Symmetric_Bytes.o \
+  $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash.o \
   $(DIST_DIR)/copied/kremstr.o $(DIST_DIR)/uint128/uint128_wrapper.o
 	$(CC) $^ -o $@ -shared
 
