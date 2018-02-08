@@ -20,31 +20,6 @@ K___uint64_t_uint64_t;
 
 
 
-void
-Hacl_Impl_Bignum_bn_mult_(
-  Prims_nat aLen,
-  Prims_nat bLen,
-  uint32_t aaLen,
-  uint64_t *a,
-  uint32_t bbLen,
-  uint64_t *b,
-  uint32_t j,
-  uint32_t resLen,
-  uint64_t *res
-);
-
-void
-Hacl_Impl_Bignum_bn_mul(
-  Prims_nat aLen,
-  Prims_nat bLen,
-  uint32_t aaLen,
-  uint64_t *a,
-  uint32_t bbLen,
-  uint64_t *b,
-  uint64_t *res
-);
-
-void Hacl_Impl_Bignum_bn_mul_mod_fast(uint64_t *a, uint64_t *b, uint64_t *res);
 
 void Hacl_Impl_Bignum_bn_sqr(Prims_nat aLen, uint32_t aaLen, uint64_t *a, uint64_t *res);
 

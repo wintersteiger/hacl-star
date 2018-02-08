@@ -41,6 +41,7 @@ void reverse(uint8_t* a, int i, int j)
 int perf_mult() {
   const size_t rLen = 32;
   const size_t rLenNat = 5;
+  TestLib_cycles t0,t1,t2,t3,t4,t5;
 
   uint8_t a1[32];
   random_bytes(a1, rLen);
@@ -51,7 +52,6 @@ int perf_mult() {
   }
 
   uint8_t b1[32] = {0};
-  //b1[31] = 1;
   random_bytes(b1, rLen);
 
   printf("\n b1:\n");
@@ -59,17 +59,18 @@ int perf_mult() {
 	printf("%02x", b1[i]);
   }
   
+/* The textbook multiplication */
   uint64_t a1Nat[4];
   uint64_t b1Nat[4];
   uint64_t res1Nat[4] = {0};
   Hacl_Impl_Bignum_text_to_nat(a1, a1Nat);
   Hacl_Impl_Bignum_text_to_nat(b1, b1Nat);
 
-  TestLib_cycles t0,t1,t2,t3;
   t0 = TestLib_cpucycles_begin();
   uint64_t a = 1;
-  for (int i = 0; i < 1000000; i++){
+  for (int i = 0; i < 10000000; i++){
     Hacl_Impl_Bignum_bn_mul_mod(a1Nat, b1Nat, res1Nat);
+    //Hacl_Impl_Bignum_bn_mul_mod_fast(a1Nat, b1Nat, res1Nat);
     a = a & res1Nat[0];
   }
   t1 = TestLib_cpucycles_end();
@@ -83,25 +84,27 @@ int perf_mult() {
   }
   printf("\n a = %llu \n", a);
 
-  uint64_t res2Nat[4] = {0};
-  uint64_t b = 1;
-  t2 = TestLib_cpucycles_begin();
-  for (int i = 0; i < 1000000; i++){
-    Hacl_Impl_Bignum_bn_mul_mod_fast(a1Nat, b1Nat, res2Nat);
-    b = b & res2Nat[0];
+/* Fast multiplication from the paper */ 
+  uint64_t res3Nat[4] = {0};
+  uint64_t c = 1;
+  t4 = TestLib_cpucycles_begin();
+  for (int i = 0; i < 10000000; i++){
+    Hacl_Impl_Bignum_bn_mul_mod_fast(a1Nat, b1Nat, res3Nat);
+    c = c & res3Nat[0];
   }
-  t3 = TestLib_cpucycles_end();
+  t5 = TestLib_cpucycles_end();
 
-  uint8_t res2[32] = {0};
-  Hacl_Impl_Bignum_nat_to_text(res2Nat, res2);
+  uint8_t res3[32] = {0};
+  Hacl_Impl_Bignum_nat_to_text(res3Nat, res3);
 
   printf("\n the fast mult:\n");
   for (int i = 0; i < rLen; i++){
-	printf("%02x", res2[i]);
+	printf("%02x", res3[i]);
   }
 
-  printf("\n b = %llu \n", b);
-/*
+  printf("\n c = %llu \n", c);
+
+/* HACL */
   reverse(a1, 31, 0);
   reverse(b1, 31, 0);
 
@@ -112,25 +115,29 @@ int perf_mult() {
   Hacl_EC_Format_fexpand(bNat, b1);
 
   t2 = TestLib_cpucycles_begin();
-  for (int i = 0; i < 100000; i++){
+  uint64_t b = 1;
+  for (int i = 0; i < 10000000; i++){
     Hacl_Bignum_fmul(res2Nat, aNat, bNat);
+    b = b & res2Nat[0];
   }
   t3 = TestLib_cpucycles_end();
 
   uint8_t res2[rLen];
-  Hacl_EC_Format_fcontract_store(res2, res2Nat);
+  Hacl_EC_Format_fcontract(res2, res2Nat);
 
-  printf("\n the curve-25519 mult:\n");
+  printf("\n the curve-25519 mult (hacl):\n");
   for (int i = 0; i < rLen; i++){
 	printf("%02x ", res2[i]);
   }
-*/
+  printf("\n b = %llu \n", b);
   double ratio = (double) (t1 - t0) / (t3 - t2);
-  double r1 = (double) (t1 - t0) / 1000000;
-  double r2 = (double) (t3 - t2) / 1000000;
+  double ratio1 = (double) (t5 - t4) / (t3 - t2);
+  double r1 = (double) (t1 - t0) / 10000000;
+  double r2 = (double) (t3 - t2) / 10000000;
+  double r3 = (double) (t5 - t4) / 10000000;
 
-  printf("\n ratio \t r1 \t r2 \n");
-  printf("%lf \t %lf \t %lf \n", ratio, r1, r2);
+  printf("\n (usual / hacl) (fast / hacl) \t  r1 (usual) \t r3 (fast) \t r2 (hacl) \n");
+  printf("%lf \t %lf \t %lf \t %lf \t %lf \n", ratio, ratio1, r1, r3, r2);
   return 0;
 }
 

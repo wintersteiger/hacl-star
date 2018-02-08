@@ -195,7 +195,7 @@ Hacl_Impl_Bignum_bn_mult_by_limb_addj(
     res[ij] = carry;
 }
 
-void
+inline static void
 Hacl_Impl_Bignum_bn_mult_(
   Prims_nat aLen,
   Prims_nat bLen,
@@ -224,7 +224,7 @@ Hacl_Impl_Bignum_bn_mult_(
   }
 }
 
-void
+inline static void
 Hacl_Impl_Bignum_bn_mul(
   Prims_nat aLen,
   Prims_nat bLen,
@@ -241,14 +241,15 @@ Hacl_Impl_Bignum_bn_mul(
   Hacl_Impl_Bignum_bn_mult_(aLen, bLen, aaLen, a, bbLen, b, (uint32_t)0U, resLen, res);
 }
 
-void mult_fast(
+
+inline static void mult_fast(
   uint32_t aLen,
   uint64_t *x,
   uint64_t *y,
   uint64_t *z
 )
 {
-  uint64_t c = 0;
+  char c = 0;
   uint64_t u0, u1;
   u0 = _mulx_u64(x[0], y[0],&u1);
   z[0] = u0;
@@ -261,13 +262,13 @@ void mult_fast(
     hj = u1;
   }
 
-  z[aLen] = hj + c;
+  c = _addcarry_u64(c,hj,0,&z[aLen]); 
 
   uint64_t l0;
-  uint64_t d = 0;
-
+  char d = 0;
+   
   for (int i = 1; i < aLen; i++){
-    c = 0;
+    char c = 0;
     u0 = _mulx_u64(x[i], y[0],&u1);
     h0 = u1; 
     l0 = u0;
@@ -281,7 +282,7 @@ void mult_fast(
       d = _addcarryx_u64(d,hj,z[i + j],&z[i + j]);
       hj = u1;
     }
-    hj = hj + c;
+    c = _addcarry_u64(c,hj,0,&hj);
     z[i + aLen] = hj + d;
   } 
 }  

@@ -466,7 +466,7 @@ inline static void Hacl_Bignum_fscalar(uint64_t *output, uint64_t *b, uint64_t s
   Hacl_Bignum_Fproduct_copy_from_wide_(output, tmp);
 }
 
-inline static void Hacl_Bignum_fmul(uint64_t *output, uint64_t *a, uint64_t *b)
+void Hacl_Bignum_fmul(uint64_t *output, uint64_t *a, uint64_t *b)
 {
   Hacl_Bignum_Fmul_fmul(output, a, b);
 }
@@ -650,7 +650,7 @@ static void Hacl_EC_Ladder_cmult(uint64_t *result, uint8_t *n1, uint64_t *q)
   Hacl_EC_Point_copy(result, nq);
 }
 
-static void Hacl_EC_Format_fexpand(uint64_t *output, uint8_t *input)
+void Hacl_EC_Format_fexpand(uint64_t *output, uint8_t *input)
 {
   uint64_t i0 = load64_le(input);
   uint8_t *x00 = input + (uint32_t)6U;
@@ -760,7 +760,7 @@ static void Hacl_EC_Format_fcontract_trim(uint64_t *input)
   input[4U] = a4_;
 }
 
-static void Hacl_EC_Format_fcontract_store(uint8_t *output, uint64_t *input)
+void Hacl_EC_Format_fcontract_store(uint8_t *output, uint64_t *input)
 {
   uint64_t t0 = input[0U];
   uint64_t t1 = input[1U];
@@ -781,7 +781,7 @@ static void Hacl_EC_Format_fcontract_store(uint8_t *output, uint64_t *input)
   store64_le(b3, o3);
 }
 
-static void Hacl_EC_Format_fcontract(uint8_t *output, uint64_t *input)
+void Hacl_EC_Format_fcontract(uint8_t *output, uint64_t *input)
 {
   Hacl_EC_Format_fcontract_first_carry_full(input);
   Hacl_EC_Format_fcontract_second_carry_full(input);
