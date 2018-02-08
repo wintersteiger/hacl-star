@@ -4,6 +4,7 @@ OPENSSL_INCLUDE=$(HACL_HOME)/other_providers/openssl/include
 .PHONY=build
 
 CC=gcc-7 -Ofast -flto -march=native -mtune=native
+CC1=gcc-7 -S -Ofast -flto -march=native -mtune=native
 #CC=gcc-7 -pg
 #CFLAGS=-Ofast -march=native -mtune=native -m64 -fwrapv -fomit-frame-pointer -funroll-loops -flto
 
@@ -26,8 +27,9 @@ test-mult.exe:
 	$(CC) $(CFLAGS) -c $(KREMLIN_HOME)/kremlib/testlib.c -o testlib.o -I$(KREMLIN_HOME)/kremlib
 	$(CC) $(CFLAGS) -c $(KREMLIN_HOME)/kremlib/kremlib.c -o kremlib.o -I$(KREMLIN_HOME)/kremlib
 	$(CC) $(CFLAGS) -c Hacl_Mult.c -o Hacl_Mult.o -I$(KREMLIN_HOME)/kremlib
+	$(CC) $(CFLAGS) -c random.c -o random.o -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/snapshots/hacl-c-experimental
 	$(CC) $(CFLAGS) -c Hacl_Perf_Mult.c -o Hacl_Perf_Mult.o  -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
-	$(CC) $(CFLAGS) -o test-mult.exe  kremlib.o testlib.o Hacl_Mult.o Hacl_Perf_Mult.o -lcrypto -I/opt/kremlin/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
+	$(CC) $(CFLAGS) -o test-mult.exe random.o kremlib.o testlib.o Hacl_Mult.o Hacl_Perf_Mult.o -L$(OPENSSL_LIB) -I$(OPENSSL_INCLUDE) -I/opt/kremlin/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental -lcrypto
 
 test-mult: test-mult.exe
 	./test-mult.exe
@@ -42,6 +44,17 @@ test-exp.exe:
 test-exp: test-exp.exe
 	LD_LIBRARY_PATH=$(HACL_HOME)/build-experimental DYLD_LIBRARY_PATH=$(HACL_HOME)/build-experimental ./test-exp.exe
 
+test-mult-c25519.exe:
+	$(CC) $(CFLAGS) -c $(KREMLIN_HOME)/kremlib/testlib.c -o testlib.o -I$(KREMLIN_HOME)/kremlib
+	$(CC) $(CFLAGS) -c $(KREMLIN_HOME)/kremlib/kremlib.c -o kremlib.o -I$(KREMLIN_HOME)/kremlib
+	$(CC) $(CFLAGS) -c random.c -o random.o -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/snapshots/hacl-c-experimental
+	$(CC) $(CFLAGS) -c Hacl_Impl_Bignum.c -o Hacl_Impl_Bignum.o -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
+	$(CC) $(CFLAGS) -c $(HACL_HOME)/snapshots/hacl-c/Hacl_Curve25519.c -o Hacl_Curve25519.o -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
+	$(CC) $(CFLAGS) -c test-mult.c -o test-mult.o  -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
+	$(CC) $(CFLAGS) -o test-mult-c25519.exe random.o kremlib.o testlib.o Hacl_Impl_Bignum.o Hacl_Curve25519.o test-mult.o -I/opt/kremlin/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental -lcrypto
+
+test-mult-c25519: test-mult-c25519.exe
+	./test-mult-c25519.exe
 build:
 	$(MAKE) -C ../.. clean
 	$(MAKE) -C ../.. build-experimental
