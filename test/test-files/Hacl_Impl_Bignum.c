@@ -344,7 +344,7 @@ inline static void mult_fast_loop(
 }  
 
 
-void mult_fast_inlined(
+static inline void mult_fast_inlined(
   uint32_t aLen,
   uint64_t *x,
   uint64_t *y,
@@ -397,6 +397,7 @@ void mult_fast_inlined(
     z[i+4] = h3 + c + d;
   }
 }  
+
 
 
 void Hacl_Impl_Bignum_bn_sqr(Prims_nat aLen, uint32_t aaLen, uint64_t *a, uint64_t *res)
