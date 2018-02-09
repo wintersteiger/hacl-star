@@ -241,6 +241,56 @@ Hacl_Impl_Bignum_bn_mul(
   Hacl_Impl_Bignum_bn_mult_(aLen, bLen, aaLen, a, bbLen, b, (uint32_t)0U, resLen, res);
 }
 
+static inline uint64_t addcarry_u64(uint64_t a, uint64_t b) {
+ uint64_t r = b;
+ __asm__ __volatile__ ( \
+ "adcxq %[x], %[y]" \
+ : [y] "+r" (r)	\
+ : [x]  "r" (a) \
+ : "cc");
+ return r;
+}
+
+static inline uint64_t addcarryx_u64(uint64_t a, uint64_t b) {
+ uint64_t r = b;
+ __asm__ __volatile__ ( \
+ "adoxq %[x], %[y]" \
+ : [y] "+r" (r)	\
+ : [x]  "r" (a) \
+ : "cc");
+ return r;
+}
+
+static inline void clearcarry_u64() {
+ uint64_t r = 0;
+ __asm__ __volatile__ ( \
+ "test %[x], %[x]" \
+ : \
+ : [x] "r" (r) \
+ : "cc");
+}
+
+
+static inline uint64_t getcarry_u64() {
+char r = 0;
+ __asm__ __volatile__ ( \
+ "setc %[x]" \
+ : [x] "=r" (r)	\
+ : \
+ : "cc");
+ return r;
+}
+
+static inline uint64_t getcarryx_u64() {
+char r = 0;
+ __asm__ __volatile__ ( \
+ "seto %[x]" \
+ : [x] "=r" (r)	\
+ : \
+ : "cc");
+ return r;
+}
+
 
 inline static void mult_fast(
   uint32_t aLen,
@@ -249,42 +299,123 @@ inline static void mult_fast(
   uint64_t *z
 )
 {
+  aLen = 4;
   char c = 0;
   uint64_t u0, u1;
   u0 = _mulx_u64(x[0], y[0],&u1);
   z[0] = u0;
   uint64_t hj = u1;
   uint64_t l,h0;
+  clearcarry_u64();
   for (int j = 1; j < aLen; j++){
     u0 = _mulx_u64(x[0], y[j],&u1);
     l = u0;
-    c = _addcarry_u64(c,hj,l,&z[j]);
+    z[j] = addcarry_u64(hj,l);
     hj = u1;
   }
-
-  c = _addcarry_u64(c,hj,0,&z[aLen]); 
+  z[aLen] = addcarry_u64(hj,0); 
 
   uint64_t l0;
   char d = 0;
-   
+  clearcarry_u64(); 
   for (int i = 1; i < aLen; i++){
     char c = 0;
     u0 = _mulx_u64(x[i], y[0],&u1);
     h0 = u1; 
     l0 = u0;
-    d = _addcarryx_u64(d,z[i],l0,&z[i]);
+    z[i] = addcarryx_u64(z[i],l0);
     hj = h0;
 
     for (int j = 1; j < aLen; j++){
       u0 = _mulx_u64(x[i], y[j],&u1);
       l = u0;
-      c = _addcarry_u64(c,hj,l, &hj);
-      d = _addcarryx_u64(d,hj,z[i + j],&z[i + j]);
+      hj = addcarry_u64(hj,l);
+      z[i+j] = addcarryx_u64(hj,z[i + j]);
       hj = u1;
     }
-    c = _addcarry_u64(c,hj,0,&hj);
-    z[i + aLen] = hj + d;
-  } 
+    hj = addcarry_u64(hj,0);
+    z[i + aLen] = addcarryx_u64(hj,0);
+  }
+}  
+
+
+inline static void mult_fast_inlined(
+  uint32_t aLen,
+  uint64_t *x,
+  uint64_t *y,
+  uint64_t *z
+)
+{
+  char c = 0;
+  uint64_t l0,h0,l1,h1,l2,h2,l3,h3,l,h;
+  l0 = _mulx_u64(x[0], y[0],&h0);
+  z[0] = l0;
+  clearcarry_u64();
+  l1 = _mulx_u64(x[0], y[1],&h1);
+  z[1] = addcarry_u64(h0,l1);
+  l2 = _mulx_u64(x[0], y[2],&h2);
+  z[2] = addcarry_u64(h1,l2);
+  l3 = _mulx_u64(x[0], y[3],&h3);
+  z[3] = addcarry_u64(h2,l3);
+  z[4] = addcarry_u64(h3,0); 
+
+  clearcarry_u64();
+  
+  l0 = _mulx_u64(x[1], y[0],&h0);
+  z[1+0] = addcarryx_u64(z[1+0],l0);
+
+  l1 = _mulx_u64(x[1], y[1],&h1);
+  h0 = addcarry_u64(h0,l1);
+  z[1+1] = addcarryx_u64(h0,z[1+1]);
+
+  l2 = _mulx_u64(x[1], y[2],&h2);
+  h1 = addcarry_u64(h1,l2);
+  z[1+2] = addcarryx_u64(h1,z[1+2]);
+
+  l3 = _mulx_u64(x[1], y[3],&h3);
+  h2 = addcarry_u64(h2,l3);
+  z[1+3] = addcarryx_u64(h2,z[1+3]);
+
+  h3 = addcarry_u64(h3,0);
+  z[1+4] = addcarryx_u64(h3,0);
+
+
+  l0 = _mulx_u64(x[2], y[0],&h0);
+  z[2+0] = addcarryx_u64(z[2+0],l0);
+
+  l1 = _mulx_u64(x[2], y[1],&h1);
+  h0 = addcarry_u64(h0,l1);
+  z[2+1] = addcarryx_u64(h0,z[2+1]);
+
+  l2 = _mulx_u64(x[2], y[2],&h2);
+  h1 = addcarry_u64(h1,l2);
+  z[2+2] = addcarryx_u64(h1,z[2+2]);
+
+  l3 = _mulx_u64(x[2], y[3],&h3);
+  h2 = addcarry_u64(h2,l3);
+  z[2+3] = addcarryx_u64(h2,z[2+3]);
+
+  h3 = addcarry_u64(h3,0);
+  z[2+4] = addcarryx_u64(h3,0);
+
+
+  l0 = _mulx_u64(x[3], y[0],&h0);
+  z[3+0] = addcarryx_u64(z[3+0],l0);
+
+  l1 = _mulx_u64(x[3], y[1],&h1);
+  h0 = addcarry_u64(h0,l1);
+  z[3+1] = addcarryx_u64(h0,z[3+1]);
+
+  l2 = _mulx_u64(x[3], y[2],&h2);
+  h1 = addcarry_u64(h1,l2);
+  z[3+2] = addcarryx_u64(h1,z[3+2]);
+
+  l3 = _mulx_u64(x[3], y[3],&h3);
+  h2 = addcarry_u64(h2,l3);
+  z[3+3] = addcarryx_u64(h2,z[3+3]);
+
+  h3 = addcarry_u64(h3,0);
+  z[3+4] = addcarryx_u64(h3,0);
 }  
 
 
