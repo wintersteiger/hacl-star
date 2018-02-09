@@ -292,7 +292,7 @@ char r = 0;
 }
 
 
-inline static void mult_fast(
+inline static void mult_fast_loop(
   uint32_t aLen,
   uint64_t *x,
   uint64_t *y,
@@ -339,7 +339,7 @@ inline static void mult_fast(
 }  
 
 
-inline static void mult_fast_inlined(
+inline static void mult_fast(
   uint32_t aLen,
   uint64_t *x,
   uint64_t *y,
@@ -360,62 +360,26 @@ inline static void mult_fast_inlined(
   z[4] = addcarry_u64(h3,0); 
 
   clearcarry_u64();
-  
-  l0 = _mulx_u64(x[1], y[0],&h0);
-  z[1+0] = addcarryx_u64(z[1+0],l0);
 
-  l1 = _mulx_u64(x[1], y[1],&h1);
-  h0 = addcarry_u64(h0,l1);
-  z[1+1] = addcarryx_u64(h0,z[1+1]);
+  for (int i = 1; i < 4; i++) {
+    l0 = _mulx_u64(x[i], y[0],&h0);
+    z[i+0] = addcarryx_u64(z[i+0],l0);
 
-  l2 = _mulx_u64(x[1], y[2],&h2);
-  h1 = addcarry_u64(h1,l2);
-  z[1+2] = addcarryx_u64(h1,z[1+2]);
+    l1 = _mulx_u64(x[i], y[1],&h1);
+    h0 = addcarry_u64(h0,l1);
+    z[i+1] = addcarryx_u64(h0,z[i+1]);
 
-  l3 = _mulx_u64(x[1], y[3],&h3);
-  h2 = addcarry_u64(h2,l3);
-  z[1+3] = addcarryx_u64(h2,z[1+3]);
+    l2 = _mulx_u64(x[i], y[2],&h2);
+    h1 = addcarry_u64(h1,l2);
+    z[i+2] = addcarryx_u64(h1,z[i+2]);
 
-  h3 = addcarry_u64(h3,0);
-  z[1+4] = addcarryx_u64(h3,0);
+    l3 = _mulx_u64(x[i], y[3],&h3);
+    h2 = addcarry_u64(h2,l3);
+    z[i+3] = addcarryx_u64(h2,z[i+3]);
 
-
-  l0 = _mulx_u64(x[2], y[0],&h0);
-  z[2+0] = addcarryx_u64(z[2+0],l0);
-
-  l1 = _mulx_u64(x[2], y[1],&h1);
-  h0 = addcarry_u64(h0,l1);
-  z[2+1] = addcarryx_u64(h0,z[2+1]);
-
-  l2 = _mulx_u64(x[2], y[2],&h2);
-  h1 = addcarry_u64(h1,l2);
-  z[2+2] = addcarryx_u64(h1,z[2+2]);
-
-  l3 = _mulx_u64(x[2], y[3],&h3);
-  h2 = addcarry_u64(h2,l3);
-  z[2+3] = addcarryx_u64(h2,z[2+3]);
-
-  h3 = addcarry_u64(h3,0);
-  z[2+4] = addcarryx_u64(h3,0);
-
-
-  l0 = _mulx_u64(x[3], y[0],&h0);
-  z[3+0] = addcarryx_u64(z[3+0],l0);
-
-  l1 = _mulx_u64(x[3], y[1],&h1);
-  h0 = addcarry_u64(h0,l1);
-  z[3+1] = addcarryx_u64(h0,z[3+1]);
-
-  l2 = _mulx_u64(x[3], y[2],&h2);
-  h1 = addcarry_u64(h1,l2);
-  z[3+2] = addcarryx_u64(h1,z[3+2]);
-
-  l3 = _mulx_u64(x[3], y[3],&h3);
-  h2 = addcarry_u64(h2,l3);
-  z[3+3] = addcarryx_u64(h2,z[3+3]);
-
-  h3 = addcarry_u64(h3,0);
-  z[3+4] = addcarryx_u64(h3,0);
+    h3 = addcarry_u64(h3,0);
+    z[i+4] = addcarryx_u64(h3,0);
+  }
 }  
 
 

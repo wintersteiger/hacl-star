@@ -84,25 +84,6 @@ int perf_mult() {
   }
   printf("\n a = %llu \n", a);
 
-/* Fast multiplication from the paper */ 
-  uint64_t res3Nat[4] = {0};
-  uint64_t c = 1;
-  t4 = TestLib_cpucycles_begin();
-  for (int i = 0; i < 10000000; i++){
-    Hacl_Impl_Bignum_bn_mul_mod_fast(a1Nat, b1Nat, res3Nat);
-    c = c & res3Nat[0];
-  }
-  t5 = TestLib_cpucycles_end();
-
-  uint8_t res3[32] = {0};
-  Hacl_Impl_Bignum_nat_to_text(res3Nat, res3);
-
-  printf("\n the fast mult:\n");
-  for (int i = 0; i < rLen; i++){
-	printf("%02x", res3[i]);
-  }
-
-  printf("\n c = %llu \n", c);
 
 /* HACL */
   reverse(a1, 31, 0);
@@ -130,6 +111,28 @@ int perf_mult() {
 	printf("%02x ", res2[i]);
   }
   printf("\n b = %llu \n", b);
+
+/* Fast multiplication from the paper */ 
+  uint64_t res3Nat[4] = {0};
+  uint64_t c = 1;
+  t4 = TestLib_cpucycles_begin();
+  for (int i = 0; i < 10000000; i++){
+    Hacl_Impl_Bignum_bn_mul_mod_fast(a1Nat, b1Nat, res3Nat);
+    c = c & res3Nat[0];
+  }
+  t5 = TestLib_cpucycles_end();
+
+  uint8_t res3[32] = {0};
+  Hacl_Impl_Bignum_nat_to_text(res3Nat, res3);
+
+  printf("\n the fast mult:\n");
+  for (int i = 0; i < rLen; i++){
+	printf("%02x", res3[i]);
+  }
+
+  printf("\n c = %llu \n", c);
+
+
   double ratio = (double) (t1 - t0) / (t3 - t2);
   double ratio1 = (double) (t5 - t4) / (t3 - t2);
   double r1 = (double) (t1 - t0) / 10000000;
