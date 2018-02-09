@@ -68,11 +68,11 @@ int perf_mult() {
 
   t0 = TestLib_cpucycles_begin();
   uint64_t a = 1;
-  for (int i = 0; i < 100000000; i++){
+   for (int i = 0; i < 100000000; i++){
     Hacl_Impl_Bignum_bn_mul_mod(a1Nat, b1Nat, res1Nat);
     //Hacl_Impl_Bignum_bn_mul_mod_fast(a1Nat, b1Nat, res1Nat);
     a = a ^ res1Nat[3];
-  }
+   }
   t1 = TestLib_cpucycles_end();
 
   uint8_t res1[32] = {0};
@@ -97,10 +97,10 @@ int perf_mult() {
 
   t2 = TestLib_cpucycles_begin();
   uint64_t b = 1;
-  for (int i = 0; i < 100000000; i++){
+   for (int i = 0; i < 100000000; i++){
     Hacl_Bignum_fmul(res2Nat, aNat, bNat);
     b = b ^ res2Nat[3];
-  }
+   }
   t3 = TestLib_cpucycles_end();
 
   uint8_t res2[rLen];
@@ -118,7 +118,7 @@ int perf_mult() {
   t4 = TestLib_cpucycles_begin();
   for (int i = 0; i < 100000000; i++){
     Hacl_Impl_Bignum_bn_mul_mod_fast(a1Nat, b1Nat, res3Nat);
-    c = c ^ res3Nat[3];
+   c = c ^ res3Nat[3];
   }
   t5 = TestLib_cpucycles_end();
 
