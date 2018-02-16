@@ -67,6 +67,8 @@ type ctrT i = x:u32 {x <=^ maxCtr i}
 // The PRF domain: an IV and a counter.
 
 type domain (i:id) = { iv:Block.iv (cipherAlg_of_id i); ctr:ctrT i }
+
+inline_for_extraction
 let incr (i:id) (x:domain i {x.ctr <^ maxCtr i}) = { iv = x.iv; ctr = x.ctr +^ 1ul }
 
 let above (#i:id) (x:domain i) (z:domain i) = x.iv == z.iv /\ x.ctr >=^ z.ctr
@@ -527,6 +529,7 @@ let prf_dexor_ensures (i:id) (t:state i) (x:domain i{ctr_0 i <^ x.ctr})
    prf_dexor_modifies t x plain h0 h1 /\
    (safeId i ==> contains_plain_block x (sel_plain h1 l plain) (HS.sel h1 (itable i t)))
    
+inline_for_extraction
 val prf_dexor: 
   i:id -> t:state i -> x:domain i{ctr_0 i <^ x.ctr} -> l:u32 {l <=^ blocklen i} -> 
   cipher:lbuffer (v l) -> plain:plainBuffer i (v l) -> ST unit

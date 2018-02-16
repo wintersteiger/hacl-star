@@ -21,6 +21,7 @@ module PRF           = Crypto.Symmetric.PRF
 module Plain         = Crypto.Plain
 module Invariant     = Crypto.AEAD.Invariant
 module HS            = FStar.HyperStack
+module ST            = FStar.HyperStack.ST
 module CMA           = Crypto.Symmetric.UF1CMA
 module MAC           = Crypto.Symmetric.MAC
 module Seq = FStar.Seq
@@ -408,6 +409,8 @@ let enxor_invariant (#i:id) (t:PRF.state i) (x:PRF.domain i)
       prf i    ==> writing at most at indexes x and above (same iv, higher ctr) at the end of the PRF table.
       safeId i ==> appending *exactly* "counterblocks i x l plain cipher" at the end of the PRF table
  **)
+
+
 val counter_enxor:
   #i:id ->
   t:PRF.state i ->
@@ -776,46 +779,73 @@ let dexor_ensures (#i:id) (t:PRF.state i) (x:PRF.domain i)
        //this clause seems unnecessary, except for perhaps simplifying some proofs
        Seq.equal (HS.sel h0 (PRF.itable i t)) (HS.sel h1 (PRF.itable i t)))
 
-val counter_dexor:
-  i:id -> t:PRF.state i -> x:PRF.domain i ->
-  len:u32 -> remaining_len:u32 ->
+(* TBC once while is generalized *)
+private let test_pre (remaining: ref u32) h0 : GTot Type0 = HS.contains h0 remaining
+private let test_post (remaining: ref u32) b h1 : GTot Type0 = HS.contains h1 remaining /\ b == (HS.sel h1 remaining <> 0ul)
+
+inline_for_extraction
+private let counter_dexor_test (remaining: ref u32) (_:unit): Stack bool
+  (requires fun h0 -> test_pre remaining h0)
+  (ensures fun h0 b h1 -> (* h0 == h1 /\ *) test_post remaining b h1) 
+=
+  !remaining <> 0ul
+
+#set-options "--lax" 
+inline_for_extraction
+private val counter_dexor_body: 
+  i:id -> t:PRF.state i -> 
+  xp: ref (PRF.domain i) ->
+  len:u32 -> 
+  remaining: ref u32 ->
   plain:plainBuffer i (v len) ->
   cipher:lbuffer (v len) ->
-  p:maybe_plain i (v len) ->
-  ST unit (requires (fun h -> dexor_requires t x remaining_len plain cipher p h))
-          (ensures (fun h0 _ h1 -> dexor_ensures t x plain cipher p h0 h1))
-#reset-options "--z3rlimit 200 --initial_fuel 0 --max_fuel 0 --initial_ifuel 0 --max_ifuel 0"
-let rec counter_dexor i t x len remaining_len plain cipher p =
-  let completed_len = len -^ remaining_len in
-  let h0 = get () in
-  if safeId i then ST.recall (itable i t);
-  if remaining_len <> 0ul then
-    begin // at least one more block
-      let starting_pos = len -^ remaining_len in
-      let l = min remaining_len (PRF.blocklen i) in
-      let cipher_hd = Buffer.sub cipher starting_pos l in
-      let plain_hd = Plain.sub plain starting_pos l in
+  p:maybe_plain i (v len) -> 
+  unit -> Stack unit 
+  (requires fun h0 -> test_post remaining false h0)
+  (ensures fun h0 r h1 -> test_pre remaining h1)
+//(requires (fun h -> dexor_requires t x (HS.sel h remaining) plain cipher p h))
+//(ensures (fun h0 _ h1 -> (*fixme*) dexor_ensures t x plain cipher p h0 h1))
+let counter_dexor_body i t xp len remaining plain cipher p () = 
+  let h0 = get() in 
+  let x = !xp in 
+  let remaining_len = !remaining in 
+  let starting_pos = len -^ remaining_len in
+  let l = min remaining_len (PRF.blocklen i) in
+  let cipher_hd = Buffer.sub cipher starting_pos l in
+  let plain_hd = Plain.sub plain starting_pos l in
 
-      invert_prf_contains_all_otp_blocks_st i x len remaining_len t p cipher h0;
-      prf_dexor i t x l cipher_hd plain_hd;
+  invert_prf_contains_all_otp_blocks_st i x len remaining_len t p cipher h0;
+  prf_dexor i t x l cipher_hd plain_hd;
 
-      let h1 = get() in
-      let y = PRF.incr i x in
-      frame_prf_contains_all_otp_blocks_st x y (remaining_len -^ l) t plain p cipher h0 h1;
-      FStar.Classical.move_requires (FStar.Buffer.lemma_reveal_modifies_1 (as_buffer plain) h0) h1;
-      extend_decrypted_up_to t x remaining_len plain p cipher h0 h1;
-      incr_remaining_len_ok x len remaining_len;
+  let h1 = get() in
+  let y = PRF.incr i x in
+  frame_prf_contains_all_otp_blocks_st x y (remaining_len -^ l) t plain p cipher h0 h1;
+  FStar.Classical.move_requires (FStar.Buffer.lemma_reveal_modifies_1 (as_buffer plain) h0) h1;
+  extend_decrypted_up_to t x remaining_len plain p cipher h0 h1;
+  incr_remaining_len_ok x len remaining_len;
 
-      counter_dexor i t y len (remaining_len -^ l) plain cipher p;
+  xp := y;
+  remaining := remaining_len -^ l
+// this won't do: we now need a small-step proof 
+(*
+  let h2 = get () in
+  dexor_of_prf_dexor_modifies t x plain_hd h0 h1;
+  dexor_modifies_widen t x plain starting_pos l h0 h1;
+  dexor_modifies_trans t x y plain h0 h1 h2;
+  FStar.Classical.move_requires (Buffer.lemma_reveal_modifies_1 (Plain.as_buffer plain) h0) h1;
+  FStar.Classical.move_requires (Buffer.lemma_reveal_modifies_1 (Plain.as_buffer plain) h1) h2
+*)
 
-      let h2 = get () in
-      dexor_of_prf_dexor_modifies t x plain_hd h0 h1;
-      dexor_modifies_widen t x plain starting_pos l h0 h1;
-      dexor_modifies_trans t x y plain h0 h1 h2;
-      FStar.Classical.move_requires (Buffer.lemma_reveal_modifies_1 (Plain.as_buffer plain) h0) h1;
-      FStar.Classical.move_requires (Buffer.lemma_reveal_modifies_1 (Plain.as_buffer plain) h1) h2
-    end
-   else dexor_modifies_refl t x plain h0
+let counter_dexor i t x0 len plain cipher p = 
+  push_frame();
+  let remaining = salloc len in 
+  let x = salloc x0 in 
+  C.Loops.while 
+    (counter_dexor_test remaining)
+    (counter_dexor_body i t x len remaining plain cipher p); 
+  pop_frame()  
+
+#reset-options ""
 
 let decrypt_ok (#i:id) (n:Cipher.iv (Cipher.algi i)) (st:aead_state i Reader)
                (#aadlen:aadlen) (aad:lbuffer (v aadlen))
@@ -917,7 +947,7 @@ let dexor #i st iv #aadlen aad #len plain cipher_tagged p =
   let cipher : lbuffer (v len) = Buffer.sub cipher_tagged 0ul len in
   let h0 = get () in
   intro_separation st aad plain cipher_tagged;
-  counter_dexor i t x_1 len len plain cipher p;
+  counter_dexor i t x_1 len plain cipher p;
   let h1 = get () in
   decrypted_up_to_end plain p h1;
 
