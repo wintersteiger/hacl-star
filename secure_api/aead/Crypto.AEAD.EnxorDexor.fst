@@ -436,35 +436,28 @@ val counter_enxor:
     enxor_invariant t x len 0ul plain cipher h_init h1))
 #set-options "--z3rlimit 200 --initial_fuel 0 --max_fuel 0 --initial_ifuel 0 --max_ifuel 0"
 let counter_enxor #i t x len remaining_len plain cipher h_init =
-  let completed_len = len -^ remaining_len in
-  let h0 = get () in
-  if remaining_len <> 0ul then begin // at least one more block
-    push_frame ();
+  push_frame ();
+  let remaining = salloc #u32 #(Heap.trivial_preorder u32) remaining_len in
+  let prf_dom   = salloc #(PRF.domain i) #(Heap.trivial_preorder (PRF.domain i)) x in
 
-    let remaining = salloc #u32 #(Heap.trivial_preorder u32) remaining_len in
-    let prf_dom   = salloc #(PRF.domain i) #(Heap.trivial_preorder (PRF.domain i)) x in
-
-    let test :unit -> Stack bool (fun _ -> True) (fun _ _ _ -> True) = fun _ -> !remaining <> 0ul in
-    let body :unit -> Stack unit (fun _ -> True) (fun _ _ _ -> True)
-      = fun _ ->
-        let remaining_len = !remaining in
-	let x = !prf_dom in
+  let test :unit -> Stack bool (fun _ -> True) (fun _ _ _ -> True) = fun _ -> !remaining <> 0ul in
+  let body :unit -> Stack unit (fun _ -> True) (fun _ _ _ -> True)
+    = fun _ ->
+      let remaining_len = !remaining in
+      let x = !prf_dom in
       
-        let starting_pos = len -^ remaining_len in
-        let l = min remaining_len (PRF.blocklen i) in
-        let cipher_hd = Buffer.sub cipher starting_pos l in
-        let plain_hd = Plain.sub plain starting_pos l in
-        PRF.prf_enxor i t x l cipher_hd plain_hd;
+      let starting_pos = len -^ remaining_len in
+      let l = min remaining_len (PRF.blocklen i) in
+      let cipher_hd = Buffer.sub cipher starting_pos l in
+      let plain_hd = Plain.sub plain starting_pos l in
+      PRF.prf_enxor i t x l cipher_hd plain_hd;
 
-        remaining := remaining_len -^ l;
-	prf_dom := PRF.incr i x
-    in
+      remaining := remaining_len -^ l;
+      prf_dom := PRF.incr i x
+  in
 
-    C.Loops.while test body;
-    pop_frame ()
-
-  end
-  else refl_modifies_table_above_x_and_buffer t x cipher h0
+  C.Loops.while test body;
+  pop_frame ()
     //   let starting_pos = len -^ remaining_len in
     //   let l = min remaining_len (PRF.blocklen i) in
     //   let cipher_hd = Buffer.sub cipher starting_pos l in
@@ -810,60 +803,57 @@ val counter_dexor:
           (ensures (fun h0 _ h1 -> dexor_ensures t x plain cipher p h0 h1))
 #reset-options "--z3rlimit 200 --initial_fuel 0 --max_fuel 0 --initial_ifuel 0 --max_ifuel 0"
 let counter_dexor i t x len remaining_len plain cipher p =
-  let h0 = get () in
-  if safeId i then ST.recall (itable i t);
-  if remaining_len <> 0ul then begin
-    push_frame ();
+  push_frame ();
 
-    let remaining = salloc #u32 #(Heap.trivial_preorder u32) remaining_len in
-    let prf_dom   = salloc #(PRF.domain i) #(Heap.trivial_preorder (PRF.domain i)) x in
+  let remaining = salloc #u32 #(Heap.trivial_preorder u32) remaining_len in
+  let prf_dom   = salloc #(PRF.domain i) #(Heap.trivial_preorder (PRF.domain i)) x in
 
-    let local_liveness (h:mem) = h `HS.contains` remaining /\ h `HS.contains` prf_dom /\
-                                 Buffer.disjoint_ref_2 (Plain.as_buffer plain) remaining prf_dom /\
-   			         Buffer.disjoint_ref_2 cipher remaining prf_dom
-    in
+  let local_liveness (h:mem) = h `HS.contains` remaining /\ h `HS.contains` prf_dom /\
+                               Buffer.disjoint_ref_2 (Plain.as_buffer plain) remaining prf_dom /\
+   			       Buffer.disjoint_ref_2 cipher remaining prf_dom
+  in
 
-    let pre (h:mem) = local_liveness h /\ dexor_requires t (HS.sel h prf_dom) (HS.sel h remaining) plain cipher p h in
-    let post (b:bool) (h:mem) = b = (HS.sel h remaining <> 0ul) /\ local_liveness h /\ 
-                                dexor_requires t (HS.sel h prf_dom) (HS.sel h remaining) plain cipher p h
-    in
+  let pre (h:mem) = local_liveness h /\ dexor_requires t (HS.sel h prf_dom) (HS.sel h remaining) plain cipher p h in
+  let post (b:bool) (h:mem) = b = (HS.sel h remaining <> 0ul) /\ local_liveness h /\ 
+                              dexor_requires t (HS.sel h prf_dom) (HS.sel h remaining) plain cipher p h
+  in
 
-    let test :unit -> Stack bool (fun h0 -> pre h0) (fun _ b h1  -> post b h1) = fun _ -> !remaining <> 0ul in
+  let test :unit -> Stack bool (fun h0 -> pre h0) (fun _ b h1  -> post b h1) = fun _ -> !remaining <> 0ul in
 
-    let body :unit -> Stack unit (fun h0 -> post true h0) (fun _ _ h1  -> pre h1)
-      = fun _ ->
-        let h0 = ST.get () in
+  let body :unit -> Stack unit (fun h0 -> post true h0) (fun _ _ h1  -> pre h1)
+    = fun _ ->
+      let h0 = ST.get () in
 
-        let remaining_len = !remaining in
-        let x = !prf_dom in
+      let remaining_len = !remaining in
+      let x = !prf_dom in
 
-        let starting_pos = len -^ remaining_len in
-        let l = min remaining_len (PRF.blocklen i) in
-        let cipher_hd = Buffer.sub cipher starting_pos l in
-        let plain_hd = Plain.sub plain starting_pos l in
+      let starting_pos = len -^ remaining_len in
+      let l = min remaining_len (PRF.blocklen i) in
+      let cipher_hd = Buffer.sub cipher starting_pos l in
+      let plain_hd = Plain.sub plain starting_pos l in
 
-        invert_prf_contains_all_otp_blocks_st i x len remaining_len t p cipher h0;
-        prf_dexor i t x l cipher_hd plain_hd;
+      invert_prf_contains_all_otp_blocks_st i x len remaining_len t p cipher h0;
+      prf_dexor i t x l cipher_hd plain_hd;
 
-        let h1 = ST.get () in
-        incr_remaining_len_ok x len remaining_len;
-        frame_prf_contains_all_otp_blocks_st x (PRF.incr i x) (remaining_len -^ l) t plain p cipher h0 h1;
-        extend_decrypted_up_to t x remaining_len plain p cipher h0 h1;
+      let h1 = ST.get () in
+      incr_remaining_len_ok x len remaining_len;
+      frame_prf_contains_all_otp_blocks_st x (PRF.incr i x) (remaining_len -^ l) t plain p cipher h0 h1;
+      extend_decrypted_up_to t x remaining_len plain p cipher h0 h1;
 
-        remaining := remaining_len -^ l;
-        prf_dom := PRF.incr i x;
+      remaining := remaining_len -^ l;
+      prf_dom := PRF.incr i x;
 
-        let h2 = ST.get () in
-        assert (dexor_requires t (PRF.incr i x) (remaining_len -^ l) plain cipher p h2);
-        assert (local_liveness h2);
-        assume (HyperStack.ST.equal_domains h0 h2)
-    in
-    admit ();
-    //F* crashes with h0 not found
-    C.Loops.while test body;
-    pop_frame ()
-  end
-  else dexor_modifies_refl t x plain h0
+      let h2 = ST.get () in
+      assert (dexor_requires t (PRF.incr i x) (remaining_len -^ l) plain cipher p h2);
+      assert (local_liveness h2);
+      assume (HyperStack.ST.equal_domains h0 h2)
+  in
+  C.Loops.while #pre #post test body;
+  admit ();
+  pop_frame ()
+
+  // end
+  // else dexor_modifies_refl t x plain h0
 
   // let h0 = get () in
   // if safeId i then ST.recall (itable i t);
