@@ -4,16 +4,32 @@
 #include <immintrin.h>
 #include <x86intrin.h>
 
-static inline uint64_t addcarry_u64(uint64_t a, uint64_t b) {
- uint64_t r = b;
- uint64_t x = a;
+static inline char addcarry_u64(char c,uint64_c a, uint64_t b, uint64_t* o) {
+  uint64_t r = b;
+  uint64_t x = a;
+  char c;
  __asm__ __volatile__ ( \
- "adcxq %[x], %[y]" \
- : [y] "+r" (r)	\
+ "adcxq %[x], %[y]\n\t" "setc %[z]" \
+ : [y] "+r" (r), [z] "=r" (c)   \
  : [x]  "r" (x) \
  : "cc");
- return r;
+ *o = r
+ return c;
 }
+
+static inline char addcarryx_u64(char c,uint64_c a, uint64_t b, uint64_t* o) {
+  uint64_t r = b;
+  uint64_t x = a;
+  char c;
+ __asm__ __volatile__ ( \
+ "adcxq %[x], %[y]\n\t" "setc %[z]" \
+ : [y] "+r" (r), [z] "=r" (c)   \
+ : [x]  "r" (x) \
+ : "cc");
+ *o = r
+ return c;
+}
+
 
 static inline uint64_t addcarryx_u64(uint64_t a, uint64_t b) {
  uint64_t r = b;
@@ -344,7 +360,7 @@ inline static void mult_fast_loop(
 }  
 
 
-static inline void mult_fast_inlined(
+void mult_fast_inlined(
   uint32_t aLen,
   uint64_t *x,
   uint64_t *y,

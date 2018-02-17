@@ -9,17 +9,21 @@ open FStar.UInt8
 open FStar.Endianness
 open Spec.Poly1305.Lemmas
 
-#set-options "--initial_fuel 0 --max_fuel 0 --initial_ifuel 0 --max_ifuel 0"
-
 (* Field types and parameters *)
 let prime = pow2 130 - 5
 type elem = e:int{e >= 0 /\ e < prime}
-let fadd (e1:elem) (e2:elem) = (e1 + e2) % prime
-let fmul (e1:elem) (e2:elem) = (e1 * e2) % prime
+let fadd (e1:elem) (e2:elem) : elem = (e1 + e2) % prime 
+let fmul (e1:elem) (e2:elem) : elem = (e1 * e2) % prime
 let zero : elem = 0
 let one  : elem = 1
 let op_Plus_At = fadd
 let op_Star_At = fmul
+
+let test1 () = assert(fadd 1 2 = 3)
+let test2 x y = assert(fadd x y = fadd y x)
+let test3 x y z = assert(fadd x (fadd y z) = fadd (fadd x y) z)
+
+
 (* Type aliases *)
 let op_Amp_Bar = UInt.logand #128
 type word = w:bytes{length w <= 16}

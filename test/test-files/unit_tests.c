@@ -301,7 +301,7 @@ bool unit_test_scalarmult(){
   bool pass = true;
   for (int i = 0; i < NUM_SCALARMULT; i++){
     b = tweet_crypto_scalarmult_base(expected_bytes, random_bytes + 32 * i);
-    b =crypto_scalarmult_base(hacl_bytes, random_bytes + 32 * i);
+    b = crypto_scalarmult_base(hacl_bytes, random_bytes + 32 * i);
     a = memcmp(hacl_bytes, expected_bytes, 16 * sizeof (uint8_t));
     if (a != 0){
       pass = false;
