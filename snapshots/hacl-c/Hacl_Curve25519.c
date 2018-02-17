@@ -30,18 +30,18 @@
 inline static void Hacl_Bignum_fsum(uint64_t *a, uint64_t *b)
 {
   char c = 0;
-  c = _addcarryx_u64(c,a[0],b[0],&a[0]);
-  c = _addcarryx_u64(c,a[1],b[1],&a[1]);
-  c = _addcarryx_u64(c,a[2],b[2],&a[2]);
-  c = _addcarryx_u64(c,a[3],b[3],&a[3]);
+  c = _addcarry_u64(c,a[0],b[0],&a[0]);
+  c = _addcarry_u64(c,a[1],b[1],&a[1]);
+  c = _addcarry_u64(c,a[2],b[2],&a[2]);
+  c = _addcarry_u64(c,a[3],b[3],&a[3]);
 
   DEBUG(if (c > 1) printf("carry greater than 1");)
   uint64_t top = (uint64_t)38 * c;
   c = 0;
-  c = _addcarryx_u64(c,a[0],top,&a[0]);
-  c = _addcarryx_u64(c,a[1],0,  &a[1]);
-  c = _addcarryx_u64(c,a[2],0,  &a[2]);
-  c = _addcarryx_u64(c,a[3],0,  &a[3]);
+  c = _addcarry_u64(c,a[0],top,&a[0]);
+  c = _addcarry_u64(c,a[1],0,  &a[1]);
+  c = _addcarry_u64(c,a[2],0,  &a[2]);
+  c = _addcarry_u64(c,a[3],0,  &a[3]);
 
   DEBUG(if (c > 0) printf("WARNING: need additional carry in fsum\n"));
 }
@@ -51,11 +51,11 @@ inline static void Hacl_Bignum_fdifference(uint64_t *a, uint64_t *b)
   
   uint64_t tmp[5U] = { 0U };
   char c = 0;
-  c = _addcarryx_u64(c,b[0],(uint64_t)0xffffffffffffff68,&tmp[0]);
-  c = _addcarryx_u64(c,b[1],(uint64_t)0xffffffffffffffff,&tmp[1]);
-  c = _addcarryx_u64(c,b[2],(uint64_t)0xffffffffffffffff,&tmp[2]);
-  c = _addcarryx_u64(c,b[3],(uint64_t)0xffffffffffffffff,&tmp[3]);
-  c = _addcarryx_u64(c,3,0,&tmp[4]);
+  c = _addcarry_u64(c,b[0],(uint64_t)0xffffffffffffff68,&tmp[0]);
+  c = _addcarry_u64(c,b[1],(uint64_t)0xffffffffffffffff,&tmp[1]);
+  c = _addcarry_u64(c,b[2],(uint64_t)0xffffffffffffffff,&tmp[2]);
+  c = _addcarry_u64(c,b[3],(uint64_t)0xffffffffffffffff,&tmp[3]);
+  c = _addcarry_u64(c,3,0,&tmp[4]);
 
   DEBUG(if (c > 0) printf("WARNING: dropping carry in fdiff\n"));
 
@@ -78,18 +78,18 @@ inline static void Hacl_Bignum_fdifference(uint64_t *a, uint64_t *b)
   
   uint64_t top = (uint64_t)38 * tmp[4];
   c = 0;
-  c = _addcarryx_u64(c,tmp[0],top,&tmp[0]);
-  c = _addcarryx_u64(c,tmp[1],0,  &tmp[1]);
-  c = _addcarryx_u64(c,tmp[2],0,  &tmp[2]);
-  c = _addcarryx_u64(c,tmp[3],0,  &tmp[3]);
+  c = _addcarry_u64(c,tmp[0],top,&tmp[0]);
+  c = _addcarry_u64(c,tmp[1],0,  &tmp[1]);
+  c = _addcarry_u64(c,tmp[2],0,  &tmp[2]);
+  c = _addcarry_u64(c,tmp[3],0,  &tmp[3]);
 
   DEBUG(if (c > 1) printf("carry greater than 1");)
   top = (uint64_t)38 * c;
   c = 0;
-  c = _addcarryx_u64(c,tmp[0],top,&tmp[0]);
-  c = _addcarryx_u64(c,tmp[1],0,  &tmp[1]);
-  c = _addcarryx_u64(c,tmp[2],0,  &tmp[2]);
-  c = _addcarryx_u64(c,tmp[3],0,  &tmp[3]);
+  c = _addcarry_u64(c,tmp[0],top,&tmp[0]);
+  c = _addcarry_u64(c,tmp[1],0,  &tmp[1]);
+  c = _addcarry_u64(c,tmp[2],0,  &tmp[2]);
+  c = _addcarry_u64(c,tmp[3],0,  &tmp[3]);
 
   DEBUG(if (c > 0) printf("WARNING: need additional carry in fdifference\n");)
 
@@ -107,28 +107,28 @@ inline static void Hacl_Bignum_fscalar(uint64_t *output, uint64_t *b, uint64_t s
   l2 = _mulx_u64(b[2],s,&h2);
   l3 = _mulx_u64(b[3],s,&h3);
   char c = 0;
-  c = _addcarryx_u64(c,l1,h0,&l1);
-  c = _addcarryx_u64(c,l2,h1,&l2);
-  c = _addcarryx_u64(c,l3,h2,&l3);
-  c = _addcarryx_u64(c,0,h3,&l4);
+  c = _addcarry_u64(c,l1,h0,&l1);
+  c = _addcarry_u64(c,l2,h1,&l2);
+  c = _addcarry_u64(c,l3,h2,&l3);
+  c = _addcarry_u64(c,0,h3,&l4);
 
   DEBUG(if (c > 0) printf("WARNING: need carry pass in fscalar\n");)
   
   l4 = _mulx_u64(l4,38,&h4);
   c = 0;
-  c = _addcarryx_u64(c,l0,l4,&l0);
-  c = _addcarryx_u64(c,l1,h4,&l1);
-  c = _addcarryx_u64(c,l2,0,&l2);
-  c = _addcarryx_u64(c,l3,0,&l3);
+  c = _addcarry_u64(c,l0,l4,&l0);
+  c = _addcarry_u64(c,l1,h4,&l1);
+  c = _addcarry_u64(c,l2,0,&l2);
+  c = _addcarry_u64(c,l3,0,&l3);
 
   DEBUG(if (c > 0) printf("WARNING: need 2nd carry round in fscalar\n");)
 
   l4 = (uint64_t)38 * c;
   c = 0;
-  c = _addcarryx_u64(c,l0,l4,&l0);
-  c = _addcarryx_u64(c,l1,0,&l1);
-  c = _addcarryx_u64(c,l2,0,&l2);
-  c = _addcarryx_u64(c,l3,0,&l3);
+  c = _addcarry_u64(c,l0,l4,&l0);
+  c = _addcarry_u64(c,l1,0,&l1);
+  c = _addcarry_u64(c,l2,0,&l2);
+  c = _addcarry_u64(c,l3,0,&l3);
 
   DEBUG(if (c > 0) printf("WARNING: discarding carry in fscalar\n");)
 
@@ -147,64 +147,64 @@ inline static void Hacl_Bignum_Fmul_fmul(uint64_t *output, uint64_t *input1, uin
   tmp[0] = _mulx_u64(input1[0],input2[0],&h0);
   for (int j = 1; j < 4; j++) {
     low = _mulx_u64(input1[0],input2[j],&h1);
-    c = _addcarryx_u64(c,low,h0,&tmp[j]);
+    c = _addcarry_u64(c,low,h0,&tmp[j]);
     h0 = h1;
   }
-  c = _addcarryx_u64(c,h0,0,&tmp[4]);
+  c = _addcarry_u64(c,h0,0,&tmp[4]);
   for (int i = 1; i < 4; i++) {
     DEBUG(if (c > 0) printf("WARNING: dropping carry in fmul\n"));
     c = 0;
     low = _mulx_u64(input1[i],input2[0],&h0);
-    d = _addcarryx_u64(d,tmp[i],low,&tmp[i]);
+    d = _addcarry_u64(d,tmp[i],low,&tmp[i]);
     for (int j = 1; j < 4; j++) {
       low = _mulx_u64(input1[i],input2[j],&h1);
-      c = _addcarryx_u64(c,low,h0,&h0);
-      d = _addcarryx_u64(d,tmp[i+j],h0,&tmp[i+j]);
+      c = _addcarry_u64(c,low,h0,&h0);
+      d = _addcarry_u64(d,tmp[i+j],h0,&tmp[i+j]);
       h0 = h1;
     }
-    c = _addcarryx_u64(c,h0,0,&h0);
-    d = _addcarryx_u64(d,h0,0,&tmp[i+4]);
+    c = _addcarry_u64(c,h0,0,&h0);
+    d = _addcarry_u64(d,h0,0,&tmp[i+4]);
   }
 
   DEBUG(if (c > 0 || d > 0) printf("discarding carry in fmul\n");)
   
   c = 0; d = 0;
   low = _mulx_u64(tmp[4],38,&h0);
-  c = _addcarryx_u64(c,tmp[0],low,&tmp[0]);
+  c = _addcarry_u64(c,tmp[0],low,&tmp[0]);
   low = _mulx_u64(tmp[5],38,&h1);
-  c = _addcarryx_u64(c,tmp[1],low,&tmp[1]);
-  d = _addcarryx_u64(d,tmp[1],h0,&tmp[1]);
+  c = _addcarry_u64(c,tmp[1],low,&tmp[1]);
+  d = _addcarry_u64(d,tmp[1],h0,&tmp[1]);
   h0 = h1;
   low = _mulx_u64(tmp[6],38,&h1);
-  c = _addcarryx_u64(c,tmp[2],low,&tmp[2]);
-  d = _addcarryx_u64(d,tmp[2],h0,&tmp[2]);
+  c = _addcarry_u64(c,tmp[2],low,&tmp[2]);
+  d = _addcarry_u64(d,tmp[2],h0,&tmp[2]);
   h0 = h1;
   low = _mulx_u64(tmp[7],38,&h1);
-  c = _addcarryx_u64(c,tmp[3],low,&tmp[3]);
-  d = _addcarryx_u64(d,tmp[3],h0,&tmp[3]);
+  c = _addcarry_u64(c,tmp[3],low,&tmp[3]);
+  d = _addcarry_u64(d,tmp[3],h0,&tmp[3]);
 
-  c = _addcarryx_u64(c,h1,0,&h1);
-  d = _addcarryx_u64(d,h1,0,&h1);
+  c = _addcarry_u64(c,h1,0,&h1);
+  d = _addcarry_u64(d,h1,0,&h1);
 
   DEBUG(if (c > 0 || d > 0) printf("discarding carry in fmul (2)\n");)
 
   h1 = (uint64_t)38 * h1;
 
   c = 0;
-  c = _addcarryx_u64(c,tmp[0],h1,&tmp[0]);
-  c = _addcarryx_u64(c,tmp[1],0,&tmp[1]);
-  c = _addcarryx_u64(c,tmp[2],0,&tmp[2]);
-  c = _addcarryx_u64(c,tmp[3],0,&tmp[3]);
+  c = _addcarry_u64(c,tmp[0],h1,&tmp[0]);
+  c = _addcarry_u64(c,tmp[1],0,&tmp[1]);
+  c = _addcarry_u64(c,tmp[2],0,&tmp[2]);
+  c = _addcarry_u64(c,tmp[3],0,&tmp[3]);
 
   DEBUG(if (c > 1) printf("WARNING: c > 1\n");)
 
   h1 = (uint64_t)38 * c;
 
   c = 0;
-  c = _addcarryx_u64(c,tmp[0],h1,&tmp[0]);
-  c = _addcarryx_u64(c,tmp[1],0,&tmp[1]);
-  c = _addcarryx_u64(c,tmp[2],0,&tmp[2]);
-  c = _addcarryx_u64(c,tmp[3],0,&tmp[3]);
+  c = _addcarry_u64(c,tmp[0],h1,&tmp[0]);
+  c = _addcarry_u64(c,tmp[1],0,&tmp[1]);
+  c = _addcarry_u64(c,tmp[2],0,&tmp[2]);
+  c = _addcarry_u64(c,tmp[3],0,&tmp[3]);
 
   DEBUG(if (c > 0) printf("WARNING: need 3rd carry round in fmul\n");)
 
@@ -476,10 +476,10 @@ void Hacl_EC_Format_fcontract(uint8_t *output, uint64_t *input)
   top = top >> 63;
   top = top * 19;
   char c = 0;
-  c = _addcarryx_u64(c,input[0],top,&input[0]);
-  c = _addcarryx_u64(c,input[1],0,  &input[1]);
-  c = _addcarryx_u64(c,input[2],0,  &input[2]);
-  c = _addcarryx_u64(c,input[3],0,  &input[3]);
+  c = _addcarry_u64(c,input[0],top,&input[0]);
+  c = _addcarry_u64(c,input[1],0,  &input[1]);
+  c = _addcarry_u64(c,input[2],0,  &input[2]);
+  c = _addcarry_u64(c,input[3],0,  &input[3]);
 
   DEBUG(if (c > 0) printf("discarding carry in fcontract");)
   if (input[0] >= 0xffffffffffffffed &&
