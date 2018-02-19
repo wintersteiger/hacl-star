@@ -51,11 +51,11 @@ inline static void Hacl_Bignum_fdifference(uint64_t *a, uint64_t *b)
   
   uint64_t tmp[5U] = { 0U };
   char c = 0;
-  c = _addcarry_u64(c,b[0],(uint64_t)0xffffffffffffff68,&tmp[0]);
+  c = _addcarry_u64(c,b[0],(uint64_t)0xffffffffffffffda,&tmp[0]);
   c = _addcarry_u64(c,b[1],(uint64_t)0xffffffffffffffff,&tmp[1]);
   c = _addcarry_u64(c,b[2],(uint64_t)0xffffffffffffffff,&tmp[2]);
   c = _addcarry_u64(c,b[3],(uint64_t)0xffffffffffffffff,&tmp[3]);
-  c = _addcarry_u64(c,3,0,&tmp[4]);
+  c = _addcarry_u64(c,0,0,&tmp[4]);
 
   DEBUG(if (c > 0) printf("WARNING: dropping carry in fdiff\n"));
 
@@ -65,7 +65,6 @@ inline static void Hacl_Bignum_fdifference(uint64_t *a, uint64_t *b)
   c = _subborrow_u64(c,tmp[2],a[2],&tmp[2]);
   c = _subborrow_u64(c,tmp[3],a[3],&tmp[3]);
   c = _subborrow_u64(c,tmp[4],0,&tmp[4]);
-  
   /*
   c = _subborrow_u64(c,a[0],tmp[0],&tmp[0]);
   c = _subborrow_u64(c,a[1],tmp[1],&tmp[1]);
@@ -75,7 +74,6 @@ inline static void Hacl_Bignum_fdifference(uint64_t *a, uint64_t *b)
   */
 
   DEBUG(if (c > 0) printf("WARNING: dropping carry in fdiff\n"));
-  
   uint64_t top = (uint64_t)38 * tmp[4];
   c = 0;
   c = _addcarry_u64(c,tmp[0],top,&tmp[0]);
@@ -464,7 +462,7 @@ void Hacl_EC_Format_fexpand(uint64_t *output, uint8_t *input)
   output[0] = load64_le(input);
   output[1] = load64_le(input+8);
   output[2] = load64_le(input+16);
-  output[3] = load64_le(input+24);
+  output[3] = load64_le(input+24)  & 0x7fffffffffffffff;
 }
 
 
