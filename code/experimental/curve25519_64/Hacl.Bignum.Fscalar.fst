@@ -6,11 +6,17 @@ open FStar.HyperStack.All
 
 open FStar.HyperStack
 open FStar.Buffer
+open FStar.Mul
 
 open Hacl.Bignum.Parameters
-open Hacl.Spec.Bignum.Bigint
 open Hacl.Bignum.Limb
+open Hacl.Bignum.Fproduct
+open Hacl.Bignum.Modulo
+open Hacl.Spec.Bignum
+open Hacl.Spec.Bignum.Bigint
 open Hacl.Spec.Bignum.Fscalar
+open Hacl.Spec.Bignum.Fproduct
+open Hacl.Spec.Bignum.Modulo
 
 module U32 = FStar.UInt32
 
@@ -18,7 +24,7 @@ module U32 = FStar.UInt32
 
 
 [@"substitute"]
-val fscalar:
+val fscalar_:
   output:felem_wide ->
   input:felem{disjoint output input} ->
   s:limb ->
@@ -27,5 +33,48 @@ val fscalar:
     (ensures  (fun h0 _ h1 -> live h0 output /\ live h0 input /\ live h1 output /\ modifies_1 output h0 h1
       /\ as_seq h1 output == fscalar_spec (as_seq h0 input) s))
 [@"substitute"]
-let fscalar output b s =
+let fscalar_ output b s =
   C.Loops.map output b clen (fun x -> Hacl.Bignum.Wide.mul_wide x s)
+
+[@"c_inline"]
+val fscalar:
+  a:felem ->
+  b:felem{disjoint a b} ->
+  s:limb ->
+  Stack unit
+    (requires (fun h -> live h b /\ live h a
+      /\ carry_wide_pre (fscalar_spec (as_seq h b) s) 0
+      /\ carry_top_wide_pre (carry_wide_spec (fscalar_spec (as_seq h b) s))
+      /\ copy_from_wide_pre (carry_top_wide_spec (carry_wide_spec (fscalar_spec (as_seq h b) s))) ))
+    (ensures (fun h0 _ h1 -> live h0 a /\ live h0 b /\ modifies_1 a h0 h1 /\ live h1 a
+      /\ eval h1 a % prime = (eval h0 b * v s) % prime
+      /\ carry_wide_pre (fscalar_spec (as_seq h0 b) s) 0
+      /\ carry_top_wide_pre (carry_wide_spec (fscalar_spec (as_seq h0 b) s))
+      /\ copy_from_wide_pre (carry_top_wide_spec (carry_wide_spec (fscalar_spec (as_seq h0 b) s)))
+      /\ as_seq h1 a == fscalar_tot (as_seq h0 b) s
+    ))
+
+#reset-options "--z3rlimit 500 --max_fuel 0 --max_ifuel 0"
+[@"c_inline"]
+let fscalar output b s =
+  let hinit = ST.get() in
+  push_frame();
+  let h0 = ST.get() in
+  let tmp = create wide_zero clen in
+  let h0' = ST.get() in
+  fscalar_ tmp b s;
+  lemma_fscalar_eval (as_seq hinit b) s;
+  carry_wide_ tmp ;
+  let h' = ST.get() in
+  cut (eval_wide h' tmp = eval hinit b * v s);
+  carry_top_wide tmp;
+  let h'' = ST.get() in
+  lemma_carry_top_wide_spec (as_seq h' tmp);
+  assert(forall (i:nat). i < len ==> w (Seq.index (as_seq h'' tmp) i) < pow2 n);
+  copy_from_wide_ output tmp;
+  let h1 = ST.get() in
+  lemma_copy_from_wide (as_seq h'' tmp);
+  pop_frame();
+  lemma_modifies_1_trans tmp h0' h' h'';
+  lemma_modifies_0_1' tmp h0 h0' h'';
+  lemma_modifies_0_1 output h0 h'' h1

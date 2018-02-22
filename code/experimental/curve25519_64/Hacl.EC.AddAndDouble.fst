@@ -9,8 +9,11 @@ open FStar.Buffer
 
 open Hacl.Bignum.Constants
 open Hacl.Bignum.Parameters
-open Hacl.Bignum
 open Hacl.Bignum.Fsquare
+open Hacl.Bignum.Fsum
+open Hacl.Bignum.Fdifference
+open Hacl.Bignum.Fmul
+open Hacl.Bignum.Fscalar
 open Hacl.Spec.EC.AddAndDouble2
 
 

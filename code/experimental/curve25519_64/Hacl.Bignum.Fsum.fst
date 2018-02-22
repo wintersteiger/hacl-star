@@ -11,6 +11,7 @@ open Hacl.Bignum.Parameters
 open Hacl.Spec.Bignum.Bigint
 open Hacl.Bignum.Limb
 open Hacl.Spec.Bignum.Fsum
+open Hacl.Spec.Bignum
 
 module U32 = FStar.UInt32
 
@@ -29,3 +30,22 @@ val fsum_:
 [@"substitute"]
 let rec fsum_ a b =
   C.Loops.in_place_map2 a b clen (fun x y -> x +%^ y)
+
+[@"c_inline"]
+val fsum:
+  a:felem ->
+  b:felem{disjoint a b} ->
+  Stack unit
+    (requires (fun h -> live h a /\ live h b
+      /\ red_c h a len /\ red_c h b len))
+    (ensures (fun h0 _ h1 -> live h0 a /\ live h0 b /\ red_c h0 a len /\ red_c h0 b len
+      /\ live h1 a /\ modifies_1 a h0 h1
+      /\ eval h1 a = eval h0 a + eval h0 b
+      /\ as_seq h1 a == fsum_tot (as_seq h0 a) (as_seq h0 b)))
+      (* /\ F.(get_elem h1 a = get_elem h0 a @+ get_elem h0 b))) *)
+[@"c_inline"]
+let fsum a b =
+  let h0 = ST.get() in
+  fsum_ a b;
+  let h1 = ST.get() in
+  Hacl.Spec.Bignum.Fsum.lemma_fsum_eval (as_seq h0 a) (as_seq h0 b)

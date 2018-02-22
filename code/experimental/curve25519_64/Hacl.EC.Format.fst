@@ -468,12 +468,12 @@ let scalar_of_point scalar point =
   let buf   = Buffer.create limb_zero 10ul in
   let zmone = Buffer.sub buf 0ul 5ul in
   let sc    = Buffer.sub buf 5ul 5ul in
-  Hacl.Bignum.crecip zmone z;
+  Hacl.Bignum.Crecip.crecip zmone z;
   let h = ST.get() in
   Hacl.Spec.EC.AddAndDouble2.lemma_513_is_53 (as_seq h x);
   Hacl.Spec.EC.AddAndDouble2.lemma_513_is_55 (as_seq h zmone);
   Hacl.Spec.EC.AddAndDouble.fmul_53_55_is_fine (as_seq h x) (as_seq h zmone);
-  Hacl.Bignum.fmul sc x zmone;
+  Hacl.Bignum.Fmul.fmul sc x zmone;
   fcontract scalar sc;
   pop_frame()
 
