@@ -56,25 +56,4 @@ val fscalar:
 
 #reset-options "--z3rlimit 500 --max_fuel 0 --max_ifuel 0"
 [@"c_inline"]
-let fscalar output b s =
-  let hinit = ST.get() in
-  push_frame();
-  let h0 = ST.get() in
-  let tmp = create wide_zero clen in
-  let h0' = ST.get() in
-  fscalar_ tmp b s;
-  lemma_fscalar_eval (as_seq hinit b) s;
-  carry_wide_ tmp ;
-  let h' = ST.get() in
-  cut (eval_wide h' tmp = eval hinit b * v s);
-  carry_top_wide tmp;
-  let h'' = ST.get() in
-  lemma_carry_top_wide_spec (as_seq h' tmp);
-  assert(forall (i:nat). i < len ==> w (Seq.index (as_seq h'' tmp) i) < pow2 n);
-  copy_from_wide_ output tmp;
-  let h1 = ST.get() in
-  lemma_copy_from_wide (as_seq h'' tmp);
-  pop_frame();
-  lemma_modifies_1_trans tmp h0' h' h'';
-  lemma_modifies_0_1' tmp h0 h0' h'';
-  lemma_modifies_0_1 output h0 h'' h1
+let fscalar output b s = Hacl.Bignum.fscalar output b s

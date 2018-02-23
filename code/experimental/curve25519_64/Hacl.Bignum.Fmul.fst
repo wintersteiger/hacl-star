@@ -171,24 +171,4 @@ val fmul:
       /\ as_seq h1 output == fmul_spec (as_seq h0 input) (as_seq h0 input2)
       ))
 [@"c_inline"]
-let fmul output input input2 =
-  let h0 = ST.get() in
-  push_frame();
-  let h1 = ST.get() in
-  let tmp = create limb_zero clen in
-  let h1' = ST.get() in
-  blit input 0ul tmp 0ul clen;
-  let h2 = ST.get() in
-  lemma_whole_slice (as_seq h2 input);
-  lemma_whole_slice (as_seq h2 tmp);
-  no_upd_lemma_1 h1' h2 tmp output;
-  no_upd_lemma_1 h1' h2 tmp input2;
-  fmul_ output tmp input2;
-  let h3 = ST.get() in
-  pop_frame();
-  let h4 = ST.get() in
-  lemma_modifies_0_1' tmp h1 h1' h2;
-  lemma_modifies_2_comm tmp output h2 h3;
-  lemma_modifies_1_2'' tmp output h1' h2 h3;
-  lemma_modifies_0_2' output tmp h1 h1' h3;
-  modifies_popped_1 output h0 h1 h3 h4
+let fmul output input input2 = Hacl.Bignum.fmul output input input2

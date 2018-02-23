@@ -3,8 +3,6 @@ module Hacl.Bignum.Fsquare
 module ST = FStar.HyperStack.ST
 
 open FStar.HyperStack.All
-
-
 open FStar.HyperStack
 open FStar.Buffer
 
@@ -198,21 +196,7 @@ val fsquare_times:
       /\ AD.red_513 (as_seq h1 output)
       /\ as_seq h1 output == fsquare_times_tot (as_seq h0 input) (U32.v count)))
 [@"c_inline"]
-let fsquare_times output input count =
-  push_frame();
-  let h0 = ST.get() in
-  let t = create wide_zero clen in
-  let h1 = ST.get() in
-  blit input 0ul output 0ul clen;
-  let h2 = ST.get() in
-  Hacl.Spec.Bignum.Fmul.lemma_whole_slice (as_seq h1 input);
-  Hacl.Spec.Bignum.Fmul.lemma_whole_slice (as_seq h2 output);
-  fsquare_times_ output t count;
-  let h3 = ST.get() in
-  lemma_modifies_1_2'' output t h1 h2 h3;
-  lemma_modifies_0_2 output t h0 h1 h3;
-  pop_frame()
-
+let fsquare_times output input count = Hacl.Bignum.fsquare_times output input count
 
 [@"c_inline"]
 val fsquare_times_inplace:
@@ -225,10 +209,4 @@ val fsquare_times_inplace:
       /\ AD.red_5413 (as_seq h0 output)
       /\ (as_seq h1 output) == fsquare_times_tot (as_seq h0 output) (U32.v count)))
 [@"c_inline"]
-let fsquare_times_inplace output count =
-  push_frame();
-  let t   = create wide_zero clen in
-  let h1 = ST.get() in
-  Hacl.Spec.Bignum.Fmul.lemma_whole_slice (as_seq h1 output);
-  fsquare_times_ output t count;
-  pop_frame()
+let fsquare_times_inplace output count = Hacl.Bignum.fsquare_times_inplace output count

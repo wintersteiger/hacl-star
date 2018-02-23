@@ -127,30 +127,7 @@ val fexpand: output:felem -> input:uint8_p{length input = 32} -> Stack unit
     /\ Hacl.Spec.EC.AddAndDouble.red_513 (as_seq h1 output)
     /\ Hacl.Spec.EC.AddAndDouble.(bounds (as_seq h1 output) p51 p51 p51 p51 p51)
     /\ as_seq h1 output == Hacl.Spec.EC.Format.fexpand_spec (as_seq h0 input)))
-let fexpand output input =
-  let h = ST.get() in
-  Seq.lemma_eq_intro (Seq.slice (as_seq h input) 0 8) (as_seq h (Buffer.sub input 0ul 8ul));
-  Seq.lemma_eq_intro (Seq.slice (as_seq h input) 6 14) (as_seq h (Buffer.sub input 6ul 8ul));
-  Seq.lemma_eq_intro (Seq.slice (as_seq h input) 12 20) (as_seq h (Buffer.sub input 12ul 8ul));
-  Seq.lemma_eq_intro (Seq.slice (as_seq h input) 19 27) (as_seq h (Buffer.sub input 19ul 8ul));
-  Seq.lemma_eq_intro (Seq.slice (as_seq h input) 24 32) (as_seq h (Buffer.sub input 24ul 8ul));
-  let i0 = hload64_le (Buffer.sub input 0ul 8ul) in
-  let i1 = hload64_le (Buffer.sub input 6ul 8ul) in
-  let i2 = hload64_le (Buffer.sub input 12ul 8ul) in
-  let i3 = hload64_le (Buffer.sub input 19ul 8ul) in
-  let i4 = hload64_le (Buffer.sub input 24ul 8ul) in
-  let output0 = (i0         ) &^ mask_51 in
-  let output1 = (i1 >>^ 3ul ) &^ mask_51 in
-  let output2 = (i2 >>^ 6ul ) &^ mask_51 in
-  let output3 = (i3 >>^ 1ul ) &^ mask_51 in
-  let output4 = (i4 >>^ 12ul) &^ mask_51 in
-  UInt.logand_mask (v i0) (51);
-  UInt.logand_mask (v (i1 >>^ 3ul)) (51);
-  UInt.logand_mask (v (i2 >>^ 6ul )) (51);
-  UInt.logand_mask (v (i3 >>^ 1ul )) (51);
-  UInt.logand_mask (v (i4 >>^ 12ul)) (51);
-  upd_5 output output0 output1 output2 output3 output4
-
+let fexpand output input = Hacl.Bignum.fexpand output input
 
 open Hacl.Spec.Endianness
 open FStar.Endianness
@@ -392,7 +369,7 @@ private let fcontract_store output input =
   (* UInt.logor_disjoint (v (t4 <<^ 12ul)) (v (t3 >>^ 39ul)) 12; *)
   
 
-private val fcontract: output:uint8_p{length output = 32} -> input:felem{disjoint output input} -> Stack unit
+val fcontract: output:uint8_p{length output = 32} -> input:felem{disjoint output input} -> Stack unit
   (requires (fun h -> Buffer.live h output /\ Buffer.live h input
     /\ Hacl.Spec.EC.AddAndDouble.red_513 (as_seq h input)))
   (ensures (fun h0 _ h1 -> Buffer.live h0 output /\ Buffer.live h0 input
@@ -400,12 +377,7 @@ private val fcontract: output:uint8_p{length output = 32} -> input:felem{disjoin
     /\ Hacl.Spec.EC.AddAndDouble.red_513 (as_seq h0 input)
     /\ as_seq h1 output == Hacl.Spec.EC.Format.fcontract_spec (as_seq h0 input)
   ))
-private let fcontract output input =
-  fcontract_first_carry_full input;
-  fcontract_second_carry_full input;
-  fcontract_trim input;
-  fcontract_store output input
-
+let fcontract output input = Hacl.Bignum.fcontract output input
 
 #reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 100"
 

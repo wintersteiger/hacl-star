@@ -44,8 +44,4 @@ val fsum:
       /\ as_seq h1 a == fsum_tot (as_seq h0 a) (as_seq h0 b)))
       (* /\ F.(get_elem h1 a = get_elem h0 a @+ get_elem h0 b))) *)
 [@"c_inline"]
-let fsum a b =
-  let h0 = ST.get() in
-  fsum_ a b;
-  let h1 = ST.get() in
-  Hacl.Spec.Bignum.Fsum.lemma_fsum_eval (as_seq h0 a) (as_seq h0 b)
+let fsum a b = Hacl.Bignum.fsum a b

@@ -9,6 +9,7 @@ BIGNUM= \
 	Hacl.Bignum.Fsum.fst \
 	Hacl.Bignum.Limb.fst \
 	Hacl.Bignum.Wide.fst \
+	Hacl.Bignum.fst \
 	specs/Hacl.Spec.Bignum.Bigint.fst \
 	specs/Hacl.Spec.Bignum.Fdifference.fst \
 	specs/Hacl.Spec.Bignum.Field.fst \
