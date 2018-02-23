@@ -108,6 +108,16 @@ extract-c: x25519-c/Hacl_Curve25519.c x25519-c/Hacl_Test_X25519.c
 
 test: x25519.exe
 
+CC=gcc-7 -Ofast -flto -march=native -mtune=native
+
+test-curve25519.exe:
+	$(CC) -c $(KREMLIN_HOME)/kremlib/testlib.c -o testlib.o -I$(KREMLIN_HOME)/kremlib
+	$(CC) -c $(KREMLIN_HOME)/kremlib/kremlib.c -o kremlib.o -I$(KREMLIN_HOME)/kremlib
+	$(CC) -c x25519-c/Hacl_Curve25519.c -o Hacl_Curve25519.o -I$(KREMLIN_HOME)/kremlib
+	$(CC) -c x25519-c/Hacl_Test_X25519.c -o Hacl_Test_X25519.o -I$(KREMLIN_HOME)/kremlib
+	$(CC) -o test-curve25519.exe kremlib.o testlib.o Hacl_Curve25519.o Hacl_Test_X25519.o -I/opt/kremlin/kremlib
+	./test-curve25519.exe
+
 X25519_LIB= \
 	Hacl.Bignum.Parameters.fst \
 	Hacl.Spec.Bignum.Modulo.fst \
