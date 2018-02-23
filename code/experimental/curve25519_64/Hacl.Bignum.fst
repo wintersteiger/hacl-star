@@ -39,24 +39,6 @@ assume val mulx_u64:
   (requires (fun h -> True))
   (ensures (fun h0 _ h1 -> True))
 
-val reduce_top:
-  output:felem -> top:limb -> Stack U8.t
-  (requires (fun h -> live h output))
-  (ensures (fun h0 _ h1 -> True))
-[@"substitute" ]
-let reduce_top output top =
-  let output0 = output.(0ul) in
-  let output1 = output.(1ul) in
-  let output2 = output.(2ul) in
-  let output3 = output.(3ul) in
-  
-  let c = 0uy in
-  let c = addcarry_u64 c output0 top output0 in
-  let c = addcarry_u64 c output1 (uint64_to_limb 0uL) output1 in
-  let c = addcarry_u64 c output2 (uint64_to_limb 0uL) output2 in
-  let c = addcarry_u64 c output3 (uint64_to_limb 0uL) output3 in
-  c
-
 val fcontract:
   output:uint8_p{length output = 32} ->
   input:felem{disjoint output input} ->
@@ -69,18 +51,24 @@ val fcontract:
 let fcontract output input =
   let top = input.(3ul) in
   input.(3ul) <- top &^ (uint64_to_limb 0x7fffffffffffffffuL);
+
+  let input0 = input.(0ul) in
+  let input1 = input.(1ul) in
+  let input2 = input.(2ul) in
+  let input3 = input.(3ul) in
+
   let top = 19uL *^ (top >>^ 63ul) in
-  let _ = reduce_top input top in
+  let c = 0uy in
+  let c = addcarry_u64 c input0 top input0 in
+  let c = addcarry_u64 c input1 0uL input1 in
+  let c = addcarry_u64 c input2 0uL input2 in
+  let c = addcarry_u64 c input3 0uL input3 in
   
   (* we can't compare the bignum with the modulo p *)
   let output0 = Buffer.sub output 0ul  8ul in
   let output1 = Buffer.sub output 8ul  8ul in
   let output2 = Buffer.sub output 16ul 8ul in
   let output3 = Buffer.sub output 24ul 8ul in
-  let input0 = input.(0ul) in
-  let input1 = input.(1ul) in
-  let input2 = input.(2ul) in
-  let input3 = input.(3ul) in  
   hstore64_le output0 input0;
   hstore64_le output1 input1;
   hstore64_le output2 input2;
@@ -123,7 +111,16 @@ let fsum a b =
   let c = addcarry_u64 c a3 b3 a3 in
   
   let top = 38uL *^ (FStar.Int.Cast.uint8_to_uint64 c) in
-  let _ = reduce_top a top in ()
+  let c = 0uy in
+  let c = addcarry_u64 c a0 top a0 in
+  let c = addcarry_u64 c a1 0uL a1 in
+  let c = addcarry_u64 c a2 0uL a2 in
+  let c = addcarry_u64 c a3 0uL a3 in
+
+  a.(0ul) <- a0;
+  a.(1ul) <- a1;
+  a.(2ul) <- a2;
+  a.(3ul) <- a3
 
 val fdifference:
   a:felem ->
@@ -159,11 +156,19 @@ let fdifference a b =
   let c = subborrow_u64 c tmp4 0uL tmp4 in
 
   let top = 38uL *^ tmp4 in
-  let c = reduce_top tmp top in
+  let c = 0uy in
+  let c = addcarry_u64 c tmp0 top tmp0 in
+  let c = addcarry_u64 c tmp1 0uL tmp1 in
+  let c = addcarry_u64 c tmp2 0uL tmp2 in
+  let c = addcarry_u64 c tmp3 0uL tmp3 in
   
   let top = 38uL *^ (FStar.Int.Cast.uint8_to_uint64 c) in
-  let _ = reduce_top tmp top in
-
+  let c = 0uy in
+  let c = addcarry_u64 c tmp0 top tmp0 in
+  let c = addcarry_u64 c tmp1 0uL tmp1 in
+  let c = addcarry_u64 c tmp2 0uL tmp2 in
+  let c = addcarry_u64 c tmp3 0uL tmp3 in
+  
   a.(0ul) <- tmp0;
   a.(1ul) <- tmp1;
   a.(2ul) <- tmp2;
@@ -221,23 +226,25 @@ val fmul_by_word:
   tmp:buffer Hacl.UInt64.t{length tmp = 8} ->
   input2:felem -> word:limb ->
   j:U32.t -> c:U8.t ->
-  h0:limb -> h1:limb -> Stack U8.t
+  h0:limb -> h1:limb -> Stack (tuple2 U8.t limb)
     (requires (fun h -> live h tmp /\ live h input2))
     (ensures (fun h0 _ h1 -> True))
-[@"c_inline"]    
+[@"c_inline"]
 let rec fmul_by_word tmp input2 word j c h0 h1 =
-   if U32.(j <^ 4ul) then begin     
+   if U32.(j <^ 4ul) then begin
+     let tmpj = tmp.(j) in
      let low = mulx_u64 word input2.(j) h1 in
-     let c = addcarry_u64 c low h0 tmp.(j) in
+     let c = addcarry_u64 c low h0 tmpj in
+     tmp.(j) <- tmpj;
      fmul_by_word tmp input2 word U32.(j +^ 1ul) c h1 h1
-   end else c
+   end else (c, h0)
 
 [@"c_inline"]
 val fmul_inner:
   tmp:buffer Hacl.UInt64.t{length tmp = 8} ->
   word:limb -> input2:felem ->
   i:U32.t{U32.v i < 4} -> j:U32.t{U32.v i + U32.v j <= 8} -> c:U8.t -> d:U8.t ->
-  h0:limb -> h1:limb -> Stack (tuple2 U8.t U8.t)
+  h0:limb -> h1:limb -> Stack (tuple2 (tuple2 U8.t U8.t) limb)
     (requires (fun h -> live h tmp /\ live h input2))
     (ensures (fun h0 _ h1 -> True))
 let rec fmul_inner tmp word input2 i j c d h0 h1 =
@@ -246,8 +253,9 @@ let rec fmul_inner tmp word input2 i j c d h0 h1 =
     let low = mulx_u64 word input2.(j) h1 in
     let c = addcarry_u64 c low h0 h0 in
     let d = addcarry_u64 d tmpij h0 tmpij in
+    tmp.(U32.(i +^ j)) <- tmpij;
     fmul_inner tmp word input2 i U32.(j +^ 1ul) c d h1 h1
-  end else (c, d)
+  end else ((c, d), h0)
 
 [@"c_inline"]
 val fmul_:
@@ -265,10 +273,13 @@ let rec fmul_ tmp input1 input2 i c d h0 h1 =
     let low = mulx_u64 input1i input2.(0ul) h0 in
     let c = 0uy in
     let d = addcarry_u64 d tmpi low tmpi in
-    let (c, d) = fmul_inner tmp input1i input2 i 1ul c d h0 h1 in 
+    tmp.(i) <- tmpi;
+    let ((c, d), h0) = fmul_inner tmp input1i input2 i 1ul c d h0 h1 in 
     let c = addcarry_u64 c h0 0uL h0 in
-    let d = addcarry_u64 d h0 0uL tmp.(U32.(i +^ 4ul)) in
-    fmul_ tmp input1 input2 U32.(i +^ 1ul) c d h0 h1 
+    let tmpi4 = tmp.(U32.(i +^ 4ul)) in
+    let d = addcarry_u64 d h0 0uL tmpi4 in
+    tmp.(U32.(i +^ 4ul)) <- tmpi4;
+    fmul_ tmp input1 input2 U32.(i +^ 1ul) c d h0 h1
   end
 
 [@"c_inline"]
@@ -283,45 +294,59 @@ val fmul:
 [@"c_inline"]
 let fmul output input1 input2 =
   push_frame();
-  let tmp = create 0uL 8ul in
+  let tmp = create 0uL 8ul in  
   let h0 = 0uL in let h1 = 0uL in
   tmp.(0ul) <- mulx_u64 input1.(0ul) input2.(0ul) h0;
-  let c = 0uy in 
+  let c = 0uy in
   let d = 0uy in
-  let c = fmul_by_word tmp input2 input1.(0ul) 1ul c h0 h1 in
-  let c = addcarry_u64 c h0 0uL tmp.(4ul) in
+  let (c, h0) = fmul_by_word tmp input2 input1.(0ul) 1ul c h0 h1 in
+  let tmp4 = tmp.(4ul) in
+  let c = addcarry_u64 c h0 0uL tmp4 in
+  tmp.(4ul) <- tmp4;
   fmul_ tmp input1 input2 1ul c d h0 h1;
-  
-  let c = 0uy in 
+
+  let tmp0 = tmp.(0ul) in let tmp1 = tmp.(1ul) in
+  let tmp2 = tmp.(2ul) in let tmp3 = tmp.(3ul) in
+  let tmp4 = tmp.(4ul) in let tmp5 = tmp.(5ul) in
+  let tmp6 = tmp.(6ul) in let tmp7 = tmp.(7ul) in
+
+  let c = 0uy in
   let d = 0uy in
-  let low = mulx_u64 tmp.(4ul) 38uL h0 in
-  let c = addcarry_u64 c tmp.(0ul) low tmp.(0ul) in
-  let low = mulx_u64 tmp.(5ul) 38uL h1 in
-  let c = addcarry_u64 c tmp.(1ul) low tmp.(1ul) in
-  let d = addcarry_u64 d tmp.(1ul) h0 tmp.(1ul) in
+  let low = mulx_u64 tmp4 38uL h0 in
+  let c = addcarry_u64 c tmp0 low tmp0 in
+  let low = mulx_u64 tmp5 38uL h1 in
+  let c = addcarry_u64 c tmp1 low tmp1 in
+  let d = addcarry_u64 d tmp1 h0 tmp1 in
   let h0 = h1 in
-  let low = mulx_u64 tmp.(6ul) 38uL h1 in
-  let c = addcarry_u64 c tmp.(2ul) low tmp.(2ul) in
-  let d = addcarry_u64 d tmp.(2ul) h0 tmp.(2ul) in
+  let low = mulx_u64 tmp6 38uL h1 in
+  let c = addcarry_u64 c tmp2 low tmp2 in
+  let d = addcarry_u64 d tmp2 h0 tmp2 in
   let h0 = h1 in
-  let low = mulx_u64 tmp.(7ul) 38uL h1 in
-  let c = addcarry_u64 c tmp.(3ul) low tmp.(3ul) in
-  let d = addcarry_u64 d tmp.(3ul) h0 tmp.(3ul) in
+  let low = mulx_u64 tmp7 38uL h1 in
+  let c = addcarry_u64 c tmp3 low tmp3 in
+  let d = addcarry_u64 d tmp3 h0 tmp3 in
 
   let c = addcarry_u64 c h1 0uL h1 in
   let d = addcarry_u64 d h1 0uL h1 in
 
   let h1 = 38uL *^ h1 in
-  let tmp' = Buffer.sub tmp 0ul 5ul in
-  let c = reduce_top tmp' h1 in
+  let c = 0uy in
+  let c = addcarry_u64 c tmp0 h1 tmp0 in
+  let c = addcarry_u64 c tmp1 0uL tmp1 in
+  let c = addcarry_u64 c tmp2 0uL tmp2 in
+  let c = addcarry_u64 c tmp3 0uL tmp3 in
  
   let h1 = 38uL *^ (FStar.Int.Cast.uint8_to_uint64 c) in
-  let c = reduce_top tmp' h1 in
+  let c = 0uy in
+  let c = addcarry_u64 c tmp0 h1 tmp0 in
+  let c = addcarry_u64 c tmp1 0uL tmp1 in
+  let c = addcarry_u64 c tmp2 0uL tmp2 in
+  let c = addcarry_u64 c tmp3 0uL tmp3 in
 
-  output.(0ul) <- tmp.(0ul);
-  output.(1ul) <- tmp.(1ul);
-  output.(2ul) <- tmp.(2ul);
-  output.(3ul) <- tmp.(3ul);
+  output.(0ul) <- tmp0;
+  output.(1ul) <- tmp1;
+  output.(2ul) <- tmp2;
+  output.(3ul) <- tmp3;
   pop_frame()
 
 [@"c_inline"]
