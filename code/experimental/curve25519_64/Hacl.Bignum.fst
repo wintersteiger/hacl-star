@@ -7,6 +7,7 @@ open FStar.HyperStack.All
 open FStar.Mul
 open FStar.HyperStack
 open FStar.Buffer
+open FStar.Int.Cast
 
 open Hacl.Bignum.Constants
 open Hacl.Bignum.Parameters
@@ -15,29 +16,43 @@ open Hacl.Endianness
 
 module U8 = FStar.UInt8
 module U32 = FStar.UInt32
+module U64 = FStar.UInt64
+module U128 = FStar.UInt128
 
 type uint8_p = buffer Hacl.UInt8.t
 
 [@"c_inline"]
-assume val addcarry_u64:
-  carry:U8.t -> input1:limb -> input2:limb ->
-  output:limb -> Stack U8.t
-  (requires (fun h -> True))
-  (ensures (fun h0 _ h1 -> True))
+val addcarry_u64:
+  carry:U8.t -> a:limb -> b:limb ->
+  Tot (tuple2 U8.t limb)
+let addcarry_u64 carry a b =
+  let t1 = add_mod a (uint8_to_uint64 carry) in
+  let carry = if U64.(t1 <^ a) then 1uy else 0uy in
+  let res = add_mod t1 b in
+  let carry = if U64.(res <^ t1) then U8.(carry +^ 1uy) else carry in
+  (carry, res)
+  
+[@"c_inline"]
+val subborrow_u64:
+  carry:U8.t -> a:limb -> b:limb ->
+  Tot (tuple2 U8.t limb)
+let subborrow_u64 carry a b =
+  let res = sub_mod (sub_mod a b) (uint8_to_uint64 carry) in
+  let carry =
+      if U8.(carry =^ 1uy) then
+	 (if U64.(a <=^ b) then 1uy else 0uy)
+      else
+         (if U64.(a <^ b) then 1uy else 0uy) in
+  (carry, res)
 
 [@"c_inline"]
-assume val subborrow_u64: 
-  carry:U8.t -> input1:limb -> input2:limb ->
-  output:limb -> Stack U8.t
-  (requires (fun h -> True))
-  (ensures (fun h0 _ h1 -> True))
-
-[@"c_inline"]
-assume val mulx_u64:
-  input1:limb -> input2:limb -> bh:limb ->
-  Stack limb
-  (requires (fun h -> True))
-  (ensures (fun h0 _ h1 -> True))
+val mulx_u64:
+  a:limb -> b:limb -> Tot (tuple2 limb limb)
+let mulx_u64 a b =
+  let res = U128.mul_wide a b in
+  let r = U128.uint128_to_uint64 res in
+  let c = U128.uint128_to_uint64 (U128.shift_right res 64ul) in
+  (c, r)
 
 val fcontract:
   output:uint8_p{length output = 32} ->
@@ -59,12 +74,11 @@ let fcontract output input =
 
   let top = 19uL *^ (top >>^ 63ul) in
   let c = 0uy in
-  let c = addcarry_u64 c input0 top input0 in
-  let c = addcarry_u64 c input1 0uL input1 in
-  let c = addcarry_u64 c input2 0uL input2 in
-  let c = addcarry_u64 c input3 0uL input3 in
+  let (c, input0) = addcarry_u64 c input0 top in
+  let (c, input1) = addcarry_u64 c input1 0uL in
+  let (c, input2) = addcarry_u64 c input2 0uL in
+  let (c, input3) = addcarry_u64 c input3 0uL in
   
-  (* we can't compare the bignum with the modulo p *)
   let output0 = Buffer.sub output 0ul  8ul in
   let output1 = Buffer.sub output 8ul  8ul in
   let output2 = Buffer.sub output 16ul 8ul in
@@ -105,17 +119,17 @@ let fsum a b =
   let b2 = b.(2ul) in let b3 = b.(3ul) in
   
   let c = 0uy in
-  let c = addcarry_u64 c a0 b0 a0 in
-  let c = addcarry_u64 c a1 b1 a1 in
-  let c = addcarry_u64 c a2 b2 a2 in
-  let c = addcarry_u64 c a3 b3 a3 in
+  let (c, a0) = addcarry_u64 c a0 b0 in
+  let (c, a1) = addcarry_u64 c a1 b1 in
+  let (c, a2) = addcarry_u64 c a2 b2 in
+  let (c, a3) = addcarry_u64 c a3 b3 in
   
   let top = 38uL *^ (FStar.Int.Cast.uint8_to_uint64 c) in
   let c = 0uy in
-  let c = addcarry_u64 c a0 top a0 in
-  let c = addcarry_u64 c a1 0uL a1 in
-  let c = addcarry_u64 c a2 0uL a2 in
-  let c = addcarry_u64 c a3 0uL a3 in
+  let (c, a0) = addcarry_u64 c a0 top in
+  let (c, a1) = addcarry_u64 c a1 0uL in
+  let (c, a2) = addcarry_u64 c a2 0uL in
+  let (c, a3) = addcarry_u64 c a3 0uL in
 
   a.(0ul) <- a0;
   a.(1ul) <- a1;
@@ -128,52 +142,46 @@ val fdifference:
   Stack unit
     (requires (fun h -> live h a /\ live h b))
     (ensures (fun h0 _ h1 -> True))
+#reset-options "--z3rlimit 50 --max_fuel 0"
 [@"substitute" ]
 let fdifference a b =
-  push_frame();
   let a0 = a.(0ul) in let a1 = a.(1ul) in
   let a2 = a.(2ul) in let a3 = a.(3ul) in
   let b0 = b.(0ul) in let b1 = b.(1ul) in
   let b2 = b.(2ul) in let b3 = b.(3ul) in
-  
-  let tmp = create 0uL 5ul in
-  let tmp0 = tmp.(0ul) in let tmp1 = tmp.(1ul) in
-  let tmp2 = tmp.(2ul) in let tmp3 = tmp.(3ul) in
-  let tmp4 = tmp.(4ul) in
-  
+   
   let c = 0uy in
-  let c = addcarry_u64 c b0 (uint64_to_limb 0xffffffffffffffdauL) tmp0 in
-  let c = addcarry_u64 c b1 (uint64_to_limb 0xffffffffffffffffuL) tmp1 in
-  let c = addcarry_u64 c b2 (uint64_to_limb 0xffffffffffffffffuL) tmp2 in
-  let c = addcarry_u64 c b3 (uint64_to_limb 0xffffffffffffffffuL) tmp3 in
-  let c = addcarry_u64 c 0uL 0uL tmp4 in
+  let (c, tmp0) = addcarry_u64 c b0 (uint64_to_limb 0xffffffffffffffdauL) in
+  let (c, tmp1) = addcarry_u64 c b1 (uint64_to_limb 0xffffffffffffffffuL) in
+  let (c, tmp2) = addcarry_u64 c b2 (uint64_to_limb 0xffffffffffffffffuL) in
+  let (c, tmp3) = addcarry_u64 c b3 (uint64_to_limb 0xffffffffffffffffuL) in
+  let (c, tmp4) = addcarry_u64 c 0uL 0uL in
 
   let c = 0uy in
-  let c = subborrow_u64 c tmp0 a0 tmp0 in
-  let c = subborrow_u64 c tmp1 a1 tmp1 in 
-  let c = subborrow_u64 c tmp2 a2 tmp2 in
-  let c = subborrow_u64 c tmp3 a3 tmp3 in
-  let c = subborrow_u64 c tmp4 0uL tmp4 in
+  let (c, tmp0) = subborrow_u64 c tmp0 a0 in
+  let (c, tmp1) = subborrow_u64 c tmp1 a1 in 
+  let (c, tmp2) = subborrow_u64 c tmp2 a2 in
+  let (c, tmp3) = subborrow_u64 c tmp3 a3 in
+  let (c, tmp4) = subborrow_u64 c tmp4 0uL in
 
-  let top = 38uL *^ tmp4 in
+  let top = U64.mul_mod 38uL tmp4 in
   let c = 0uy in
-  let c = addcarry_u64 c tmp0 top tmp0 in
-  let c = addcarry_u64 c tmp1 0uL tmp1 in
-  let c = addcarry_u64 c tmp2 0uL tmp2 in
-  let c = addcarry_u64 c tmp3 0uL tmp3 in
+  let (c, tmp0) = addcarry_u64 c tmp0 top in
+  let (c, tmp1) = addcarry_u64 c tmp1 0uL in
+  let (c, tmp2) = addcarry_u64 c tmp2 0uL in
+  let (c, tmp3) = addcarry_u64 c tmp3 0uL in
   
-  let top = 38uL *^ (FStar.Int.Cast.uint8_to_uint64 c) in
+  let top = U64.mul_mod 38uL (FStar.Int.Cast.uint8_to_uint64 c) in
   let c = 0uy in
-  let c = addcarry_u64 c tmp0 top tmp0 in
-  let c = addcarry_u64 c tmp1 0uL tmp1 in
-  let c = addcarry_u64 c tmp2 0uL tmp2 in
-  let c = addcarry_u64 c tmp3 0uL tmp3 in
+  let (c, tmp0) = addcarry_u64 c tmp0 top in
+  let (c, tmp1) = addcarry_u64 c tmp1 0uL in
+  let (c, tmp2) = addcarry_u64 c tmp2 0uL in
+  let (c, tmp3) = addcarry_u64 c tmp3 0uL in
   
   a.(0ul) <- tmp0;
   a.(1ul) <- tmp1;
   a.(2ul) <- tmp2;
-  a.(3ul) <- tmp3;
-  pop_frame()
+  a.(3ul) <- tmp3
 
 val fscalar:
   a:felem ->
@@ -186,35 +194,31 @@ val fscalar:
 let fscalar a b s =
   let b0 = b.(0ul) in let b1 = b.(1ul) in
   let b2 = b.(2ul) in let b3 = b.(3ul) in
-
-  let h0 = 0uL in let h1 = 0uL in
-  let h2 = 0uL in let h3 = 0uL in
-  let h4 = 0uL in let l4 = 0uL in
   
-  let l0 = mulx_u64 b0 s h0 in
-  let l1 = mulx_u64 b1 s h1 in
-  let l2 = mulx_u64 b2 s h2 in
-  let l3 = mulx_u64 b3 s h3 in
+  let (h0, l0) = mulx_u64 b0 s in
+  let (h1, l1) = mulx_u64 b1 s in
+  let (h2, l2) = mulx_u64 b2 s in
+  let (h3, l3) = mulx_u64 b3 s in
 
   let c = 0uy in
-  let c = addcarry_u64 c l1 h0 l1 in
-  let c = addcarry_u64 c l2 h1 l2 in
-  let c = addcarry_u64 c l3 h2 l3 in
-  let c = addcarry_u64 c 0uL h3 l4 in
+  let (c, l1) = addcarry_u64 c l1 h0 in
+  let (c, l2) = addcarry_u64 c l2 h1 in
+  let (c, l3) = addcarry_u64 c l3 h2 in
+  let (c, l4) = addcarry_u64 c 0uL h3 in
 
-  let l4 = mulx_u64 l4 38uL h4 in
+  let (h4, l4) = mulx_u64 l4 38uL in
   let c = 0uy in
-  let c = addcarry_u64 c l0 l4 l0 in
-  let c = addcarry_u64 c l1 h4 l1 in
-  let c = addcarry_u64 c l2 0uL l2 in
-  let c = addcarry_u64 c l3 0uL l3 in
+  let (c, l0) = addcarry_u64 c l0 l4 in
+  let (c, l1) = addcarry_u64 c l1 h4 in
+  let (c, l2) = addcarry_u64 c l2 0uL in
+  let (c, l3) = addcarry_u64 c l3 0uL in
 
-  let l4 = 38uL *^ (FStar.Int.Cast.uint8_to_uint64 c) in
+  let l4 = U64.mul_mod 38uL (FStar.Int.Cast.uint8_to_uint64 c) in
   let c = 0uy in
-  let c = addcarry_u64 c l0 l4 l0 in
-  let c = addcarry_u64 c l1 0uL l1 in
-  let c = addcarry_u64 c l2 0uL l2 in
-  let c = addcarry_u64 c l3 0uL l3 in
+  let (c, l0) = addcarry_u64 c l0 l4 in
+  let (c, l1) = addcarry_u64 c l1 0uL in
+  let (c, l2) = addcarry_u64 c l2 0uL in
+  let (c, l3) = addcarry_u64 c l3 0uL in
 
   a.(0ul) <- l0;
   a.(1ul) <- l1;
@@ -233,8 +237,8 @@ val fmul_by_word:
 let rec fmul_by_word tmp input2 word j c h0 h1 =
    if U32.(j <^ 4ul) then begin
      let tmpj = tmp.(j) in
-     let low = mulx_u64 word input2.(j) h1 in
-     let c = addcarry_u64 c low h0 tmpj in
+     let (h1, low) = mulx_u64 word input2.(j) in
+     let (c, tmpj) = addcarry_u64 c low h0 in
      tmp.(j) <- tmpj;
      fmul_by_word tmp input2 word U32.(j +^ 1ul) c h1 h1
    end else (c, h0)
@@ -250,9 +254,9 @@ val fmul_inner:
 let rec fmul_inner tmp word input2 i j c d h0 h1 =
   if U32.(j <^ 4ul) then begin
     let tmpij = tmp.(U32.(i +^ j)) in
-    let low = mulx_u64 word input2.(j) h1 in
-    let c = addcarry_u64 c low h0 h0 in
-    let d = addcarry_u64 d tmpij h0 tmpij in
+    let (h1, low) = mulx_u64 word input2.(j) in
+    let (c, h0) = addcarry_u64 c low h0 in
+    let (d, tmpij) = addcarry_u64 d tmpij h0 in
     tmp.(U32.(i +^ j)) <- tmpij;
     fmul_inner tmp word input2 i U32.(j +^ 1ul) c d h1 h1
   end else ((c, d), h0)
@@ -270,14 +274,14 @@ let rec fmul_ tmp input1 input2 i c d h0 h1 =
   if U32.(i <^ 4ul) then begin
     let tmpi = tmp.(i) in
     let input1i = input1.(i) in
-    let low = mulx_u64 input1i input2.(0ul) h0 in
-    let c = 0uy in
-    let d = addcarry_u64 d tmpi low tmpi in
+    let (h0, low) = mulx_u64 input1i input2.(0ul) in
+    let (d, tmpi) = addcarry_u64 d tmpi low in
     tmp.(i) <- tmpi;
+    let c = 0uy in    
     let ((c, d), h0) = fmul_inner tmp input1i input2 i 1ul c d h0 h1 in 
-    let c = addcarry_u64 c h0 0uL h0 in
+    let (c, h0) = addcarry_u64 c h0 0uL in
     let tmpi4 = tmp.(U32.(i +^ 4ul)) in
-    let d = addcarry_u64 d h0 0uL tmpi4 in
+    let (d, tmpi4) = addcarry_u64 d h0 0uL in
     tmp.(U32.(i +^ 4ul)) <- tmpi4;
     fmul_ tmp input1 input2 U32.(i +^ 1ul) c d h0 h1
   end
@@ -294,16 +298,17 @@ val fmul:
 [@"c_inline"]
 let fmul output input1 input2 =
   push_frame();
-  let tmp = create 0uL 8ul in  
-  let h0 = 0uL in let h1 = 0uL in
-  tmp.(0ul) <- mulx_u64 input1.(0ul) input2.(0ul) h0;
+  let tmp = create 0uL 8ul in
+  let tmp0 = tmp.(0ul) in
+  let (h0, tmp0) = mulx_u64 input1.(0ul) input2.(0ul) in
+  tmp.(0ul) <- tmp0;
   let c = 0uy in
   let d = 0uy in
-  let (c, h0) = fmul_by_word tmp input2 input1.(0ul) 1ul c h0 h1 in
+  let (c, h0) = fmul_by_word tmp input2 input1.(0ul) 1ul c h0 0uL in
   let tmp4 = tmp.(4ul) in
-  let c = addcarry_u64 c h0 0uL tmp4 in
+  let (c, tmp4) = addcarry_u64 c h0 0uL in
   tmp.(4ul) <- tmp4;
-  fmul_ tmp input1 input2 1ul c d h0 h1;
+  fmul_ tmp input1 input2 1ul c d h0 0uL;
 
   let tmp0 = tmp.(0ul) in let tmp1 = tmp.(1ul) in
   let tmp2 = tmp.(2ul) in let tmp3 = tmp.(3ul) in
@@ -312,36 +317,36 @@ let fmul output input1 input2 =
 
   let c = 0uy in
   let d = 0uy in
-  let low = mulx_u64 tmp4 38uL h0 in
-  let c = addcarry_u64 c tmp0 low tmp0 in
-  let low = mulx_u64 tmp5 38uL h1 in
-  let c = addcarry_u64 c tmp1 low tmp1 in
-  let d = addcarry_u64 d tmp1 h0 tmp1 in
+  let (h0, low) = mulx_u64 tmp4 38uL in
+  let (c, tmp0) = addcarry_u64 c tmp0 low in
+  let (h1, low) = mulx_u64 tmp5 38uL in
+  let (c, tmp1) = addcarry_u64 c tmp1 low in
+  let (d, tmp1) = addcarry_u64 d tmp1 h0 in
   let h0 = h1 in
-  let low = mulx_u64 tmp6 38uL h1 in
-  let c = addcarry_u64 c tmp2 low tmp2 in
-  let d = addcarry_u64 d tmp2 h0 tmp2 in
+  let (h1, low) = mulx_u64 tmp6 38uL in
+  let (c, tmp2) = addcarry_u64 c tmp2 low in
+  let (d, tmp2) = addcarry_u64 d tmp2 h0 in
   let h0 = h1 in
-  let low = mulx_u64 tmp7 38uL h1 in
-  let c = addcarry_u64 c tmp3 low tmp3 in
-  let d = addcarry_u64 d tmp3 h0 tmp3 in
+  let (h1, low) = mulx_u64 tmp7 38uL in
+  let (c, tmp3) = addcarry_u64 c tmp3 low in
+  let (d, tmp3) = addcarry_u64 d tmp3 h0 in
 
-  let c = addcarry_u64 c h1 0uL h1 in
-  let d = addcarry_u64 d h1 0uL h1 in
+  let (c, h1) = addcarry_u64 c h1 0uL in
+  let (d, h1) = addcarry_u64 d h1 0uL in
 
-  let h1 = 38uL *^ h1 in
+  let h1 = U64.mul_mod 38uL h1 in
   let c = 0uy in
-  let c = addcarry_u64 c tmp0 h1 tmp0 in
-  let c = addcarry_u64 c tmp1 0uL tmp1 in
-  let c = addcarry_u64 c tmp2 0uL tmp2 in
-  let c = addcarry_u64 c tmp3 0uL tmp3 in
+  let (c, tmp0) = addcarry_u64 c tmp0 h1 in
+  let (c, tmp1) = addcarry_u64 c tmp1 0uL in
+  let (c, tmp2) = addcarry_u64 c tmp2 0uL in
+  let (c, tmp3) = addcarry_u64 c tmp3 0uL in
  
-  let h1 = 38uL *^ (FStar.Int.Cast.uint8_to_uint64 c) in
+  let h1 = U64.mul_mod 38uL (FStar.Int.Cast.uint8_to_uint64 c) in
   let c = 0uy in
-  let c = addcarry_u64 c tmp0 h1 tmp0 in
-  let c = addcarry_u64 c tmp1 0uL tmp1 in
-  let c = addcarry_u64 c tmp2 0uL tmp2 in
-  let c = addcarry_u64 c tmp3 0uL tmp3 in
+  let (c, tmp0) = addcarry_u64 c tmp0 h1 in
+  let (c, tmp1) = addcarry_u64 c tmp1 0uL in
+  let (c, tmp2) = addcarry_u64 c tmp2 0uL in
+  let (c, tmp3) = addcarry_u64 c tmp3 0uL in
 
   output.(0ul) <- tmp0;
   output.(1ul) <- tmp1;
