@@ -108,14 +108,15 @@ extract-c: x25519-c/Hacl_Curve25519.c x25519-c/Hacl_Test_X25519.c
 
 test: x25519.exe
 
-CC=gcc-7 -Ofast -flto -march=native -mtune=native
+#CC=gcc-7 -Ofast -flto -march=native -mtune=native
+CC=clang-5.0 -Ofast -march=native -mtune=native -m64 -fwrapv -fomit-frame-pointer -funroll-loops --param max-unroll-times=20
 
 test-curve25519.exe:
-	$(CC) -c $(KREMLIN_HOME)/kremlib/testlib.c -o testlib.o -I$(KREMLIN_HOME)/kremlib
-	$(CC) -c $(KREMLIN_HOME)/kremlib/kremlib.c -o kremlib.o -I$(KREMLIN_HOME)/kremlib
-	$(CC) -c x25519-c/Hacl_Curve25519.c -o Hacl_Curve25519.o -I$(KREMLIN_HOME)/kremlib
-	$(CC) -c x25519-c/Hacl_Test_X25519.c -o Hacl_Test_X25519.o -I$(KREMLIN_HOME)/kremlib
-	$(CC) -o test-curve25519.exe kremlib.o testlib.o Hacl_Curve25519.o Hacl_Test_X25519.o -I/opt/kremlin/kremlib
+	$(CC) -c $(KREMLIN_HOME)/kremlib/testlib.c -o testlib.o -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/code/experimental/curve25519_64
+	$(CC) -c $(KREMLIN_HOME)/kremlib/kremlib.c -o kremlib.o -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/code/experimental/curve25519_64
+	$(CC) -c x25519-c/Hacl_Curve25519.c -o Hacl_Curve25519.o -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/code/experimental/curve25519_64
+	$(CC) -c x25519-c/Hacl_Test_X25519.c -o Hacl_Test_X25519.o -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/code/experimental/curve25519_64
+	$(CC) -o test-curve25519.exe kremlib.o testlib.o Hacl_Curve25519.o Hacl_Test_X25519.o -I/opt/kremlin/kremlib -I$(HACL_HOME)/code/experimental/curve25519_64
 	./test-curve25519.exe
 
 X25519_LIB= \
