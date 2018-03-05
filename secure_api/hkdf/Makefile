@@ -15,3 +15,6 @@ tmp/out.krml: Crypto.Test.HMAC.fst
 test-hmac.exe: tmp/out.krml
 	$(KRML) $< -tmpdir tmp -o $@ -no-prefix Crypto.Test.HMAC
 	./$@	
+
+%.fst-in %.fsti-in:
+	@echo $(INCLUDE_PATHS) --cache_dir $(CACHE_DIR) --cache_checked_modules $(OTHERFLAGS) --use_hints --use_hint_hashes

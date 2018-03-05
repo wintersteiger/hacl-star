@@ -1,4 +1,4 @@
-HACL_HOME=..
+HACL_HOME?=..
 
 # The main Makefile that knows which combinations of targets are possible/valid.
 all: check
