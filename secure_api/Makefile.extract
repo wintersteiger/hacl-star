@@ -35,7 +35,6 @@ $(DIST_DIR)/uint128/FStar_UInt128.h: $(DIST_DIR)/uint128/kremlib0.h
 	  $(FSTAR_HOME)/ulib/FStar.UInt128.fst \
 	  -tmpdir $(DIST_DIR)/uint128 -skip-compilation \
 	  -add-include '"kremlib0.h"' \
-	  -drop FStar.Int.Cast.Full \
 	  -bundle FStar.UInt128=FStar.*,Prims -fnostruct-passing
 	touch $(subst .c,.h,$(@))
 
@@ -44,7 +43,7 @@ $(DIST_DIR)/uint128/kremlib0.h: cstubs/kremlib0.h
 	cp $< $@
 
 KOPTS+=-add-early-include '"FStar_UInt128.h"'
-KOPTS+=-fnouint128 -drop FStar.UInt128
+KOPTS+=-fnouint128 -drop FStar.UInt128 -by-ref Crypto.Indexing.id
 CFLAGS+=-DKRML_NOUINT128 -DKRML_NOSTRUCT_PASSING
 
 $(DIST_DIR)/uint128/uint128_wrapper.c: \
@@ -142,7 +141,7 @@ CCOPTS+=-Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable 
 # Generic rule for single-file KreMLin packaging -- use with caution, this may
 # repeat most of your program in every single compilation unit.
 $(CRYPTO_DIR)/%.h $(CRYPTO_DIR)/%.c: $(filter-out $(OUTPUT_DIR)/prims.krml,$(ALL_KRML_FILES))
-	$(KREMLIN_HOME)/krml $(KOPTS) -drop FStar.UInt128,FStar.Int.Cast.Full -bundle '$(if $(BUNDLE),$(BUNDLE),$*)=*' -minimal -skip-compilation \
+	$(KREMLIN_HOME)/krml $(KOPTS) -drop FStar.UInt128 -bundle '$(if $(BUNDLE),$(BUNDLE),$*)=*' -minimal -skip-compilation \
 	  -tmpdir $(CRYPTO_DIR) $^ -add-include '"kremlib.h"' -add-include '"kremstr.h"' \
 	  $(EXTRA)
 
@@ -154,7 +153,9 @@ $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC.c \
   $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC.h: BUNDLE=Crypto_HKDF+Crypto_HMAC
 
 # This is without the indexing id.
-$(CRYPTO_DIR)/Crypto_AEAD_Main.h: EXTRA = -add-include '"testlib.h"' -add-include '"Crypto_Indexing.h"' -drop Crypto.Indexing
+$(CRYPTO_DIR)/Crypto_AEAD_Main.h: EXTRA = -add-include '"testlib.h"' \
+  -add-include '"Crypto_Indexing.h"' -drop Crypto.Indexing \
+  $(BYREF)
 
 
 ################################################################################
@@ -214,7 +215,7 @@ endif
 ifeq (,$(wildcard $(CURVE_DIR)/Curve25519.c))
   ifneq (,$(KRML_NOUINT128))
     $(error The Curve25519 directory is $(CURVE_DIR) and I cannot find \
-      $(CURVE_DIR)/Curve25519.c -- please run `KOPTS="-fnouint128 -drop FStar.UInt128,FStar.Int.Cast.Full -add-early-include '\"FStar_UInt128.h\"'" make -C $(CURVE_DIR)/.. extract-c`)
+      $(CURVE_DIR)/Curve25519.c -- please run `KOPTS="-fnouint128 -drop FStar.UInt128 -add-early-include '\"FStar_UInt128.h\"'" make -C $(CURVE_DIR)/.. extract-c`)
   else
     $(error The Curve25519 directory is $(CURVE_DIR) and I cannot find \
       $(CURVE_DIR)/Curve25519.c -- please run `make -C $(CURVE_DIR)/.. extract-c`)
