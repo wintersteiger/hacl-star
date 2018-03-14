@@ -209,7 +209,7 @@ let rec add_bytes #i st acc len txt =
   let h1 = ST.get() in
   CMA.frame_acc_inv st acc h0 h1;
   if len = 0ul then () else
-  if len <^ 16ul then
+  (if len <^ 16ul then
       begin
         let w = Buffer.create 0uy 16ul in
         let h2 = ST.get() in
@@ -262,7 +262,7 @@ let rec add_bytes #i st acc len txt =
           assert(Seq.equal l3 (Seq.append (encode_bytes txt0) l1))
         end
         else Buffer.lemma_reveal_modifies_1 (MAC.as_buffer (CMA.abuf acc)) h1 h3
-      end;
+      end) <: unit;
   let h5 = ST.get() in
   pop_frame();
   let h6 = ST.get() in
@@ -478,7 +478,7 @@ let accumulate #i st aadlen aad txtlen cipher =
   modifies_0_acc_inv st acc h2 h4;
   CMA.update st acc final_word;
   let h5 = ST.get () in
-  if mac_log then
+  (if mac_log then
     begin
       let open FStar.Seq in
       let buf = CMA.(MAC.as_buffer (abuf acc)) in
@@ -518,5 +518,5 @@ let accumulate #i st aadlen aad txtlen cipher =
       Buffer.lemma_reveal_modifies_1 buf h0 h1;
       Buffer.lemma_reveal_modifies_1 buf h1 h2;
       Buffer.lemma_reveal_modifies_1 buf h4 h5
-    end;
+    end) <: unit;
   acc
