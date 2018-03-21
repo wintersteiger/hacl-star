@@ -24,8 +24,9 @@
 #include <immintrin.h>
 #include <x86intrin.h>
 
-//#define DEBUG(x) {}
-#define DEBUG(x) x
+#define DEBUG(x) {}
+//#define DEBUG(x) x
+//#define force_inline inline __attribute__((always_inline))
 
 inline static void Hacl_Bignum_fsum(uint64_t *a, uint64_t *b)
 {
@@ -137,8 +138,109 @@ inline static void Hacl_Bignum_fscalar(uint64_t *output, uint64_t *b, uint64_t s
 }
 
 
-inline static void Hacl_Bignum_Fmul_fmul(uint64_t *output, uint64_t *input1, uint64_t *input2){
-  uint64_t tmp[8] = {0};
+force_inline static void Hacl_Bignum_Fmul_textbook_mul(uint64_t *tmp, uint64_t *input1, uint64_t *input2){
+
+  __asm__ __volatile__(
+    "movq   (%1), %%rdx; " /* A[0] */
+    "mulx   (%2),  %%r8,  %%r9; " /* A[0]*B[0] */    "xorl %%r10d, %%r10d ;"                           "movq  %%r8,  (%0) ;"
+    "mulx  8(%2), %%r10, %%r11; " /* A[0]*B[1] */    "adox  %%r9, %%r10 ;"                             "movq %%r10, 8(%0) ;"
+    "mulx 16(%2), %%r12, %%r13; " /* A[0]*B[2] */    "adox %%r11, %%r12 ;"
+    "mulx 24(%2), %%r14, %%rdx; " /* A[0]*B[3] */    "adox %%r13, %%r14 ;"                                                       "movq $0, %%rax ;"
+    /*******************************************/    "adox %%rdx, %%rax ;"
+
+    "movq  8(%1), %%rdx; " /* A[1] */
+    "mulx   (%2),  %%r8,  %%r9; " /* A[1]*B[0] */    "xorl %%r10d, %%r10d ;"  "adcx 8(%0),  %%r8 ;"    "movq  %%r8,  8(%0) ;"
+    "mulx  8(%2), %%r10, %%r11; " /* A[1]*B[1] */    "adox  %%r9, %%r10 ;"    "adcx %%r12, %%r10 ;"    "movq %%r10, 16(%0) ;"
+    "mulx 16(%2), %%r12, %%r13; " /* A[1]*B[2] */    "adox %%r11, %%r12 ;"    "adcx %%r14, %%r12 ;"                              "movq $0, %%r8  ;"
+    "mulx 24(%2), %%r14, %%rdx; " /* A[1]*B[3] */    "adox %%r13, %%r14 ;"    "adcx %%rax, %%r14 ;"                              "movq $0, %%rax ;"
+    /*******************************************/    "adox %%rdx, %%rax ;"    "adcx  %%r8, %%rax ;"
+
+    "movq 16(%1), %%rdx; " /* A[2] */
+    "mulx   (%2),  %%r8,  %%r9; " /* A[2]*B[0] */    "xorl %%r10d, %%r10d ;"  "adcx 16(%0), %%r8 ;"    "movq  %%r8, 16(%0) ;"
+    "mulx  8(%2), %%r10, %%r11; " /* A[2]*B[1] */    "adox  %%r9, %%r10 ;"    "adcx %%r12, %%r10 ;"    "movq %%r10, 24(%0) ;"
+    "mulx 16(%2), %%r12, %%r13; " /* A[2]*B[2] */    "adox %%r11, %%r12 ;"    "adcx %%r14, %%r12 ;"                              "movq $0, %%r8  ;"
+    "mulx 24(%2), %%r14, %%rdx; " /* A[2]*B[3] */    "adox %%r13, %%r14 ;"    "adcx %%rax, %%r14 ;"                              "movq $0, %%rax ;"
+    /*******************************************/    "adox %%rdx, %%rax ;"    "adcx  %%r8, %%rax ;"
+
+    "movq 24(%1), %%rdx; " /* A[3] */
+    "mulx   (%2),  %%r8,  %%r9; " /* A[3]*B[0] */    "xorl %%r10d, %%r10d ;"  "adcx 24(%0), %%r8 ;"    "movq  %%r8, 24(%0) ;"
+    "mulx  8(%2), %%r10, %%r11; " /* A[3]*B[1] */    "adox  %%r9, %%r10 ;"    "adcx %%r12, %%r10 ;"    "movq %%r10, 32(%0) ;"
+    "mulx 16(%2), %%r12, %%r13; " /* A[3]*B[2] */    "adox %%r11, %%r12 ;"    "adcx %%r14, %%r12 ;"    "movq %%r12, 40(%0) ;"    "movq $0, %%r8  ;"
+    "mulx 24(%2), %%r14, %%rdx; " /* A[3]*B[3] */    "adox %%r13, %%r14 ;"    "adcx %%rax, %%r14 ;"    "movq %%r14, 48(%0) ;"    "movq $0, %%rax ;"
+    /*******************************************/    "adox %%rdx, %%rax ;"    "adcx  %%r8, %%rax ;"    "movq %%rax, 56(%0) ;"
+  :
+  : "r" (tmp), "r" (input1), "r" (input2)
+  : "memory", "cc", "%rax", "%rdx", "%r8",
+    "%r9", "%r10", "%r11", "%r12", "%r13", "%r14"
+  );
+}
+
+force_inline static void square(uint64_t *tmp, uint64_t *input) {
+  __asm__ __volatile__(
+    "movq   (%1), %%rdx        ;" /* A[0]      */
+    "mulx  8(%1),  %%r8, %%r14 ;" /* A[1]*A[0] */  "xorl %%r15d, %%r15d;"
+    "mulx 16(%1),  %%r9, %%r10 ;" /* A[2]*A[0] */  "adcx %%r14,  %%r9 ;"
+    "mulx 24(%1), %%rax, %%rcx ;" /* A[3]*A[0] */  "adcx %%rax, %%r10 ;"
+    "movq 24(%1), %%rdx        ;" /* A[3]      */
+    "mulx  8(%1), %%r11, %%r12 ;" /* A[1]*A[3] */  "adcx %%rcx, %%r11 ;"
+    "mulx 16(%1), %%rax, %%r13 ;" /* A[2]*A[3] */  "adcx %%rax, %%r12 ;"
+    "movq  8(%1), %%rdx        ;" /* A[1]      */  "adcx %%r15, %%r13 ;"
+    "mulx 16(%1), %%rax, %%rcx ;" /* A[2]*A[1] */  "movq    $0, %%r14 ;"
+    /*******************************************/  "adcx %%r15, %%r14 ;"
+
+    "xorl %%r15d, %%r15d;"
+    "adox %%rax, %%r10 ;"  "adcx  %%r8,  %%r8 ;"
+    "adox %%rcx, %%r11 ;"  "adcx  %%r9,  %%r9 ;"
+    "adox %%r15, %%r12 ;"  "adcx %%r10, %%r10 ;"
+    "adox %%r15, %%r13 ;"  "adcx %%r11, %%r11 ;"
+    "adox %%r15, %%r14 ;"  "adcx %%r12, %%r12 ;"
+                           "adcx %%r13, %%r13 ;"
+                           "adcx %%r14, %%r14 ;"
+
+    "movq   (%1), %%rdx ;"  "mulx %%rdx, %%rax, %%rcx ;" /* A[0]^2 */
+    /********************/  "movq %%rax,  0(%0) ;"
+    "addq %%rcx,  %%r8 ;"   "movq  %%r8,  8(%0) ;"
+    "movq  8(%1), %%rdx ;"  "mulx %%rdx, %%rax, %%rcx ;" /* A[1]^2 */
+    "adcq %%rax,  %%r9 ;"   "movq  %%r9, 16(%0) ;"
+    "adcq %%rcx, %%r10 ;"   "movq %%r10, 24(%0) ;"
+    "movq 16(%1), %%rdx ;"  "mulx %%rdx, %%rax, %%rcx ;" /* A[2]^2 */
+    "adcq %%rax, %%r11 ;"   "movq %%r11, 32(%0) ;"
+    "adcq %%rcx, %%r12 ;"   "movq %%r12, 40(%0) ;"
+    "movq 24(%1), %%rdx ;"  "mulx %%rdx, %%rax, %%rcx ;" /* A[3]^2 */
+    "adcq %%rax, %%r13 ;"   "movq %%r13, 48(%0) ;"
+    "adcq %%rcx, %%r14 ;"   "movq %%r14, 56(%0) ;"
+  :
+  : "r" (tmp), "r" (input)
+  : "memory", "cc", "%rax", "%rcx", "%rdx",
+    "%r8", "%r9", "%r10", "%r11", "%r12", "%r13", "%r14", "%r15"
+  );
+}
+
+force_inline void reduce(uint64_t *output, uint64_t *tmp) {
+  __asm__ __volatile__(
+    "movl    $38, %%edx ;" /* 2*c = 38 = 2^256 */
+    "mulx 32(%1),  %%r8, %%r10 ;" /* c*C[4] */  "xorl %%ebx, %%ebx ;"  "adox   (%1),  %%r8 ;"
+    "mulx 40(%1),  %%r9, %%r11 ;" /* c*C[5] */  "adcx %%r10,  %%r9 ;"  "adox  8(%1),  %%r9 ;"
+    "mulx 48(%1), %%r10, %%rax ;" /* c*C[6] */  "adcx %%r11, %%r10 ;"  "adox 16(%1), %%r10 ;"
+    "mulx 56(%1), %%r11, %%rcx ;" /* c*C[7] */  "adcx %%rax, %%r11 ;"  "adox 24(%1), %%r11 ;"
+    /****************************************/  "adcx %%rbx, %%rcx ;"  "adox  %%rbx, %%rcx ;"
+    "clc ;"
+    "mulx %%rcx, %%rax, %%rcx ;" /* c*C[4] */
+    "adcx %%rax,  %%r8 ;"
+    "adcx %%rcx,  %%r9 ;"  "movq  %%r9,  8(%0) ;"
+    "adcx %%rbx, %%r10 ;"  "movq %%r10, 16(%0) ;"
+    "adcx %%rbx, %%r11 ;"  "movq %%r11, 24(%0) ;"
+    "mov     $0, %%ecx ;"	  
+    "cmovc %%edx, %%ecx ;"	  
+    "addq %%rcx,  %%r8 ;"  "movq  %%r8,   (%0) ;"
+  :
+  : "r" (output), "r" (tmp)
+  : "memory", "cc", "%rax", "%rbx", "%rcx", "%rdx", "%r8", "%r9", "%r10", "%r11"
+  );
+}
+
+
+force_inline static void Hacl_Bignum_Fmul_textbook_mul_(uint64_t *tmp, uint64_t *input1, uint64_t *input2){
   char c = 0;
   char d = 0;
   uint64_t low,h0,h1;
@@ -165,8 +267,17 @@ inline static void Hacl_Bignum_Fmul_fmul(uint64_t *output, uint64_t *input1, uin
   }
 
   DEBUG(if (c > 0 || d > 0) printf("discarding carry in fmul\n");)
+    }
+
+
+
+inline static void Hacl_Bignum_Fmul_fmul(uint64_t *output, uint64_t *input1, uint64_t *input2){
+  uint64_t tmp[8] = {0};
+
+  Hacl_Bignum_Fmul_textbook_mul(tmp,input1,input2);
+  reduce(output,tmp);
   
-  c = 0; d = 0;
+  /*
   low = _mulx_u64(tmp[4],38,&h0);
   c = _addcarry_u64(c,tmp[0],low,&tmp[0]);
   low = _mulx_u64(tmp[5],38,&h1);
@@ -205,20 +316,22 @@ inline static void Hacl_Bignum_Fmul_fmul(uint64_t *output, uint64_t *input1, uin
   c = _addcarry_u64(c,tmp[3],0,&tmp[3]);
 
   DEBUG(if (c > 0) printf("WARNING: need 3rd carry round in fmul\n");)
-
   output[0] = tmp[0];
   output[1] = tmp[1];
   output[2] = tmp[2];
   output[3] = tmp[3];
-  
+  */
+ 
 }
-
   
 inline static void
 Hacl_Bignum_Fsquare_fsquare(uint64_t *input)
 {
-  Hacl_Bignum_Fmul_fmul(input,input,input);
+  uint64_t tmp[8] = {0};
+  square(tmp,input);
+  reduce(input,tmp);
 }
+
 
 inline static void
 Hacl_Bignum_Fsquare_fsquare_times(uint64_t *output, uint64_t *input, uint32_t count1)
