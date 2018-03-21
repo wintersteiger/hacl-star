@@ -61,17 +61,17 @@ typedef uint8_t *Hacl_EC_Ladder_uint8_p;
 
 typedef uint8_t *Hacl_EC_Format_uint8_p;
 
-void Hacl_EC_crypto_scalarmult(uint8_t *mypublic, uint8_t *secret, uint8_t *basepoint);
+//void Hacl_EC_crypto_scalarmult(uint8_t *mypublic, uint8_t *secret, uint8_t *basepoint);
 
 typedef uint8_t *Hacl_Curve25519_uint8_p;
 
 void Hacl_Curve25519_crypto_scalarmult(uint8_t *mypublic, uint8_t *secret, uint8_t *basepoint);
 
-void Hacl_Bignum_fmul(uint64_t *output, uint64_t *a, uint64_t *b);
+//void Hacl_Bignum_fmul(uint64_t *output, uint64_t *a, uint64_t *b);
 
-void Hacl_EC_Format_fcontract(uint8_t *output, uint64_t *input);
+//void Hacl_EC_Format_fcontract(uint8_t *output, uint64_t *input);
 
-void Hacl_EC_Format_fexpand(uint64_t *output, uint8_t *input);
+//void Hacl_EC_Format_fexpand(uint64_t *output, uint8_t *input);
 
-void Hacl_EC_Format_fcontract_store(uint8_t *output, uint64_t *input);
+//void Hacl_EC_Format_fcontract_store(uint8_t *output, uint64_t *input);
 #endif

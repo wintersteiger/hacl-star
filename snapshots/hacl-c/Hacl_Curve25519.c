@@ -26,7 +26,6 @@
 
 #define DEBUG(x) {}
 //#define DEBUG(x) x
-//#define force_inline inline __attribute__((always_inline))
 
 inline static void Hacl_Bignum_fsum(uint64_t *a, uint64_t *b)
 {
@@ -138,7 +137,7 @@ inline static void Hacl_Bignum_fscalar(uint64_t *output, uint64_t *b, uint64_t s
 }
 
 
-force_inline static void Hacl_Bignum_Fmul_textbook_mul(uint64_t *tmp, uint64_t *input1, uint64_t *input2){
+inline static void Hacl_Bignum_Fmul_textbook_mul(uint64_t *tmp, uint64_t *input1, uint64_t *input2){
 
   __asm__ __volatile__(
     "movq   (%1), %%rdx; " /* A[0] */
@@ -175,7 +174,7 @@ force_inline static void Hacl_Bignum_Fmul_textbook_mul(uint64_t *tmp, uint64_t *
   );
 }
 
-force_inline static void square(uint64_t *tmp, uint64_t *input) {
+inline static void square(uint64_t *tmp, uint64_t *input) {
   __asm__ __volatile__(
     "movq   (%1), %%rdx        ;" /* A[0]      */
     "mulx  8(%1),  %%r8, %%r14 ;" /* A[1]*A[0] */  "xorl %%r15d, %%r15d;"
@@ -216,7 +215,7 @@ force_inline static void square(uint64_t *tmp, uint64_t *input) {
   );
 }
 
-force_inline void reduce(uint64_t *output, uint64_t *tmp) {
+inline void reduce(uint64_t *output, uint64_t *tmp) {
   __asm__ __volatile__(
     "movl    $38, %%edx ;" /* 2*c = 38 = 2^256 */
     "mulx 32(%1),  %%r8, %%r10 ;" /* c*C[4] */  "xorl %%ebx, %%ebx ;"  "adox   (%1),  %%r8 ;"
@@ -240,7 +239,7 @@ force_inline void reduce(uint64_t *output, uint64_t *tmp) {
 }
 
 
-force_inline static void Hacl_Bignum_Fmul_textbook_mul_(uint64_t *tmp, uint64_t *input1, uint64_t *input2){
+inline static void Hacl_Bignum_Fmul_textbook_mul_(uint64_t *tmp, uint64_t *input1, uint64_t *input2){
   char c = 0;
   char d = 0;
   uint64_t low,h0,h1;
@@ -277,7 +276,8 @@ inline static void Hacl_Bignum_Fmul_fmul(uint64_t *output, uint64_t *input1, uin
   Hacl_Bignum_Fmul_textbook_mul(tmp,input1,input2);
   reduce(output,tmp);
   
-  /*
+  /* Old version of reduce:
+
   low = _mulx_u64(tmp[4],38,&h0);
   c = _addcarry_u64(c,tmp[0],low,&tmp[0]);
   low = _mulx_u64(tmp[5],38,&h1);
@@ -396,7 +396,7 @@ inline static void Hacl_Bignum_crecip(uint64_t *output, uint64_t *input)
   Hacl_Bignum_Crecip_crecip(output, input);
 }
 
-static void
+inline static void
 Hacl_EC_Point_swap_conditional_step(uint64_t *a, uint64_t *b, uint64_t swap1, uint32_t ctr)
 {
   uint32_t i = ctr - (uint32_t)1U;
@@ -409,25 +409,23 @@ Hacl_EC_Point_swap_conditional_step(uint64_t *a, uint64_t *b, uint64_t swap1, ui
   b[i] = bi1;
 }
 
-static void
+inline static void
 Hacl_EC_Point_swap_conditional_(uint64_t *a, uint64_t *b, uint64_t swap1, uint32_t ctr)
 {
-  if (!(ctr == (uint32_t)0U))
+  for (int i = ctr; i > 0; i--)
   {
-    Hacl_EC_Point_swap_conditional_step(a, b, swap1, ctr);
-    uint32_t i = ctr - (uint32_t)1U;
-    Hacl_EC_Point_swap_conditional_(a, b, swap1, i);
+    Hacl_EC_Point_swap_conditional_step(a, b, swap1, i);
   }
 }
 
-static void Hacl_EC_Point_swap_conditional(uint64_t *a, uint64_t *b, uint64_t iswap)
+inline static void Hacl_EC_Point_swap_conditional(uint64_t *a, uint64_t *b, uint64_t iswap)
 {
   uint64_t swap1 = (uint64_t)0U - iswap;
   Hacl_EC_Point_swap_conditional_(a, b, swap1, (uint32_t)5U);
   Hacl_EC_Point_swap_conditional_(a + (uint32_t)5U, b + (uint32_t)5U, swap1, (uint32_t)5U);
 }
 
-static void Hacl_EC_Point_copy(uint64_t *output, uint64_t *input)
+inline static void Hacl_EC_Point_copy(uint64_t *output, uint64_t *input)
 {
   memcpy(output, input, (uint32_t)5U * sizeof input[0U]);
   memcpy(output + (uint32_t)5U,
@@ -435,7 +433,7 @@ static void Hacl_EC_Point_copy(uint64_t *output, uint64_t *input)
     (uint32_t)5U * sizeof (input + (uint32_t)5U)[0U]);
 }
 
-static void
+inline static void
 Hacl_EC_AddAndDouble_fmonty(
   uint64_t *pp,
   uint64_t *ppq,
@@ -491,7 +489,7 @@ Hacl_EC_AddAndDouble_fmonty(
   Hacl_Bignum_fmul(z2, zzz, zz);
 }
 
-static void
+inline static void
 Hacl_EC_Ladder_SmallLoop_cmult_small_loop_step(
   uint64_t *nq,
   uint64_t *nqpq,
@@ -508,7 +506,7 @@ Hacl_EC_Ladder_SmallLoop_cmult_small_loop_step(
   Hacl_EC_Point_swap_conditional(nq2, nqpq2, bit0);
 }
 
-static void
+inline static void
 Hacl_EC_Ladder_SmallLoop_cmult_small_loop_double_step(
   uint64_t *nq,
   uint64_t *nqpq,
@@ -523,7 +521,7 @@ Hacl_EC_Ladder_SmallLoop_cmult_small_loop_double_step(
   Hacl_EC_Ladder_SmallLoop_cmult_small_loop_step(nq2, nqpq2, nq, nqpq, q, byt1);
 }
 
-static void
+inline static void
 Hacl_EC_Ladder_SmallLoop_cmult_small_loop(
   uint64_t *nq,
   uint64_t *nqpq,
@@ -540,7 +538,7 @@ Hacl_EC_Ladder_SmallLoop_cmult_small_loop(
   }
 }
 
-static void
+inline static void
 Hacl_EC_Ladder_BigLoop_cmult_big_loop(
   uint8_t *n1,
   uint64_t *nq,
@@ -570,7 +568,7 @@ static void Hacl_EC_Ladder_cmult(uint64_t *result, uint8_t *n1, uint64_t *q)
   Hacl_EC_Point_copy(result, nq);
 }
 
-void Hacl_EC_Format_fexpand(uint64_t *output, uint8_t *input)
+inline static void Hacl_EC_Format_fexpand(uint64_t *output, uint8_t *input)
 {
   output[0] = load64_le(input);
   output[1] = load64_le(input+8);
@@ -579,7 +577,7 @@ void Hacl_EC_Format_fexpand(uint64_t *output, uint8_t *input)
 }
 
 
-void Hacl_EC_Format_fcontract(uint8_t *output, uint64_t *input)
+inline static void Hacl_EC_Format_fcontract(uint8_t *output, uint64_t *input)
 {
   uint64_t top = input[3];
   //DEBUG(  if (top >> 63 == 1) printf("fcontract top bit\n");)
@@ -610,7 +608,7 @@ void Hacl_EC_Format_fcontract(uint8_t *output, uint64_t *input)
   //  DEBUG(printf("fcontract result: ");for (int i = 31; i >= 0; i--) printf("%02X",output[i]);printf("\n");)
 }
 
-static void Hacl_EC_Format_scalar_of_point(uint8_t *scalar, uint64_t *point)
+inline static void Hacl_EC_Format_scalar_of_point(uint8_t *scalar, uint64_t *point)
 {
   uint64_t *x = point;
   uint64_t *z = point + (uint32_t)5U;
@@ -622,7 +620,7 @@ static void Hacl_EC_Format_scalar_of_point(uint8_t *scalar, uint64_t *point)
   Hacl_EC_Format_fcontract(scalar, sc);
 }
 
-void Hacl_EC_crypto_scalarmult(uint8_t *mypublic, uint8_t *secret, uint8_t *basepoint)
+static inline void Hacl_EC_crypto_scalarmult(uint8_t *mypublic, uint8_t *secret, uint8_t *basepoint)
 {
   uint64_t buf0[10U] = { 0U };
   uint64_t *x0 = buf0;
@@ -653,6 +651,6 @@ void Hacl_EC_crypto_scalarmult(uint8_t *mypublic, uint8_t *secret, uint8_t *base
 void Hacl_Curve25519_crypto_scalarmult(uint8_t *mypublic, uint8_t *secret, uint8_t *basepoint)
 {
   Hacl_EC_crypto_scalarmult(mypublic, secret, basepoint);
-  fflush(stdout);
+  DEBUG(fflush(stdout);)
 }
 

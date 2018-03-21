@@ -340,22 +340,8 @@ int32_t perf_curve() {
   uint64_t d[ROUNDS];
   cycles a,b;
   clock_t t1,t2;
-  t1 = clock();
-  for (int i = 0; i < ROUNDS; i++){
-    a = TestLib_cpucycles();
-    Hacl_Curve25519_crypto_scalarmult(mul + KEYSIZE * i, sk + KEYSIZE * i, pk + KEYSIZE * i);
-    b = TestLib_cpucycles();
-    d[i] = b - a;
-  }
-  t2 = clock();
-  hacl_cy = (double) median(d,ROUNDS);
-  hacl_utime = (double)t2 - t1;
-  print_results("HACL Curve25519 speed", (double)(t2-t1)/ROUNDS, (double) median(d,ROUNDS), 1, 1);
-  uint64_t res = 0;
-  for (int i = 0; i < ROUNDS; i++) res += (uint64_t)*(mul+KEYSIZE*i) + (uint64_t)*(mul+KEYSIZE*i+8)
-                                 + (uint64_t)*(mul+KEYSIZE*i+16) + (uint64_t)*(mul+KEYSIZE*i+24);
-  printf("Composite result (ignore): %" PRIx64 "\n", res);
-
+  int res;
+  
   t1 = clock();
   for (int i = 0; i < ROUNDS; i++){
     a = TestLib_cpucycles();
@@ -367,6 +353,21 @@ int32_t perf_curve() {
   sodium_cy = (double) median(d,ROUNDS);
   sodium_utime = (double)t2 - t1;
   print_results("Sodium Curve25519 speed", (double)(t2-t1)/ROUNDS, (double) median(d,ROUNDS), 1, 1);
+  for (int i = 0; i < ROUNDS; i++) res += (uint64_t)*(mul+KEYSIZE*i) + (uint64_t)*(mul+KEYSIZE*i+8)
+                                 + (uint64_t)*(mul+KEYSIZE*i+16) + (uint64_t)*(mul+KEYSIZE*i+24);
+  printf("Composite result (ignore): %" PRIx64 "\n", res);
+
+t1 = clock();
+  for (int i = 0; i < ROUNDS; i++){
+    a = TestLib_cpucycles();
+    Hacl_Curve25519_crypto_scalarmult(mul + KEYSIZE * i, sk + KEYSIZE * i, pk + KEYSIZE * i);
+    b = TestLib_cpucycles();
+    d[i] = b - a;
+  }
+  t2 = clock();
+  hacl_cy = (double) median(d,ROUNDS);
+  hacl_utime = (double)t2 - t1;
+  print_results("HACL Curve25519 speed", (double)(t2-t1)/ROUNDS, (double) median(d,ROUNDS), 1, 1);
   for (int i = 0; i < ROUNDS; i++) res += (uint64_t)*(mul+KEYSIZE*i) + (uint64_t)*(mul+KEYSIZE*i+8)
                                  + (uint64_t)*(mul+KEYSIZE*i+16) + (uint64_t)*(mul+KEYSIZE*i+24);
   printf("Composite result (ignore): %" PRIx64 "\n", res);
