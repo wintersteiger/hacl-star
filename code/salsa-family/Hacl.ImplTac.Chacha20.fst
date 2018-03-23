@@ -201,18 +201,14 @@ let is_in_same_module_as (t1 t2: T.term) : T.Tac bool =
     compare_module_names n1 n2
   | _ -> false
 
-let rec compile (t: T.term) : T.Tac T.term =
-  match T.inspect t with
-  | T.Tv_Const (T.C_Int i) ->
-    T.mk_app (quote FStar.UInt32.uint_to_t) [t, T.Q_Explicit]
-  | _ ->
+let rec compile (ty: T.term) (t: T.term) : T.Tac T.term =
     let (hd, tl) = app_head_tail t in
     if T.term_eq hd (quote Spec.op_At)
     then begin
       match L.rev tl with // BEWARE we reverse the list of arguments here
       | (ar2, T.Q_Explicit) :: (ar1, T.Q_Explicit) :: _ ->
-        let ar1' = compile ar1 in
-        let ar2' = compile ar2 in
+        let ar1' = compile ty ar1 in
+        let ar2' = compile ty ar2 in
         let ty = quote Spec.shuffle in
         T.mk_app (quote seq) [
           ar1, T.Q_Explicit;
@@ -227,22 +223,41 @@ let rec compile (t: T.term) : T.Tac T.term =
       match tl with
       | [ar, _] -> ar
       | _ -> T.fail "v"
-    end else if
+    end else
+    if
       hd `is_in_same_module_as` (quote Spec.state)
     then
+      let tdef = unfold' hd in
+      let binders = binders_of_abs tdef in
       let hd' = T.pack (T.Tv_FVar (transfer_lid_to_this_module hd)) in
-      let tl' = compile_args tl in
+      let tl' = compile_args binders tl in
       T.mk_app hd' tl'
+    else
+    let ins = T.inspect t in
+    if
+      let q = quote Spec.idx in
+      if T.term_eq ty q
+      then
+        if T.Tv_Const? ins
+        then
+          let (T.Tv_Const c) = ins in
+          T.C_Int? c
+        else false
+      else false
+    then
+      T.mk_app (quote index) [t, T.Q_Explicit]
     else
       (* do not change terms that start with a head symbol that is not a spec function *)
       t
 
-and compile_args (tl: list T.argv) : T.Tac (list T.argv) =
-  match tl with
-  | [] -> []
-  | (ar, qual) :: tlq ->
-    let ar' = compile ar in
-    (ar', qual) :: compile_args tlq
+and compile_args (binders: list T.binder) (tl: list T.argv) : T.Tac (list T.argv) =
+  match binders, tl with
+  | (b :: binders'), ((ar, qual) :: tlq) ->
+    let ty = T.type_of_binder b in
+    let ar' = compile ty ar in
+    (ar', qual) :: compile_args binders' tlq
+  | _, [] -> []
+  | _ -> T.fail "compile_args: more arguments than binders"
 
 let rec mk_abs (l: list T.binder) (body: T.term) : T.Tac T.term =
   match l with
@@ -270,7 +285,7 @@ let compile_def (#a: Type) (v: a) : T.Tac T.term =
   let spec_unfolded =
     T.norm_term_env state.compile_binders_new_env [] (T.mk_app t_unfolded new_args)
   in
-  let body_before_coerce = compile spec_unfolded in
+  let body_before_coerce = compile (quote Spec.shuffle) spec_unfolded in
   let q : T.term = quote () in
   let body = T.mk_app (quote coerce_shuffle) [
     spec_unfolded, T.Q_Explicit;
@@ -300,16 +315,6 @@ shuffle (Spec.quarter_round (v a) (v b) (v c) (v d))) =
   T.synth_by_tactic (fun () -> synth_def Spec.quarter_round)
 *)
 
-let rec binders_of_arrow (t: T.term) : T.Tac (list T.binder) =
-  match T.inspect t with
-  | T.Tv_Arrow binder body ->
-    begin match T.inspect_comp body with
-    | T.C_Total rt _ ->
-      binder :: binders_of_arrow rt
-    | _ -> T.fail "Unknown computation"
-    end
-  | _ -> []
-
 let rec mk_arrow (l: list T.binder) (body: T.term) : T.Tac T.term =
   match l with
   | [] -> body
@@ -333,3 +338,12 @@ let synth_type_of  (#a: Type) (v: a) : T.Tac unit =
 
 let quarter_round : T.synth_by_tactic (fun () -> synth_type_of Spec.quarter_round) =
   T.synth_by_tactic (fun () -> synth_def Spec.quarter_round)
+
+let column_round : T.synth_by_tactic (fun () -> synth_type_of Spec.column_round) =
+  T.synth_by_tactic (fun () -> synth_def Spec.column_round)
+
+let diagonal_round : T.synth_by_tactic (fun () -> synth_type_of Spec.diagonal_round) =
+  T.synth_by_tactic (fun () -> synth_def Spec.diagonal_round)
+
+let double_round : T.synth_by_tactic (fun () -> synth_type_of Spec.double_round) =
+  T.synth_by_tactic (fun () -> synth_def Spec.double_round)
