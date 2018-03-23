@@ -25,8 +25,11 @@ type shuffle = state -> Tot state
 // Using @ as a functional substitute for ;
 let op_At f g = fun x -> g (f x)
 
+let plus_equal (a b: idx) : Tot shuffle =
+  fun m -> m.[a] <- (m.[a] +. m.[b])
+
 let line (a:idx) (b:idx) (d:idx) (s:rotval U32) (m:state) : Tot state =
-  let m = m.[a] <- (m.[a] +. m.[b]) in
+  let m = m.[a] <- (m.[a] +. m.[b]) in // plus_equal a b m in
   let m = m.[d] <- ((m.[d] ^. m.[a]) <<<. s) in m
 
 let quarter_round a b c d : shuffle =
