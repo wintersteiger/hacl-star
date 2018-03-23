@@ -59,20 +59,22 @@ let app_head_tail (t: T.term) :
 = let (x, l) = app_head_rev_tail t in
   (x, L.rev l)
 
-// FIXME: is there any way to determine, in a function definition, whether a binder binds an implicit argument?
+let rec binders_of_abs (t: T.term) : T.Tac (list T.binder) =
+  match T.inspect t with
+  | T.Tv_Abs binder body ->
+    binder :: binders_of_abs body
+  | _ -> []
 
 noeq
-type compile_abs_state = {
-  compile_abs_rev_new_args: list T.argv;
-  compile_abs_rev_new_binders: list T.binder;
-  compile_abs_new_env: T.env;
-  compile_abs_bv: (T.bv -> T.Tac T.bv);
-  compile_abs_remainder: T.term;
+type compile_binders_state = {
+  compile_binders_rev_new_args: list T.argv;
+  compile_binders_rev_new_binders: list T.binder;
+  compile_binders_new_env: T.env;
 }
 
-let rec compile_abs (s: compile_abs_state) : T.Tac compile_abs_state =
-  match T.inspect s.compile_abs_remainder with
-  | T.Tv_Abs binder body ->
+let rec compile_binders (s: compile_binders_state) (l: list T.binder) : T.Tac compile_binders_state =
+  match l with
+  | binder :: body ->
       let binder_ty = T.type_of_binder binder in
       let new_arg, new_binder =
         if T.term_eq binder_ty (quote Spec.idx)
@@ -90,18 +92,26 @@ let rec compile_abs (s: compile_abs_state) : T.Tac compile_abs_state =
             (new_binder_tm, nb)
       in
       let new_bv = T.bv_of_binder new_binder in
-      compile_abs ({
-        compile_abs_rev_new_args = new_arg :: s.compile_abs_rev_new_args;
-        compile_abs_rev_new_binders = new_binder :: s.compile_abs_rev_new_binders;
-        compile_abs_new_env = T.push_binder s.compile_abs_new_env new_binder;
-        compile_abs_bv = (fun (b: T.bv) ->
-          if T.term_eq (T.bv_to_term b) (T.binder_to_term binder)
-          then new_bv
-          else s.compile_abs_bv b
-        );
-        compile_abs_remainder = body;
+      compile_binders ({
+        compile_binders_rev_new_args = new_arg :: s.compile_binders_rev_new_args;
+        compile_binders_rev_new_binders = new_binder :: s.compile_binders_rev_new_binders;
+        compile_binders_new_env = T.push_binder s.compile_binders_new_env new_binder;
       })
+      body
   | _ -> s
+
+// FIXME: is there any way to determine, in a function definition, whether a binder binds an implicit argument?
+
+let compile_abs (t: T.term) : T.Tac compile_binders_state =
+  let l = binders_of_abs t in
+  let env = T.cur_env () in
+  compile_binders
+      ({
+        compile_binders_rev_new_args = [];
+        compile_binders_rev_new_binders = [];
+        compile_binders_new_env = env;
+      })
+      l
 
 let unfold_fv (t: T.fv) : T.Tac T.term =
   let env = T.cur_env () in
@@ -122,15 +132,8 @@ let unfold' (t: T.term) : T.Tac T.term =
 let _ = T.assert_by_tactic True (fun () ->
   let s = unfold' (quote Spec.quarter_round) in
   let env = T.cur_env () in
-  let s' = compile_abs ({
-    compile_abs_rev_new_args = [];
-    compile_abs_rev_new_binders = [];
-    compile_abs_new_env = env;
-    compile_abs_bv = (fun _ -> T.fail "Undefined bv");
-    compile_abs_remainder = s;
-  })
-  in
-  let l = s'.compile_abs_rev_new_binders in
+  let s' = compile_abs s in
+  let l = s'.compile_binders_rev_new_binders in
   match l with [] -> () | a::_ -> begin
     T.print (T.term_to_string (T.type_of_binder a))
   end
@@ -261,18 +264,11 @@ let compile_def (#a: Type) (v: a) : T.Tac T.term =
   let t_folded = quote v in
   let t_unfolded = unfold' t_folded in
   let env = T.cur_env () in
-  let state = compile_abs ({
-    compile_abs_rev_new_args = [];
-    compile_abs_rev_new_binders = [];
-    compile_abs_new_env = env;
-    compile_abs_bv = (fun _ -> T.fail "Unexpected bv");
-    compile_abs_remainder = t_unfolded;
-  })
-  in
-  let new_args = L.rev state.compile_abs_rev_new_args in
+  let state = compile_abs t_unfolded in
+  let new_args = L.rev state.compile_binders_rev_new_args in
   let spec_folded = T.mk_app t_folded new_args in
   let spec_unfolded =
-    T.norm_term_env state.compile_abs_new_env [] (T.mk_app t_unfolded new_args)
+    T.norm_term_env state.compile_binders_new_env [] (T.mk_app t_unfolded new_args)
   in
   let body_before_coerce = compile spec_unfolded in
   let q : T.term = quote () in
@@ -283,7 +279,7 @@ let compile_def (#a: Type) (v: a) : T.Tac T.term =
     q, T.Q_Explicit;
   ]
   in
-  let res = mk_abs (L.rev state.compile_abs_rev_new_binders) body in
+  let res = mk_abs (L.rev state.compile_binders_rev_new_binders) body in
   T.print (T.term_to_string res) ;
   res
 
@@ -294,20 +290,46 @@ let _ = T.assert_by_tactic True (fun () ->
   ()
 )
 
-let quarter_round : (a: idx) -> (b: idx) -> (c: idx) -> (d: idx) -> Tot (
-shuffle (Spec.quarter_round (v a) (v b) (v c) (v d))) =
-  T.synth_by_tactic (fun () ->
-    let res = compile_def Spec.quarter_round in
-    T.exact_guard res
-  )
+let synth_def (#a: Type) (v: a) : T.Tac unit =
+   let res = compile_def v in
+   T.exact res
 
 (*
-  | T.Tv_Let _ m' def body ->
-    let def' = compile_expr bvs t in
-    let bvs' (b: T.bv) : T.Tac T.bv =
-      if T.term_eq (T.bv_to_term b) m'
-      then bvs m
-      else bvs b
-    in
-    compile bvs' m' body
+let quarter_round : (a: idx) -> (b: idx) -> (c: idx) -> (d: idx) -> Tot (
+shuffle (Spec.quarter_round (v a) (v b) (v c) (v d))) =
+  T.synth_by_tactic (fun () -> synth_def Spec.quarter_round)
 *)
+
+let rec binders_of_arrow (t: T.term) : T.Tac (list T.binder) =
+  match T.inspect t with
+  | T.Tv_Arrow binder body ->
+    begin match T.inspect_comp body with
+    | T.C_Total rt _ ->
+      binder :: binders_of_arrow rt
+    | _ -> T.fail "Unknown computation"
+    end
+  | _ -> []
+
+let rec mk_arrow (l: list T.binder) (body: T.term) : T.Tac T.term =
+  match l with
+  | [] -> body
+  | b :: q ->
+    let body' = mk_arrow q body in
+    T.pack (T.Tv_Arrow b (T.pack_comp (T.C_Total body' None)))
+
+let compile_type_of (#a: Type) (v: a) : T.Tac T.term =
+  let t_folded = quote v in
+  let t_unfolded = unfold' t_folded in
+  let state = compile_abs t_unfolded in
+  let body = T.mk_app (quote shuffle) [
+    T.mk_app t_folded (L.rev state.compile_binders_rev_new_args), T.Q_Explicit;
+  ]
+  in
+  mk_arrow (L.rev state.compile_binders_rev_new_binders) body
+
+let synth_type_of  (#a: Type) (v: a) : T.Tac unit =
+  let res = compile_type_of v in
+  T.exact res
+
+let quarter_round : T.synth_by_tactic (fun () -> synth_type_of Spec.quarter_round) =
+  T.synth_by_tactic (fun () -> synth_def Spec.quarter_round)
