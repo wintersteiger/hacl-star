@@ -155,7 +155,8 @@ uint8_t q[128U] =
     };
 
 uint32_t skeyBits = (uint32_t)2048U;
-uint32_t pkeyBits = (uint32_t)24U;
+//uint32_t pkeyBits = (uint32_t)24U;
+uint32_t pkeyBits = (uint32_t)17U;
 uint32_t modBits = (uint32_t)2048U;
 uint32_t pTLen = (uint32_t)128U;
 uint32_t qTLen = (uint32_t)128U;
