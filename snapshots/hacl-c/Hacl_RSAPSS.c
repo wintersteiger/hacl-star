@@ -61,60 +61,6 @@ inline bool Hacl_Impl_Lib_eq_b(Prims_nat len, uint32_t clen, uint8_t *b1, uint8_
   return Hacl_Impl_Lib_eq_b_(len, clen, b1, b2, (uint32_t)0U);
 }
 
-inline static K___uint64_t_uint64_t
-Hacl_Impl_Addition_addcarry_u64(uint64_t carry, uint64_t a, uint64_t b)
-{
-  uint64_t ite;
-  uint64_t x00 = a + carry + b;
-  uint64_t x1 = a + carry;
-  if (x00 < x1)
-  {
-    uint64_t ite0;
-    uint64_t x0 = a + carry;
-    if (x0 < carry)
-      ite0 = (uint64_t)1U;
-    else
-      ite0 = (uint64_t)0U;
-    ite = ite0 + (uint64_t)1U;
-  }
-  else
-  {
-    uint64_t ite0;
-    uint64_t x0 = a + carry;
-    if (x0 < carry)
-      ite0 = (uint64_t)1U;
-    else
-      ite0 = (uint64_t)0U;
-    ite = ite0;
-  }
-  return ((K___uint64_t_uint64_t){ .fst = ite, .snd = a + carry + b });
-}
-
-inline static K___uint64_t_uint64_t
-Hacl_Impl_Addition_subborrow_u64(uint64_t carry, uint64_t a, uint64_t b)
-{
-  uint64_t ite0;
-  if (carry == (uint64_t)1U)
-  {
-    uint64_t ite;
-    if (a <= b)
-      ite = (uint64_t)1U;
-    else
-      ite = (uint64_t)0U;
-    ite0 = ite;
-  }
-  else
-  {
-    uint64_t ite;
-    if (a < b)
-      ite = (uint64_t)1U;
-    else
-      ite = (uint64_t)0U;
-    ite0 = ite;
-  }
-  return ((K___uint64_t_uint64_t){ .fst = ite0, .snd = a - b - carry });
-}
-
 inline static void
 Hacl_Impl_Addition_bn_sub_(
   Prims_nat aLen,
@@ -128,16 +74,9 @@ Hacl_Impl_Addition_bn_sub_(
   uint64_t *res
 )
 {
-  if (i < caLen)
-  {
-    uint64_t t1 = a[i];
-    uint64_t t2 = Hacl_Impl_Lib_bval(bLen, cbLen, b, i);
-    K___uint64_t_uint64_t uu____389 = Hacl_Impl_Addition_subborrow_u64(carry, t1, t2);
-    K___uint64_t_uint64_t scrut = uu____389;
-    uint64_t carry1 = scrut.fst;
-    uint64_t res_i = scrut.snd;
-    res[i] = res_i;
-    Hacl_Impl_Addition_bn_sub_(aLen, bLen, caLen, a, cbLen, b, i + (uint32_t)1U, carry1, res);
+  uint8_t carry2 = carry;
+  for(int i = 0; i < caLen; i++) {
+    carry2 = _subborrow_u64(carry2,Hacl_Impl_Lib_bval(cbLen,cbLen,b,i),a[i],&res[i]);
   }
 }
 
@@ -164,32 +103,15 @@ Hacl_Impl_Addition_bn_add_(
   uint32_t cbLen,
   uint64_t *b,
   uint32_t i,
-  uint64_t carry,
+  uint8_t carry,
   uint64_t *res
 )
 {
-  if (i < caLen)
-  {
-    uint64_t t1 = a[i];
-    uint64_t t2 = Hacl_Impl_Lib_bval(bLen, cbLen, b, i);
-    K___uint64_t_uint64_t uu____1247 = Hacl_Impl_Addition_addcarry_u64(carry, t1, t2);
-    K___uint64_t_uint64_t scrut = uu____1247;
-    uint64_t carry1 = scrut.fst;
-    uint64_t res_i = scrut.snd;
-    res[i] = res_i;
-    return
-      Hacl_Impl_Addition_bn_add_(aLen,
-        bLen,
-        caLen,
-        a,
-        cbLen,
-        b,
-        i + (uint32_t)1U,
-        carry1,
-        res);
+  uint8_t carry2 = carry;
+  for(int i = 0; i < caLen; i++) {
+    carry2 = _addcarry_u64(carry2,a[i],Hacl_Impl_Lib_bval(cbLen, cbLen,b,i),&res[i]);
   }
-  else
-    return carry;
+  return carry2;
 }
 
 inline static void
@@ -433,22 +355,13 @@ Hacl_Impl_Multiplication_bn_mult_by_limb_addj(
   {
     uint64_t res_ij = res[ij];
     uint64_t uu____258 = a[i];
-    K___uint64_t_uint64_t
-    uu____253 =
-      {
-        .fst = FStar_UInt128_uint128_to_uint64(FStar_UInt128_shift_right(FStar_UInt128_add(FStar_UInt128_add(FStar_UInt128_mul_wide(uu____258,
+    FStar_UInt128_t u =
+      FStar_UInt128_add(FStar_UInt128_add(FStar_UInt128_mul_wide(uu____258,
                   l),
                 FStar_UInt128_uint64_to_uint128(carry)),
-              FStar_UInt128_uint64_to_uint128(res_ij)),
-            (uint32_t)64U)),
-        .snd = FStar_UInt128_uint128_to_uint64(FStar_UInt128_add(FStar_UInt128_add(FStar_UInt128_mul_wide(uu____258,
-                l),
-              FStar_UInt128_uint64_to_uint128(carry)),
-            FStar_UInt128_uint64_to_uint128(res_ij)))
-      };
-    K___uint64_t_uint64_t scrut = uu____253;
-    uint64_t carry_ = scrut.fst;
-    uint64_t res_ij1 = scrut.snd;
+			FStar_UInt128_uint64_to_uint128(res_ij));
+    uint64_t carry_ = FStar_UInt128_uint128_to_uint64(FStar_UInt128_shift_right(u,(uint32_t)64U));
+    uint64_t res_ij1 = FStar_UInt128_uint128_to_uint64(u);
     res[ij] = res_ij1;
     Hacl_Impl_Multiplication_bn_mult_by_limb_addj(aLen,
       aaLen,
@@ -840,22 +753,14 @@ Hacl_Impl_Montgomery_bn_mult_by_limb_addj_carry(
   {
     uint64_t res_ij = res[ij];
     uint64_t uu____1228 = a[i];
-    K___uint64_t_uint64_t
-    uu____1223 =
-      {
-        .fst = FStar_UInt128_uint128_to_uint64(FStar_UInt128_shift_right(FStar_UInt128_add(FStar_UInt128_add(FStar_UInt128_mul_wide(uu____1228,
+
+    FStar_UInt128_t u =
+      FStar_UInt128_add(FStar_UInt128_add(FStar_UInt128_mul_wide(uu____1228,
                   l),
                 FStar_UInt128_uint64_to_uint128(carry)),
-              FStar_UInt128_uint64_to_uint128(res_ij)),
-            (uint32_t)64U)),
-        .snd = FStar_UInt128_uint128_to_uint64(FStar_UInt128_add(FStar_UInt128_add(FStar_UInt128_mul_wide(uu____1228,
-                l),
-              FStar_UInt128_uint64_to_uint128(carry)),
-            FStar_UInt128_uint64_to_uint128(res_ij)))
-      };
-    K___uint64_t_uint64_t scrut = uu____1223;
-    uint64_t carry_ = scrut.fst;
-    uint64_t res_ij1 = scrut.snd;
+			FStar_UInt128_uint64_to_uint128(res_ij));
+    uint64_t carry_ = FStar_UInt128_uint128_to_uint64(FStar_UInt128_shift_right(u,(uint32_t)64U));
+    uint64_t res_ij1 = FStar_UInt128_uint128_to_uint64(u);
     res[ij] = res_ij1;
     return
       Hacl_Impl_Montgomery_bn_mult_by_limb_addj_carry(aLen,
@@ -870,13 +775,7 @@ Hacl_Impl_Montgomery_bn_mult_by_limb_addj_carry(
   }
   else
   {
-    uint64_t res_ij = res[ij];
-    K___uint64_t_uint64_t
-    uu____1420 = Hacl_Impl_Addition_addcarry_u64((uint64_t)0U, res_ij, carry);
-    K___uint64_t_uint64_t scrut = uu____1420;
-    uint64_t c_ = scrut.fst;
-    uint64_t res_ij1 = scrut.snd;
-    res[ij] = res_ij1;
+    uint8_t c_ = _addcarry_u64((uint8_t)0U,res[ij],carry,&res[ij]);
     return c_;
   }
 }
@@ -1642,9 +1541,6 @@ Hacl_RSAPSS_rsa_pss_verify(
   }
   else
     res = false;
-  bool r = res;
-  bool r0 = r;
-  bool res0 = r0;
-  return res0;
+  return res;
 }
 
