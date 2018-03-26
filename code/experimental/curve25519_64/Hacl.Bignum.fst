@@ -374,7 +374,7 @@ val fsquare_times:
     (ensures (fun h0 _ h1 -> True))
 [@"substitute"]
 let fsquare_times output input count =
-  blit input 0ul output 0ul 5ul;
+  blit input 0ul output 0ul 4ul;
   fsquare output;
   let inv h i = True in
   C.Loops.for 1ul count inv (fun i ->

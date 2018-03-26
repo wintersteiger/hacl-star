@@ -123,7 +123,7 @@ private let lemma_crecip_1_modifies h0 h1 h2 h3 h4 h5 h6 h7 buf =
 
 [@"substitute"]
 private val crecip_1:
-  buf:buffer limb{length buf = 20} ->
+  buf:buffer limb{length buf = 16} ->
   z:felem{disjoint buf z} ->
   Stack unit
   (requires (fun h -> live h buf /\ live h z /\ crecip_pre (as_seq h z)))
@@ -141,10 +141,10 @@ private val crecip_1:
 #reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 100"
 [@"substitute"]
 private let crecip_1 buf z =
-  let a  = Buffer.sub buf 0ul  5ul in
-  let t0 = Buffer.sub buf 5ul  5ul in
-  let b  = Buffer.sub buf 10ul 5ul in
-  let c  = Buffer.sub buf 15ul 5ul in
+  let a  = Buffer.sub buf 0ul  4ul in
+  let t0 = Buffer.sub buf 4ul  4ul in
+  let b  = Buffer.sub buf 8ul 4ul in
+  let c  = Buffer.sub buf 12ul 4ul in
   (**) lemma_disjoint_sub buf a z;
   (**) lemma_disjoint_sub buf t0 z;
   (**) lemma_disjoint_sub buf b z;
@@ -200,7 +200,7 @@ private let lemma_crecip_2_modifies h0 h1 h2 h3 h4 h5 h6 h7 h8 buf =
 
 [@"substitute"]
 private val crecip_2:
-  buf:buffer limb{length buf = 20} ->
+  buf:buffer limb{length buf = 16} ->
   Stack unit
   (requires (fun h -> live h buf
     /\ (let a  = Buffer.sub buf 0ul  5ul in
@@ -228,10 +228,10 @@ private val crecip_2:
 [@"substitute"]
 private let crecip_2 buf =
   assert_norm(pow2 32 = 0x100000000);
-  let a  = Buffer.sub buf 0ul  5ul in
-  let t0 = Buffer.sub buf 5ul  5ul in
-  let b  = Buffer.sub buf 10ul 5ul in
-  let c  = Buffer.sub buf 15ul 5ul in
+  let a  = Buffer.sub buf 0ul  4ul in
+  let t0 = Buffer.sub buf 4ul  4ul in
+  let b  = Buffer.sub buf 8ul 4ul in
+  let c  = Buffer.sub buf 12ul 4ul in
   let h0 = ST.get() in
   fmul b t0 b;
   let h1 = ST.get() in
@@ -299,7 +299,7 @@ private let lemma_crecip_3_modifies h0 h1 h2 h3 h4 h5 h6 h7 buf out =
 [@"substitute"]
 private val crecip_3:
   out:felem ->
-  buf:buffer limb{length buf = 20 /\ disjoint out buf} ->
+  buf:buffer limb{length buf = 16 /\ disjoint out buf} ->
   Stack unit
   (requires (fun h -> live h buf /\ live h out
     /\ (let a  = Buffer.sub buf 0ul  5ul in
@@ -325,10 +325,10 @@ private val crecip_3:
 [@"substitute"]
 private let crecip_3 out buf =
   assert_norm(pow2 32 = 0x100000000);
-  let a  = Buffer.sub buf 0ul  5ul in
-  let t0 = Buffer.sub buf 5ul  5ul in
-  let b  = Buffer.sub buf 10ul 5ul in
-  let c  = Buffer.sub buf 15ul 5ul in
+  let a  = Buffer.sub buf 0ul  4ul in
+  let t0 = Buffer.sub buf 4ul  4ul in
+  let b  = Buffer.sub buf 8ul 4ul in
+  let c  = Buffer.sub buf 12ul 4ul in
   let h0 = ST.get() in
   fmul c t0 b;
   let h1 = ST.get() in
@@ -361,7 +361,7 @@ private let crecip_3 out buf =
 [@"substitute"]
 private val crecip_3':
   out:felem ->
-  buf:buffer limb{length buf = 20 /\ disjoint out buf} ->
+  buf:buffer limb{length buf = 16 /\ disjoint out buf} ->
   Stack unit
   (requires (fun h -> live h buf /\ live h out
     /\ (let a  = Buffer.sub buf 0ul  5ul in
@@ -387,10 +387,10 @@ private val crecip_3':
 [@"substitute"]
 private let crecip_3' out buf =
   assert_norm(pow2 32 = 0x100000000);
-  let a  = Buffer.sub buf 0ul  5ul in
-  let t0 = Buffer.sub buf 5ul  5ul in
-  let b  = Buffer.sub buf 10ul 5ul in
-  let c  = Buffer.sub buf 15ul 5ul in
+  let a  = Buffer.sub buf 0ul  4ul in
+  let t0 = Buffer.sub buf 4ul  4ul in
+  let b  = Buffer.sub buf 8ul 4ul in
+  let c  = Buffer.sub buf 12ul 4ul in
   let h0 = ST.get() in
   fmul c t0 b;
   let h1 = ST.get() in
@@ -435,7 +435,7 @@ let crecip out z =
   (**) let hinit = ST.get() in
   push_frame();
   (**) let h0 = ST.get() in
-  let buf = create limb_zero 20ul in
+  let buf = create limb_zero 16ul in
   (**) let h1 = ST.get() in
   (**) no_upd_lemma_0 h0 h1 out;
   crecip_1 buf z;
@@ -472,7 +472,7 @@ let crecip' out z =
   (**) let hinit = ST.get() in
   push_frame();
   (**) let h0 = ST.get() in
-  let buf = create limb_zero 20ul in
+  let buf = create limb_zero 16ul in
   (**) let h1 = ST.get() in
   let h  = ST.get() in
   crecip_1 buf z;
@@ -482,10 +482,10 @@ let crecip' out z =
   (**) lemma_modifies_1_trans buf h1 h2 h3;
   let h' = ST.get() in
   no_upd_lemma_1 h h' buf z;
-  let a  = Buffer.sub buf 0ul  5ul in
-  let t0 = Buffer.sub buf 5ul  5ul in
-  let b  = Buffer.sub buf 10ul 5ul in
-  let c  = Buffer.sub buf 15ul 5ul in
+  let a  = Buffer.sub buf 0ul  4ul in
+  let t0 = Buffer.sub buf 4ul  4ul in
+  let b  = Buffer.sub buf 8ul 4ul in
+  let c  = Buffer.sub buf 12ul 4ul in
   let h  = ST.get() in
   fsquare_times a z 1ul;
   (**) let h4 = ST.get() in

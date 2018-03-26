@@ -110,7 +110,7 @@ private let lemma_point_inf s s' =
 
 [@"substitute"]
 private val cmult_: result:point ->
-  buf:buffer limb{length buf = 40} ->
+  buf:buffer limb{length buf = 32} ->
   scalar:uint8_p{length scalar = keylen} ->
   q:point ->
   Stack unit
@@ -137,10 +137,10 @@ private val cmult_: result:point ->
 [@"substitute"]
 private let cmult_ result point_buf n q =
   assert_norm(pow2 32 = 0x100000000);
-  let nq    = Buffer.sub point_buf 0ul 10ul in
-  let nqpq  = Buffer.sub point_buf 10ul 10ul in
-  let nq2   = Buffer.sub point_buf 20ul 10ul in
-  let nqpq2 = Buffer.sub point_buf 30ul 10ul in
+  let nq    = Buffer.sub point_buf 0ul 8ul in
+  let nqpq  = Buffer.sub point_buf 8ul 8ul in
+  let nq2   = Buffer.sub point_buf 16ul 8ul in
+  let nqpq2 = Buffer.sub point_buf 24ul 8ul in
   let h0 = ST.get() in
   lemma_seq' h0 point_buf;
   Hacl.EC.Point.copy nqpq q;
@@ -190,7 +190,7 @@ let cmult result n q =
   let h0 = ST.get() in
   push_frame();
   let h1 = ST.get() in
-  let point_buf = create limb_zero 40ul in
+  let point_buf = create limb_zero 32ul in
   let h2 = ST.get() in
   lemma_reveal_modifies_0 h1 h2;
   cmult_ result point_buf n q;

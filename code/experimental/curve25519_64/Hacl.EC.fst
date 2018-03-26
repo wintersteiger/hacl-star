@@ -54,11 +54,11 @@ let crypto_scalarmult__ mypublic scalar basepoint q =
   let h0 = ST.get() in
   push_frame();
   let h1 = ST.get() in
-  let buf   = Buffer.create limb_zero 15ul in
-  let nq    = Buffer.sub buf 0ul 10ul in
+  let buf   = Buffer.create limb_zero 12ul in
+  let nq    = Buffer.sub buf 0ul 8ul in
   let x     = getx nq in
   let z     = getz nq in
-  let zmone = Buffer.sub buf 5ul 5ul in
+  let zmone = Buffer.sub buf 4ul 4ul in
   let h2 = ST.get() in
   x.(0ul) <- limb_one;
   let h3 = ST.get() in

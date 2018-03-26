@@ -220,7 +220,7 @@ private let lemma_fmonty__3_modifies tmp x2 z2 x3 z3 px pz pqx pqz qx h16 h17 h1
 
 [@"substitute"]
 private val fmonty__1:
-  tmp:buffer limb{length tmp = 40} ->
+  tmp:buffer limb{length tmp = 32} ->
   ppx:felem -> ppz:felem -> ppqx:felem -> ppqz:felem ->
   px:felem -> pz:felem -> pqx:felem -> pqz:felem ->
   qx:felem -> Stack unit
@@ -253,16 +253,16 @@ private val fmonty__1:
 #reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 200"
 [@"substitute"]
 private let fmonty__1 buf x2 z2 x3 z3 x z xprime zprime qx =
-  let origx      = Buffer.sub buf 0ul  5ul in
-  let origxprime = Buffer.sub buf 5ul  5ul in
-  let zzz        = Buffer.sub buf 10ul 5ul in
-  let xx         = Buffer.sub buf 15ul 5ul in
-  let zz         = Buffer.sub buf 20ul 5ul in
-  let xxprime    = Buffer.sub buf 25ul 5ul in
-  let zzprime    = Buffer.sub buf 30ul 5ul in
-  let zzzprime   = Buffer.sub buf 35ul 5ul in
+  let origx      = Buffer.sub buf 0ul  4ul in
+  let origxprime = Buffer.sub buf 4ul  4ul in
+  let zzz        = Buffer.sub buf 8ul 4ul in
+  let xx         = Buffer.sub buf 12ul 4ul in
+  let zz         = Buffer.sub buf 16ul 4ul in
+  let xxprime    = Buffer.sub buf 20ul 4ul in
+  let zzprime    = Buffer.sub buf 24ul 4ul in
+  let zzzprime   = Buffer.sub buf 28ul 4ul in
   let h0 = ST.get() in
-  blit x 0ul origx 0ul 5ul;
+  blit x 0ul origx 0ul 4ul;
   let h1 = ST.get() in
   Hacl.Spec.Bignum.Fmul.lemma_whole_slice (as_seq h0 x);
   Hacl.Spec.Bignum.Fmul.lemma_whole_slice (as_seq h1 origx);
@@ -273,7 +273,7 @@ private let fmonty__1 buf x2 z2 x3 z3 x z xprime zprime qx =
   Hacl.Spec.EC.AddAndDouble.lemma_fdifference_unrolled''' (as_seq h2 z) (as_seq h2 origx);
   fdifference z origx; // z <- 8p + x - z
   let h3 = ST.get() in
-  blit xprime 0ul origxprime 0ul 5ul;
+  blit xprime 0ul origxprime 0ul 4ul;
   let h4 = ST.get() in
   Hacl.Spec.Bignum.Fmul.lemma_whole_slice (as_seq h3 xprime);
   Hacl.Spec.Bignum.Fmul.lemma_whole_slice (as_seq h4 origxprime);
@@ -295,7 +295,7 @@ private let fmonty__1 buf x2 z2 x3 z3 x z xprime zprime qx =
 
 [@"substitute"]
 private val fmonty__2:
-  tmp:buffer limb{length tmp = 40} ->
+  tmp:buffer limb{length tmp = 32} ->
   ppx:felem -> ppz:felem -> ppqx:felem -> ppqz:felem ->
   px:felem -> pz:felem -> pqx:felem -> pqz:felem ->
   qx:felem -> Stack unit
@@ -337,16 +337,16 @@ private val fmonty__2:
 #reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 1500"
 [@"substitute"]
 private let fmonty__2 buf x2 z2 x3 z3 x z xprime zprime qx =
-  let origx      = Buffer.sub buf 0ul  5ul in
-  let origxprime = Buffer.sub buf 5ul  5ul in
-  let zzz        = Buffer.sub buf 10ul 5ul in
-  let xx         = Buffer.sub buf 15ul 5ul in
-  let zz         = Buffer.sub buf 20ul 5ul in
-  let xxprime    = Buffer.sub buf 25ul 5ul in
-  let zzprime    = Buffer.sub buf 30ul 5ul in
-  let zzzprime   = Buffer.sub buf 35ul 5ul in
+  let origx      = Buffer.sub buf 0ul  4ul in
+  let origxprime = Buffer.sub buf 4ul  4ul in
+  let zzz        = Buffer.sub buf 8ul 4ul in
+  let xx         = Buffer.sub buf 12ul 4ul in
+  let zz         = Buffer.sub buf 16ul 4ul in
+  let xxprime    = Buffer.sub buf 20ul 4ul in
+  let zzprime    = Buffer.sub buf 24ul 4ul in
+  let zzzprime   = Buffer.sub buf 28ul 4ul in
   let h8 = ST.get() in
-  blit xxprime 0ul origxprime 0ul 5ul;
+  blit xxprime 0ul origxprime 0ul 4ul;
   let h9 = ST.get() in
   Hacl.Spec.Bignum.Fmul.lemma_whole_slice (as_seq h8 xxprime);
   Hacl.Spec.Bignum.Fmul.lemma_whole_slice (as_seq h9 origxprime);
@@ -407,7 +407,7 @@ private let fmonty__2 buf x2 z2 x3 z3 x z xprime zprime qx =
 
 [@"substitute"]
 private val fmonty__3:
-  tmp:buffer limb{length tmp = 40} ->
+  tmp:buffer limb{length tmp = 32} ->
   ppx:felem -> ppz:felem -> ppqx:felem -> ppqz:felem ->
   px:felem -> pz:felem -> pqx:felem -> pqz:felem ->
   qx:felem -> Stack unit
@@ -450,14 +450,14 @@ private let lemma_5413_is_55 (s:seqelem{red_5413 s}) : Lemma (Hacl.Spec.EC.AddAn
 #reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 1500"
 [@"substitute"]
 private let fmonty__3 buf x2 z2 x3 z3 x z xprime zprime qx =
-  let origx      = Buffer.sub buf 0ul  5ul in
-  let origxprime = Buffer.sub buf 5ul  5ul in
-  let zzz        = Buffer.sub buf 10ul 5ul in
-  let xx         = Buffer.sub buf 15ul 5ul in
-  let zz         = Buffer.sub buf 20ul 5ul in
-  let xxprime    = Buffer.sub buf 25ul 5ul in
-  let zzprime    = Buffer.sub buf 30ul 5ul in
-  let zzzprime   = Buffer.sub buf 35ul 5ul in
+  let origx      = Buffer.sub buf 0ul  4ul in
+  let origxprime = Buffer.sub buf 4ul  4ul in
+  let zzz        = Buffer.sub buf 8ul 4ul in
+  let xx         = Buffer.sub buf 12ul 4ul in
+  let zz         = Buffer.sub buf 16ul 4ul in
+  let xxprime    = Buffer.sub buf 20ul 4ul in
+  let zzprime    = Buffer.sub buf 24ul 4ul in
+  let zzzprime   = Buffer.sub buf 28ul 4ul in
   let h16 = ST.get() in
   lemma_513_is_53 (as_seq h16 xx);
   lemma_513_is_55 (as_seq h16 zz);
@@ -492,7 +492,7 @@ private let fmonty__3 buf x2 z2 x3 z3 x z xprime zprime qx =
 
 [@"substitute"]
 private val fmonty__:
-  tmp:buffer limb{length tmp = 40} ->
+  tmp:buffer limb{length tmp = 32} ->
   ppx:felem -> ppz:felem -> ppqx:felem -> ppqz:felem ->
   px:felem -> pz:felem -> pqx:felem -> pqz:felem ->
   qx:felem -> Stack unit
@@ -525,14 +525,14 @@ private val fmonty__:
 #reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 150"
 [@"substitute"]
 private let fmonty__ buf x2 z2 x3 z3 x z xprime zprime qx =
-  let origx      = Buffer.sub buf 0ul  5ul in
-  let origxprime = Buffer.sub buf 5ul  5ul in
-  let zzz        = Buffer.sub buf 10ul 5ul in
-  let xx         = Buffer.sub buf 15ul 5ul in
-  let zz         = Buffer.sub buf 20ul 5ul in
-  let xxprime    = Buffer.sub buf 25ul 5ul in
-  let zzprime    = Buffer.sub buf 30ul 5ul in
-  let zzzprime   = Buffer.sub buf 35ul 5ul in
+  let origx      = Buffer.sub buf 0ul  4ul in
+  let origxprime = Buffer.sub buf 4ul  4ul in
+  let zzz        = Buffer.sub buf 8ul 4ul in
+  let xx         = Buffer.sub buf 12ul 4ul in
+  let zz         = Buffer.sub buf 16ul 4ul in
+  let xxprime    = Buffer.sub buf 20ul 4ul in
+  let zzprime    = Buffer.sub buf 24ul 4ul in
+  let zzzprime   = Buffer.sub buf 28ul 4ul in
   let h0 = ST.get() in
   fmonty__1 buf x2 z2 x3 z3 x z xprime zprime qx;
   let h1 = ST.get() in
@@ -611,7 +611,7 @@ let fmonty pp ppq p pq qmqp =
   let hinit = ST.get() in
   push_frame();
   let h0 = ST.get() in
-  let buf = create limb_zero 40ul in
+  let buf = create limb_zero 32ul in
   let h1 = ST.get() in
   fmonty__ buf x2 z2 x3 z3 x z xprime zprime qx;
   let h2 = ST.get() in

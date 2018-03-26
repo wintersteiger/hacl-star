@@ -36,10 +36,10 @@ val point_inf: unit -> StackInline point
        (px, pz) == Hacl.Spec.EC.Format.point_inf ())
     ))
 let point_inf () =
-  let buf = create limb_zero 10ul in
-  let x = Buffer.sub buf 0ul 5ul in
+  let buf = create limb_zero 8ul in
+  let x = Buffer.sub buf 0ul 4ul in
   let y = x in
-  let z = Buffer.sub buf 5ul 5ul in
+  let z = Buffer.sub buf 4ul 4ul in
   let h' = ST.get() in
   cut (v (get h' z 0) = 0);
   cut (v (get h' z 1) = 0);
@@ -393,9 +393,9 @@ val point_of_scalar: scalar:buffer Hacl.UInt8.t{length scalar = keylen} -> Stack
   ))
 #reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 200"
 let point_of_scalar scalar =
-  let buf = create limb_zero 10ul in  
-  let x = Buffer.sub buf 0ul 5ul in
-  let z = Buffer.sub buf 5ul 5ul in
+  let buf = create limb_zero 8ul in  
+  let x = Buffer.sub buf 0ul 4ul in
+  let z = Buffer.sub buf 4ul 4ul in
   let h = ST.get() in
   cut (get h z 0 == limb_zero);
   cut (get h z 1 == limb_zero);
@@ -437,9 +437,9 @@ let scalar_of_point scalar point =
   push_frame();
   let x = Hacl.EC.Point.getx point in
   let z = Hacl.EC.Point.getz point in
-  let buf   = Buffer.create limb_zero 10ul in
-  let zmone = Buffer.sub buf 0ul 5ul in
-  let sc    = Buffer.sub buf 5ul 5ul in
+  let buf   = Buffer.create limb_zero 8ul in
+  let zmone = Buffer.sub buf 0ul 4ul in
+  let sc    = Buffer.sub buf 4ul 4ul in
   Hacl.Bignum.Crecip.crecip zmone z;
   let h = ST.get() in
   Hacl.Spec.EC.AddAndDouble2.lemma_513_is_53 (as_seq h x);

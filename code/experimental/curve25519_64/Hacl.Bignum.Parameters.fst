@@ -26,7 +26,7 @@ inline_for_extraction let ctr  = FStar.UInt32.t
 (** Number of limbs of a bigint **)
 inline_for_extraction let len = len
 inline_for_extraction val clen: l:FStar.UInt32.t{FStar.UInt32.v l = len}
-inline_for_extraction let clen = 5ul
+inline_for_extraction let clen = 4ul
 
 type felem = b:buffer limb{length b = len}
 type felem_wide = b:buffer wide{length b = len}
@@ -36,10 +36,10 @@ type seqelem_wide = s:Seq.seq wide{Seq.length s = len}
 
 (** Associates a weight in bits to each limb of the bigint *)
 inline_for_extraction val climb_size: l:FStar.UInt32.t{limb_size = FStar.UInt32.v l}
-inline_for_extraction let climb_size = assert_norm(pow2 32 > 51); 51ul
+inline_for_extraction let climb_size = assert_norm(pow2 32 > 64); 64ul
 
 val lemma_prime_limb_size: unit -> Lemma (pow2 (len * limb_size) > prime)
-let lemma_prime_limb_size () = assert_norm (pow2 (5 * 51) > pow2 255 - 19)
+let lemma_prime_limb_size () = assert_norm (pow2 (4 * 64) > pow2 255 - 19)
 
 open Hacl.UInt64
 
