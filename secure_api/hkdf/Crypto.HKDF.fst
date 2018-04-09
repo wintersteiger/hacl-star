@@ -29,11 +29,109 @@ let uint8_p  = Buffer.buffer uint8_t
 
 type alg = Hash.alg13
 
-// ADL July 4
-#set-options "--lax"
+
+//18-03-05 I'd rather verify a simpler implementation, closer to the spec, as outlined below. 
+//18-03-05 We could make do with fewer loop variables if it helps with C.Loops
+private val hkdf_expand_loop: 
+  a       : alg13 ->
+  okm     : bptr ->
+  prk     : bptr ->
+  prklen  : bptrlen prk ->
+  infolen : UInt32.t -> 
+  len     : bptrlen okm  ->
+  hashed  : lbptr (tagLength a + v infolen + 1) ->
+  i       : UInt8.t {
+    let count = UInt8.v i in 
+    let required = UInt32.v len in 
+    HMAC.keysized a (length prk) /\ 
+    disjoint okm prk /\
+    disjoint hashed okm /\ 
+    disjoint hashed prk /\
+    tagLength a + v infolen + 1 + blockLength a < pow2 32 /\ (* specific to this implementation *)
+    tagLength a + pow2 32 + blockLength a <= maxLength a /\
+    count < 255 /\
+    required <= (255 - count) * tagLength a } ->
+  Stack unit
+  (requires fun h0 -> 
+    live h0 okm /\ live h0 prk /\ live h0 hashed)
+  (ensures  fun h0 r h1 -> 
+    live h1 okm /\ modifies_2 okm hashed h0 h1 /\ (
+    let prk = as_seq h0 prk in 
+    let info = as_seq h0 (Buffer.sub hashed (tagLen a) infolen) in 
+    let last = if i = 0uy then Seq.createEmpty else as_seq h0 (Buffer.sub hashed 0ul (tagLen a)) in 
+    let okm = as_seq h1 okm in 
+    okm =  expand0 a prk info (v len) (UInt8.v i) last))
+
+#set-options "--z3rlimit 30"
+[@"c_inline"]
+let rec hkdf_expand_loop a okm prk prklen infolen len hashed i =
+  push_frame ();
+  let tlen = tagLen a in 
+  let tag     = Buffer.sub hashed 0ul tlen in 
+  let info    = Buffer.sub hashed (tagLen a) infolen in 
+  let counter = Buffer.sub hashed (tagLen a +^ infolen) 1ul in 
+  assert(disjoint tag info /\ disjoint tag counter /\ disjoint info counter);
+
+  let i' = FStar.UInt8.(i +^ 1uy) in
+
+  let h0 = ST.get() in  // initial state
+
+  // update the counter byte
+  Buffer.upd counter 0ul i';
+
+  let h1 = ST.get() in // before hashing
+  Seq.lemma_eq_intro (Seq.upd (as_seq h0 counter) 0 i') (Seq.create 1 i');
+  assert(as_seq h1 counter == Seq.create 1 i');
+
+  assume false;//18-04-09 
+
+  // derive an extra tag 
+  if i = 0uy then (
+    // the first input is shorter, does not include the chaining block
+    let len1 = infolen +^ 1ul in 
+    let hashed1 = Buffer.sub hashed tlen len1 in
+    HMAC.compute a tag prk prklen hashed1 len1;
+
+    let h2 = ST.get() in 
+    ( let v_info = as_seq h0 info in 
+      let v_ctr = as_seq h1 counter in 
+      let v_tag = as_seq h2 tag in 
+      let v_prk = as_seq h1 prk in 
+      assume(v_tag == HMAC.hmac a v_prk (v_info @| v_ctr))
+    ))
+
+  else (
+    HMAC.compute a tag prk prklen hashed (tlen +^ infolen +^ 1ul));
+
+  // copy it to the result, and iterate if required
+  if len <=^ tlen then 
+    Buffer.blit tag 0ul okm 0ul len 
+  else (
+    Buffer.blit tag 0ul okm 0ul tlen;
+    let len = len -^ tlen in 
+    let okm = Buffer.sub okm tlen len in 
+    hkdf_expand_loop a okm prk prklen infolen len hashed i');
+
+  pop_frame()
+
 
 let hkdf_extract a prk salt saltlen ikm ikmlen =
   HMAC.compute a prk salt saltlen ikm ikmlen
+
+#set-options "--z3rlimit 20"
+let hkdf_expand a okm prk prklen info infolen len = 
+  push_frame();
+  let tlen = tagLen a in 
+  let text = Buffer.create 0uy (tlen +^ infolen +^ 1ul) in 
+  Buffer.blit info 0ul text tlen infolen; 
+  hkdf_expand_loop a okm prk prklen infolen len text 0uy;
+  pop_frame()
+
+(*
+// prior implementation, a bit too complicated
+// ADL July 4
+#set-options "--lax"
+
 
 [@"c_inline"]
 private val hkdf_expand_inner:
@@ -105,7 +203,6 @@ let rec hkdf_expand_inner a state prk prklen info infolen n i =
   (* Pop the memory frame *)
   (**) pop_frame()
 
-
 let hkdf_expand a okm prk prklen info infolen len =
   push_frame ();
   let size_Ti = tagLen a in 
@@ -136,69 +233,8 @@ let hkdf_expand a okm prk prklen info infolen len =
   Buffer.blit _T 0ul okm 0ul len;
 
   pop_frame()
+*)
 
-
-//18-03-05 I'd rather verify a simpler implementation, closer to the spec
-//18-03-05 We could make do with fewer loop variables if it helps with C.Loops
-private val hkdf_expand_loop: 
-  a       : alg13 ->
-  okm     : bptr ->
-  prk     : bptr {disjoint okm prk} ->
-  prklen  : bptrlen prk ->
-  infolen : UInt32.t -> 
-  len     : bptrlen okm { v len <= 255 * tagLength a } ->
-  hashed  : lbptr (tagLength a + v infolen + 1) {disjoint hashed okm /\ disjoint hashed prk} ->
-  i       : UInt8.t {i <> 0uy} ->
-  Stack unit
-  (requires fun h0 -> 
-    live h0 okm /\ live h0 prk /\ live h0 hashed)
-  (ensures  fun h0 r h1 -> 
-    live h1 okm /\ modifies_2 okm hashed h0 h1 /\ (
-    let prk = as_seq h0 prk in 
-    let info = as_seq h0 (Buffer.sub hashed (tagLen a) infolen) in 
-    let last = if i = 1uy then Seq.createEmpty else as_seq h0 (Buffer.sub hashed 0ul (tagLen a)) in 
-    let okm = as_seq h1 okm in 
-    okm =  expand0 a prk info (v len) (UInt8.v i) last))
-
-
-[@"c_inline"]
-let rec hkdf_expand_loop a okm prk prklen infolen len hashed i =
-  push_frame ();
-
-  let tlen = tagLen a in 
-  let tag = Buffer.sub hashed 0ul tlen in 
-
-  // derive one more block
-  Buffer.upd hashed (tlen +^ infolen) i;
-  if i = 1uy then (
-    // the first input is shorter, does not include the chaining block
-    let len1 = infolen +^ 1ul in 
-    let hashed1 = Buffer.sub hashed tlen len1 in
-    HMAC.compute a hashed prk prklen hashed1 len1 )
-  else
-    HMAC.compute a hashed prk prklen hashed (tlen +^ infolen +^ 1ul);
-
-  // copy it to the result, and iterate if required
-  if len <=^ tlen then 
-    Buffer.blit tag 0ul okm 0ul len 
-  else (
-    Buffer.blit tag 0ul okm 0ul tlen;
-    let len = len -^ tlen in 
-    let okm = Buffer.sub okm tlen len in 
-    let i = FStar.UInt8.(i +^ 1uy) in 
-    hkdf_expand_loop a okm prk prklen infolen len hashed i);
-    
-  pop_frame()
-
-
-[@"c_inline"]
-let hkdf_expand_alt a okm prk prklen info infolen len = 
-  push_frame();
-  let tlen = tagLen a in 
-  let hashed = Buffer.create 0uy (tlen +^ infolen +^ 1ul) in 
-  Buffer.blit info 0ul hashed tlen infolen; 
-  hkdf_expand_loop a okm prk prklen infolen len hashed 1uy;
-  pop_frame()
 
 
 

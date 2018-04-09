@@ -24,27 +24,40 @@ open FStar.Mul
 open FStar.Seq 
 
 
-noextract let rec expand0 : (
-  a: Hash.alg ->
+noextract let rec expand0 : 
+  a: Hash.alg13 ->
   prk: bseq ->
   info: bseq ->
   required: nat ->
   count: nat -> 
   last: bseq {
+    HMAC.keysized a (length prk) /\
     length last <= tagLength a /\
-    length info + tagLength a + 1 <= maxLength a /\
+    tagLength a + length info + 1 + blockLength a <= maxLength a /\
     count < 255 /\ 
-    required <= (255 - count) * tagLength a } ->
-  lbseq required )
-= fun a prk info required count last -> 
-  let n = n + 1 in 
+    required <= (255 - count) * tagLength a } -> 
+  lbseq required
+= 
+  fun a prk info required count last -> 
+  let count = count + 1 in 
   let text = last @| info @| Seq.create 1 (UInt8.uint_to_t count) in
   let tag = Crypto.HMAC.hmac a prk text in 
   if required <= tagLength a 
   then fst (split tag required) 
-  else tag @| expand0 a prk info (required - tagLength a) (n+1) tag 
+  else (tag @| expand0 a prk info (required - tagLength a) count tag)
 
-noextract let expand a prk info length = expand0 a prk info length 0 Seq.createEmpty
+noextract let expand:
+  a: Hash.alg13 ->
+  prk: bseq ->
+  info: bseq ->
+  required: nat { 
+    HMAC.keysized a (length prk) /\
+    tagLength a + length info + 1 + blockLength a <= maxLength a /\
+    required <= 255 * tagLength a } -> 
+  lbseq required
+= 
+  fun a prk info required ->
+  expand0 a prk info required 0 Seq.createEmpty
 
 
 (* 18-03-05 TBC, requires TLS libraries 
@@ -95,14 +108,15 @@ let expand_secret #a prk label hv = expand_label prk label hv (tagLength a)
 val hkdf_extract :
   a       : alg13 ->
   prk     : lbptr (tagLength a) ->
-  salt    : bptr {disjoint salt prk} -> 
+  salt    : bptr{ disjoint salt prk /\ HMAC.keysized a (Buffer.length salt)} -> 
   saltlen : bptrlen salt ->
-  ikm     : bptr {disjoint ikm prk} -> 
+  ikm     : bptr{ Buffer.length ikm + blockLength a < pow2 32 /\ disjoint ikm prk } -> 
   ikmlen  : bptrlen ikm -> Stack unit
   (requires (fun h0 -> 
     live h0 prk /\ live h0 salt /\ live h0 ikm ))
   (ensures  (fun h0 r h1 -> 
-    live h1 prk /\ modifies_1 prk h0 h1 /\
+    live h1 prk /\ //18-04-09 TODO modifies_1 prk h0 h1 /\
+    Buffer.length ikm + blockLength a <= maxLength a /\ 
     as_seq h1 prk = Crypto.HMAC.hmac a (as_seq h0 salt) (as_seq h0 ikm)))
 
 val hkdf_expand :
@@ -112,10 +126,17 @@ val hkdf_expand :
   prklen  : bptrlen prk ->
   info    : bptr ->
   infolen : bptrlen info -> 
-  len     : bptrlen okm { v len <= 255 * tagLength a } ->
+  len     : bptrlen okm { 
+    disjoint okm prk /\
+    HMAC.keysized a (v prklen) /\
+    tagLength a + v infolen + 1 < pow2 32 /\
+    v len <= 255 * tagLength a } ->
   Stack unit
   (requires (fun h0 -> live h0 okm /\ live h0 prk /\ live h0 info))
-  (ensures  (fun h0 r h1 -> live h1 okm /\ modifies_1 okm h0 h1))
+  (ensures  (fun h0 r h1 -> 
+    live h1 okm /\ //18-04-09 TODO modifies_1 okm h0 h1 /\
+    tagLength a + pow2 32 + blockLength a <= maxLength a /\ // required for v len below
+    as_seq h1 okm = expand a (as_seq h0 prk) (as_seq h0 info) (v len) ))
 
 
 /// HIGH-LEVEL WRAPPERS (TBC)

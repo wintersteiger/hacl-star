@@ -24,6 +24,10 @@ let acc0 = function
   | SHA512 -> [0x6a09e667f3bcc908; 0xbb67ae8584caa73b; 0x3c6ef372fe94f82b; 0xa54ff53a5f1d36f1; 0x510e527fade682d1; 0x9b05688c2b3e6c1f; 0x1f83d9abfb41bd6b; 0x5be0cd19137e2179]
 *)
 
+
+// 18-04-09 eta-expansions are *required* for Kremlin extraction. 
+// 18-04-09 Even for no_extract functions! 
+
 (* specification code *) 
 
 let acc a = 
@@ -38,17 +42,17 @@ let acc0 #a =
   | SHA384 -> Spec.SHA2_384.h_0
   | SHA512 -> Spec.SHA2_512.h_0
 
-let compress #a =
+let compress #a st b =
   match a with 
-  | SHA256 -> Spec.SHA2_256.shuffle
-  | SHA384 -> Spec.SHA2_384.shuffle
-  | SHA512 -> Spec.SHA2_512.shuffle
+  | SHA256 -> Spec.SHA2_256.shuffle st b
+  | SHA384 -> Spec.SHA2_384.shuffle st b
+  | SHA512 -> Spec.SHA2_512.shuffle st b
 
-let finish #a  = 
+let finish #a st = 
   match a with 
-  | SHA256 -> Spec.SHA2_256.finish
-  | SHA384 -> Spec.SHA2_384.finish
-  | SHA512 -> Spec.SHA2_512.finish
+  | SHA256 -> Spec.SHA2_256.finish st
+  | SHA384 -> Spec.SHA2_384.finish st 
+  | SHA512 -> Spec.SHA2_512.finish st 
 
 let suffix a l = 
   let l1 = l % blockLength a in 
@@ -70,17 +74,17 @@ let state_size a =
 
 let as_acc #a h st = admit() //TODO as_seq (sub st ...)
 
-let init a = 
+let init a acc = 
  match a with
-  | SHA256 -> Hacl.Hash.SHA2_256.init 
-  | SHA384 -> Hacl.Hash.SHA2_384.init  
-  | SHA512 -> Hacl.Hash.SHA2_512.init  
+  | SHA256 -> Hacl.Hash.SHA2_256.init acc
+  | SHA384 -> Hacl.Hash.SHA2_384.init acc
+  | SHA512 -> Hacl.Hash.SHA2_512.init acc 
 
-let update a = 
+let update a st block = 
   match a with
-  | SHA256 -> Hacl.Hash.SHA2_256.update 
-  | SHA384 -> Hacl.Hash.SHA2_384.update 
-  | SHA512 -> Hacl.Hash.SHA2_512.update 
+  | SHA256 -> Hacl.Hash.SHA2_256.update st block
+  | SHA384 -> Hacl.Hash.SHA2_384.update st block
+  | SHA512 -> Hacl.Hash.SHA2_512.update st block
 
 let update_multi a st blocks len = 
   match a with
@@ -95,11 +99,11 @@ let update_last a st last totlen =
   | SHA384 -> Hacl.Hash.SHA2_384.update_last st last (Int.Cast.uint32_to_uint64 len)
   | SHA512 -> Hacl.Hash.SHA2_512.update_last st last (Int.Cast.uint32_to_uint64 len)
 
-let extract a = 
+let extract a st output = 
   match a with 
-  | SHA256 -> Hacl.Hash.SHA2_256.finish
-  | SHA384 -> Hacl.Hash.SHA2_384.finish 
-  | SHA512 -> Hacl.Hash.SHA2_512.finish
+  | SHA256 -> Hacl.Hash.SHA2_256.finish st output
+  | SHA384 -> Hacl.Hash.SHA2_384.finish st output
+  | SHA512 -> Hacl.Hash.SHA2_512.finish st output
 
 let compute a len input output = 
   match a with

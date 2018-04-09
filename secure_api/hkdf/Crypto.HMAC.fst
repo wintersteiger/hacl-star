@@ -30,8 +30,9 @@ noextract let rec xor (v: bseq) (x: UInt8.t): lbseq (length v) =
 
 // [noextract] incompatible with interfaces?!
 let hmac a key data =
+  assert(tagLength a + blockLength a <= maxLength a); // avoid?
   let k = wrap a key in 
-  let h1 = spec a (xor k 0x36uy @| data) in 
+  let h1 = spec a (xor k 0x36uy @| data) in
   let h2 = spec a (xor k 0x5cuy @| h1) in 
   h2
 
@@ -94,12 +95,20 @@ val part1:
 #reset-options "--max_fuel 0 --z3rlimit 200"
 [@"substitute"]
 let part1 a keyblock data len =
-  push_frame ();
   // 18-04-09 monomorphic; otherwise verification dies
   if a = SHA256 then (
+  push_frame ();
   // 18-04-09 Kremlin complains about variable-size allocation, 
   // why? can we force normalization? [normalize_term] does not help.
   let acc = Buffer.create 0ul (state_size a) in
+
+// 18-04-09 what I had before:
+//
+//  let acc = 
+//    if a = SHA256 
+//    then Buffer.create 0ul (state_size a) 
+//    else Buffer.create 0uL (state_size a) in
+  
   Math.Lemmas.lemma_div_mod (v len) (blockLength a);
   let n0 = len /^ blockLen a in
   let r0 = len %^ blockLen a in
@@ -134,10 +143,10 @@ let part1 a keyblock data len =
     Seq.append_assoc v2 vlast vsuffix; 
     Seq.append_assoc v1 vblocks vlast;
     assert(acc3 == hash0 #a ((v1 @| vdata) @| vsuffix));
-    assert(finish acc3 == spec a (v1 @| vdata))
-  ))
-  else admit();
+    assert(finish acc3 == spec a (v1 @| vdata)));
   pop_frame()
+  )
+  else admit()
 
 // the two parts have the same stucture; let's keep their proofs in sync. 
   
@@ -162,8 +171,8 @@ val part2:
 
 [@"substitute"]
 let part2 a mac opad tag =
-  push_frame ();
   if a = SHA256 then (
+  push_frame ();
   let totLen = blockLen a +^ tagLen a in 
   assert_norm(v totLen <= maxLength a);
   let acc = Buffer.create 0ul (state_size a) in
@@ -184,10 +193,10 @@ let part2 a mac opad tag =
     lemma_hash2 (acc0 #a) v1 (vtag @| vsuffix); 
     Seq.append_assoc v1 vtag vsuffix;
     assert(acc2 == hash0 #a ((v1 @| vtag) @| vsuffix));
-    assert(finish acc2 = spec a (v1 @| vtag))
-  )) 
-  else admit(); 
+    assert(finish acc2 = spec a (v1 @| vtag)));
   pop_frame ()
+  )
+  else admit() 
 
 (* same spec as hmac with keylen = blockLen a *)
 //#reset-options "--max_fuel 0  --z3rlimit 20"
@@ -195,10 +204,11 @@ val hmac_core:
   a: alg ->
   tag: lbptr (tagLength a) ->
   key: lbptr (blockLength a) {disjoint key tag} ->
-  data: bptr {
+  data: bptr{
     length data + blockLength a < pow2 32 /\ 
     length data + blockLength a <= maxLength a /\
-    disjoint data tag /\ disjoint data key} ->
+    // disjoint data tag /\ 
+    disjoint data key } ->
   datalen: UInt32.t {v datalen = length data} ->
   Stack unit
   (requires fun h0 -> live h0 tag /\ live h0 key /\ live h0 data)

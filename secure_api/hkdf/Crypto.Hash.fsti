@@ -94,9 +94,7 @@ noextract let rec hash2
     let c,b = Seq.split b (blockLength a) in
     hash2 (compress v c) b
 
-
-let hash0 (#a:alg) (b:bseq {Seq.length b % blockLength a = 0}) = hash2 (acc0 #a) b
-
+noextract let hash0 (#a:alg) (b:bseq {Seq.length b % blockLength a = 0}) = hash2 (acc0 #a) b
 
 (* PADDING AND LENGTH ENCODING *) 
 
@@ -116,9 +114,9 @@ let suffixLength (a:alg13) (length:nat {length <= maxLength a}):
     //was, harder to prove: required + blockLen a - ((required - 1) % blockLen a + 1) in
   1 + zeros + lenlen
 
-val suffix: a:alg13 -> l:nat {l <= maxLength a} -> lbseq (suffixLength a l)
+noextract val suffix: a:alg13 -> l:nat {l <= maxLength a} -> lbseq (suffixLength a l)
 
-let spec (a:alg13) (b:hashable a): lbseq (tagLength a) =
+noextract let spec (a:alg13) (b:hashable a): lbseq (tagLength a) =
   let blocks = Seq.append b (suffix a (Seq.length b)) in
   let acc = hash0 blocks in
   let tag = finish acc in
@@ -209,7 +207,8 @@ let state (a:alg13) =
   | SHA256 -> b:Buffer.buffer UInt32.t {Buffer.length b = v (state_size SHA256)}
   | SHA384 -> b:Buffer.buffer UInt64.t {Buffer.length b = v (state_size SHA384)}
   | SHA512 -> b:Buffer.buffer UInt64.t {Buffer.length b = v (state_size SHA512)}
-val as_acc: #a:alg13 -> h:FStar.HyperStack.mem -> state a -> acc a
+
+noextract val as_acc: #a:alg13 -> h:FStar.HyperStack.mem -> state a -> acc a
 
 val init:
   a:alg13 -> 
