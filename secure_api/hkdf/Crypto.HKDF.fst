@@ -138,7 +138,7 @@ let hkdf_expand a okm prk prklen info infolen len =
   pop_frame()
 
 
-//18-03-05 I'd rather simplify a simpler implementation, closer to the spec,
+//18-03-05 I'd rather verify a simpler implementation, closer to the spec
 //18-03-05 We could make do with fewer loop variables if it helps with C.Loops
 private val hkdf_expand_loop: 
   a       : alg13 ->

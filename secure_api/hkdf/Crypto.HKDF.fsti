@@ -24,7 +24,7 @@ open FStar.Mul
 open FStar.Seq 
 
 
-let rec expand0 : (
+noextract let rec expand0 : (
   a: Hash.alg ->
   prk: bseq ->
   info: bseq ->
@@ -44,7 +44,7 @@ let rec expand0 : (
   then fst (split tag required) 
   else tag @| expand0 a prk info (required - tagLength a) (n+1) tag 
 
-let expand a prk info length = expand0 a prk info length 0 Seq.createEmpty
+noextract let expand a prk info length = expand0 a prk info length 0 Seq.createEmpty
 
 
 (* 18-03-05 TBC, requires TLS libraries 
@@ -116,3 +116,6 @@ val hkdf_expand :
   Stack unit
   (requires (fun h0 -> live h0 okm /\ live h0 prk /\ live h0 info))
   (ensures  (fun h0 r h1 -> live h1 okm /\ modifies_1 okm h0 h1))
+
+
+/// HIGH-LEVEL WRAPPERS (TBC)

@@ -11,6 +11,9 @@ let string_of_alg = function
   | SHA384 -> "SHA384"
   | SHA512 -> "SHA512"
 
+/// HACL*-based implementation, missing MD5 and SHA1 for now.
+/// (commented out chunks provide earlier implementation details)
+
 (*
 let acc0 = function
   | MD5 ->  [0x67452301; 0xefcdab89; 0x98badcfe; 0x10325476] // A, B, C, D
@@ -59,17 +62,11 @@ let suffix a l =
 
 let lemma_hash_spec a b = ()
 
-let compute a len input output = 
-  match a with
-  | SHA256 -> Hacl.Hash.SHA2_256.hash output input len
-  | SHA384 -> Hacl.Hash.SHA2_384.hash output input len
-  | SHA512 -> Hacl.Hash.SHA2_512.hash output input len
-
 let state_size a =
   match a with 
   | SHA256 -> Hacl.Hash.SHA2_256.size_state
-  | SHA384 -> 2ul *^ Hacl.Hash.SHA2_384.size_state
-  | SHA512 -> 2ul *^ Hacl.Hash.SHA2_512.size_state
+  | SHA384 -> (* 2ul *^ *) Hacl.Hash.SHA2_384.size_state
+  | SHA512 -> (* 2ul *^ *) Hacl.Hash.SHA2_512.size_state
 
 let as_acc #a h st = admit() //TODO as_seq (sub st ...)
 
@@ -103,3 +100,10 @@ let extract a =
   | SHA256 -> Hacl.Hash.SHA2_256.finish
   | SHA384 -> Hacl.Hash.SHA2_384.finish 
   | SHA512 -> Hacl.Hash.SHA2_512.finish
+
+let compute a len input output = 
+  match a with
+  | SHA256 -> Hacl.Hash.SHA2_256.hash output input len
+  | SHA384 -> Hacl.Hash.SHA2_384.hash output input len
+  | SHA512 -> Hacl.Hash.SHA2_512.hash output input len
+
