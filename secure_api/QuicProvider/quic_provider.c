@@ -5,9 +5,9 @@
 #include <string.h>
 
 #include "kremlib.h"
-#include "Crypto_HKDF_Crypto_HMAC.h"
+#include "Crypto_HKDF_Crypto_HMAC_Crypto_Hash.h"
+//now included above: #include "Crypto_Symmetric_Bytes.h"
 #include "Crypto_AEAD_Main_Crypto_Indexing.h"
-#include "Crypto_Symmetric_Bytes.h"
 #include "quic_provider.h"
 
 #define DEBUG 0
@@ -46,12 +46,12 @@ static void dump_secret(quic_secret *s)
 #endif
 
 #define CONVERT_ALG(a) \
-  (a == TLS_hash_SHA256 ? Crypto_HMAC_SHA256 : \
-    (a == TLS_hash_SHA384 ? Crypto_HMAC_SHA384 : Crypto_HMAC_SHA512))
+  (a == TLS_hash_SHA256 ? Crypto_Hash_SHA256 : \
+    (a == TLS_hash_SHA384 ? Crypto_Hash_SHA384 : Crypto_Hash_SHA512))
 
 int MITLS_CALLCONV quic_crypto_hash(quic_hash a, /*out*/ char *hash, const char *data, size_t len){
   if(a < TLS_hash_SHA256) return 0;
-  Crypto_HMAC_agile_hash(CONVERT_ALG(a), (uint8_t*) hash, (uint8_t*)data, len);
+  Crypto_Hash_compute(CONVERT_ALG(a), len, (uint8_t*)data, (uint8_t*) hash);
   return 1;
 }
 
@@ -59,7 +59,7 @@ int MITLS_CALLCONV quic_crypto_hmac(quic_hash a, char *mac,
                      const char *key, uint32_t key_len,
                      const char *data, uint32_t data_len) {
   if(a < TLS_hash_SHA256) return 0;
-  Crypto_HMAC_hmac(CONVERT_ALG(a), (uint8_t*) mac, (uint8_t*)key, key_len, (uint8_t*)data, data_len);
+  Crypto_HMAC_compute(CONVERT_ALG(a), (uint8_t*) mac, (uint8_t*)key, key_len, (uint8_t*)data, data_len);
   return 1;
 }
 
@@ -222,7 +222,7 @@ int MITLS_CALLCONV quic_crypto_derive_key(quic_key **k, const quic_secret *secre
   if(!quic_crypto_hkdf_expand(secret->hash, key->static_iv, 12, secret->secret, slen, info, info_len))
     return 0;
 
-#if DEBIG
+#if DEBUG
    printf("KEY: "); dump(dkey, klen);
    printf("IV: "); dump(key->static_iv, 12);
 #endif

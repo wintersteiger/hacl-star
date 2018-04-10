@@ -344,6 +344,23 @@ val compute:
     v len <= maxLength a /\ (* required for subtyping the RHS below *)
     Buffer.as_seq h1 output = hash a (Buffer.as_seq h0 input))
 
+// same as compute with permuted arguments; included for backward
+// compatibility with secure_api
+val agile_hash: 
+  a: alg13 -> 
+  output: lbptr (tagLength a) -> 
+  input: bptr -> 
+  len: UInt32.t -> 
+  Stack unit
+  (requires fun h0 -> 
+    Buffer.disjoint input output /\ 
+    Buffer.length input = v len /\
+    Buffer.live h0 input /\ Buffer.live h0 output)
+  (ensures fun h0 () h1 -> 
+    Buffer.live h1 input /\ Buffer.live h1 output /\
+    Buffer.modifies_1 output h0 h1 /\
+    v len <= maxLength a /\ (* required for subtyping the RHS below *)
+    Buffer.as_seq h1 output = hash a (Buffer.as_seq h0 input))
 
 (* TODO a third, incremental-hash implementation. *)
 

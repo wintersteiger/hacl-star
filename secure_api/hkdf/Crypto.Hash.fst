@@ -36,6 +36,9 @@ let acc a =
   | SHA384 -> Spec.SHA2_384.block_w
   | SHA512 -> Spec.SHA2_512.block_w
 
+/// 18-04-10 verification is very slow, probably due to lots of HACL
+/// context. And the specs are not matching anyway.
+
 let acc0 #a = 
   match a with 
   | SHA256 -> Spec.SHA2_256.h_0
@@ -111,3 +114,4 @@ let compute a len input output =
   | SHA384 -> Hacl.Hash.SHA2_384.hash output input len
   | SHA512 -> Hacl.Hash.SHA2_512.hash output input len
 
+let agile_hash a output input len = compute a len input output 

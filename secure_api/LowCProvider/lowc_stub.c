@@ -25,8 +25,9 @@
 
 #include "FStar_UInt128.h"
 #include "Crypto_AEAD_Main_Crypto_Indexing.h"
-#include "Crypto_Symmetric_Bytes.h"
-#include "Crypto_HKDF_Crypto_HMAC.h"
+// now included below?
+// #include "Crypto_Symmetric_Bytes.h"
+#include "Crypto_HKDF_Crypto_HMAC_Crypto_Hash.h"
 #include "Curve25519.h"
 #include "FStar.h"
 
@@ -182,40 +183,32 @@ CAMLprim value ocaml_crypto_scalarmult(value secret, value base) {
   CAMLreturn(out);
 }
 
-static inline Crypto_HMAC_alg alg_of_int(int i) {
+static inline Crypto_Hash_alg alg_of_int(int i) {
   switch (i) {
     case 0:
-      return Crypto_HMAC_SHA256;
+      return Crypto_Hash_SHA256;
     case 1:
-      return Crypto_HMAC_SHA384;
+      return Crypto_Hash_SHA384;
     case 2:
-      return Crypto_HMAC_SHA512;
+      return Crypto_Hash_SHA512;
   }
   return 0;
 }
 
-static inline size_t hash_size(Crypto_HMAC_alg h) {
-  switch (h) {
-    case Crypto_HMAC_SHA256:
-      return 32;
-    case Crypto_HMAC_SHA384:
-      return 48;
-    case Crypto_HMAC_SHA512:
-      return 64;
-  }
-  return 32;
+static inline size_t hash_size(Crypto_Hash_alg h) {
+  return Crypto_Hash_tagLen(h);
 }
 
 CAMLprim value ocaml_crypto_hash(value alg, value msg) {
   CAMLparam2(alg, msg);
   CAMLlocal1(out);
 
-  Crypto_HMAC_alg h = alg_of_int(Int_val(alg));
+  Crypto_Hash_alg h = alg_of_int(Int_val(alg));
   out = caml_alloc_string(hash_size(h));
 
   uint8_t *out_p = (uint8_t *) String_val(out);
   uint8_t *msg_p = (uint8_t *) String_val(msg);
-  Crypto_HMAC_agile_hash(h, out_p, msg_p, caml_string_length(msg));
+  Crypto_Hash_compute(h, caml_string_length(msg), out_p, msg_p);
   CAMLreturn(out);
 }
 
@@ -223,7 +216,7 @@ CAMLprim value ocaml_crypto_hmac(value alg, value key, value msg) {
   CAMLparam3(alg, key, msg);
   CAMLlocal1(out);
 
-  Crypto_HMAC_alg h = alg_of_int(Int_val(alg));
+  Crypto_Hash_alg h = alg_of_int(Int_val(alg));
   out = caml_alloc_string(hash_size(h));
 
   uint8_t *out_p = (uint8_t *) String_val(out);
@@ -232,6 +225,6 @@ CAMLprim value ocaml_crypto_hmac(value alg, value key, value msg) {
   uint8_t *msg_p = (uint8_t *) String_val(msg);
   size_t msg_l = caml_string_length(msg);
 
-  Crypto_HMAC_hmac(h, out_p, key_p, key_l, msg_p, msg_l);
+  Crypto_HMAC_compute(h, out_p, key_p, key_l, msg_p, msg_l);
   CAMLreturn(out);
 }
