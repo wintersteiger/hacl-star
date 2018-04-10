@@ -36,8 +36,8 @@ let hmac a key data =
   let h2 = spec a (xor k 0x5cuy @| h1) in 
   h2
 
-/// Agile implementation, relying on using 3 variants of SHA2
-/// supported by HACL*.
+/// Agile implementation, relying on 3 variants of SHA2 supported by
+/// HACL*.
 
 open FStar.HyperStack.All
 open FStar.Buffer
@@ -76,9 +76,14 @@ let wrap_key a output key len =
   Seq.lemma_eq_intro (as_seq h0 pad) (Seq.create (blockLength a - v i) 0uy);
   Seq.lemma_split (as_seq h1 output) (v i)
 
+// we pre-allocate the variable-type, variable length hash state,
+// to avoid both verification and extraction problems.
+
 [@"substitute"]
 val part1:
   a: alg ->
+  acc: state a -> ( 
+  let uint = if a = SHA256 then UInt32.t else UInt64.t in 
   s2: lbptr (blockLength a) ->
   data: bptr {
     length data + blockLength a  < pow2 32 /\ 
@@ -86,29 +91,28 @@ val part1:
     disjoint data s2} ->
   len: UInt32.t {length data = v len} ->
   Stack unit
-    (requires (fun h0 ->  live h0 s2 /\ live h0 data))
+    (requires (fun h0 -> 
+      disjoint #uint acc s2 /\ 
+      disjoint #uint acc data /\ 
+      live #uint h0 acc /\ 
+      live h0 s2 /\ live h0 data))
     (ensures  (fun h0 _ h1 -> 
-      live h1 s2 /\ live h0 s2 /\ live h1 data /\ live h0 data /\ modifies_1 s2 h0 h1 /\ (
+      live h1 s2 /\ live h0 s2 /\ live h1 data /\ live h0 data /\ 
+      modifies_2 #uint acc s2 h0 h1 /\ (
       let hash0 = Seq.slice (as_seq h1 s2) 0 (tagLength a) in
-      hash0 == spec a (Seq.append (as_seq h0 s2) (as_seq h0 data)))))
+      hash0 == spec a (Seq.append (as_seq h0 s2) (as_seq h0 data))))))
 
-#reset-options "--max_fuel 0 --z3rlimit 200"
+#reset-options "--max_fuel 0 --z3rlimit 1000"
 [@"substitute"]
-let part1 a keyblock data len =
-  // 18-04-09 monomorphic; otherwise verification dies
-  if a = SHA256 then (
-  push_frame ();
-  // 18-04-09 Kremlin complains about variable-size allocation, 
-  // why? can we force normalization? [normalize_term] does not help.
-  let acc = Buffer.create 0ul (state_size a) in
-
-// 18-04-09 what I had before:
-//
-//  let acc = 
-//    if a = SHA256 
-//    then Buffer.create 0ul (state_size a) 
-//    else Buffer.create 0uL (state_size a) in
-  
+let part1 a (acc: state a) keyblock data len =
+  (*
+  let t = state a in 
+  let acc: t = 
+    match a with 
+    | SHA256 -> Buffer.rcreate HyperStack.root 0ul (state_size a)
+    | SHA384 -> Buffer.rcreate HyperStack.root 0UL (state_size a)
+    | SHA512 -> Buffer.rcreate HyperStack.root 0UL (state_size a) in 
+  *)
   Math.Lemmas.lemma_div_mod (v len) (blockLength a);
   let n0 = len /^ blockLen a in
   let r0 = len %^ blockLen a in
@@ -143,39 +147,36 @@ let part1 a keyblock data len =
     Seq.append_assoc v2 vlast vsuffix; 
     Seq.append_assoc v1 vblocks vlast;
     assert(acc3 == hash0 #a ((v1 @| vdata) @| vsuffix));
-    assert(finish acc3 == spec a (v1 @| vdata)));
-  pop_frame()
-  )
-  else admit()
+    assert(finish acc3 == spec a (v1 @| vdata)))
+  
 
 // the two parts have the same stucture; let's keep their proofs in sync. 
   
 [@"substitute"]
 val part2:
   a: alg ->
+  acc: state a -> ( 
+  let uint = if a = SHA256 then UInt32.t else UInt64.t in 
   mac: lbptr (tagLength a) ->
   opad: lbptr (blockLength a) ->
   tag: lbptr (tagLength a) {disjoint mac opad /\ disjoint mac tag} ->
   Stack unit
-    (requires fun h -> live h mac /\ live h opad /\ live h tag)
+    (requires fun h0 -> 
+      disjoint #uint acc opad /\ 
+      disjoint #uint acc tag /\ 
+      disjoint #uint acc mac /\ 
+      live #uint h0 acc /\ 
+      live h0 mac /\ live h0 opad /\ live h0 tag)
     (ensures fun h0 _ h1 -> 
-      live h1 mac /\ live h0 mac /\ modifies_1 mac h0 h1 /\
+      live h1 mac /\ live h0 mac /\ modifies_2 #uint acc mac h0 h1 /\
       ( let payload = Seq.append (as_seq h0 opad) (as_seq h0 tag) in 
         Seq.length payload <= maxLength a /\
-        as_seq h1 mac = spec a payload))
-
- //TODO spec
- ///\ live h1 s5 /\ live h0 s5
- ///\ live h1 s4 /\ live h0 s4 /\ modifies_1 mac h0 h1
- ///\ (reveal_sbytes (as_seq h1 mac) == Spec_Hash.hash (Seq.append (reveal_sbytes (as_seq h0 s5)) (reveal_sbytes (as_seq h0 s4))))))
+        as_seq h1 mac = spec a payload)))
 
 [@"substitute"]
-let part2 a mac opad tag =
-  if a = SHA256 then (
-  push_frame ();
+let part2 a acc mac opad tag =
   let totLen = blockLen a +^ tagLen a in 
   assert_norm(v totLen <= maxLength a);
-  let acc = Buffer.create 0ul (state_size a) in
   Hash.init a acc;
   Hash.update a acc opad; 
   let h1 = ST.get() in 
@@ -193,55 +194,64 @@ let part2 a mac opad tag =
     lemma_hash2 (acc0 #a) v1 (vtag @| vsuffix); 
     Seq.append_assoc v1 vtag vsuffix;
     assert(acc2 == hash0 #a ((v1 @| vtag) @| vsuffix));
-    assert(finish acc2 = spec a (v1 @| vtag)));
-  pop_frame ()
-  )
-  else admit() 
+    assert(finish acc2 = spec a (v1 @| vtag)))
 
 (* same spec as hmac with keylen = blockLen a *)
 //#reset-options "--max_fuel 0  --z3rlimit 20"
 val hmac_core:
   a: alg ->
+  acc: state a -> (
+  let uint = if a = SHA256 then UInt32.t else UInt64.t in 
   tag: lbptr (tagLength a) ->
   key: lbptr (blockLength a) {disjoint key tag} ->
   data: bptr{
     length data + blockLength a < pow2 32 /\ 
     length data + blockLength a <= maxLength a /\
-    // disjoint data tag /\ 
     disjoint data key } ->
   datalen: UInt32.t {v datalen = length data} ->
   Stack unit
-  (requires fun h0 -> live h0 tag /\ live h0 key /\ live h0 data)
-  (ensures fun h0 _ h1 -> 
+  (requires fun h0 -> 
+    disjoint #uint acc tag /\ 
+    disjoint #uint acc key /\ 
+    disjoint #uint acc data /\ 
+    live #uint h0 acc /\ 
+    live h0 tag /\ live h0 key /\ live h0 data)
+  (ensures fun h0 _ h1 ->   
     live h1 tag /\ live h0 tag /\
     live h1 key /\ live h0 key /\
-    live h1 data /\ live h0 data /\ //18-04-08 TODO modifies_1 tag h0 h1 /\
+    live h1 data /\ live h0 data /\ 
+    //modifies_2 #uint acc tag h0 h1 /\
     ( let k = as_seq h0 key in  
       let k1 = xor k 0x36uy in
       let k2 = xor k 0x5cuy in
       let v1 = spec a (k1 @| as_seq h0 data) in 
       Seq.length (k2 @| v1) <= maxLength a /\
-      as_seq h1 tag = spec a (k2 @| v1)))
+      as_seq h1 tag = spec a (k2 @| v1))))
       //harder: hmac a (as_seq h0 key) (as_seq h0 data)
 
-//#reset-options "--max_fuel 0 --z3rlimit 10"
-let xor_bytes_inplace a b len =
+val xor_bytes_inplace:
+  a: bptr ->
+  b: bptr{ disjoint a b } ->
+  len: UInt32.t {v len = length a /\ v len = length b} ->
+  Stack unit
+  (requires fun h0 -> live h0 a /\ live h0 b)
+  (ensures fun h0 _ h1 -> 
+    modifies_1 a h0 h1)
+let xor_bytes_inplace a b len =     
   C.Loops.in_place_map2 a b len (fun x y -> UInt8.logxor x y)
 // below, we only XOR with a constant bytemask.
 
-let hmac_core a mac key data len =
+let hmac_core a acc mac key data len =
   push_frame ();
   let ipad = Buffer.create 0x36uy (blockLen a) in
   let opad = Buffer.create 0x5cuy (blockLen a) in
-  xor_bytes_inplace ipad key (blockLen a);
   xor_bytes_inplace opad key (blockLen a);
-  // in principle, we can re-use the same pad for both, xoring it with
-  // (0x36uy xor 0x5cuy) in-between.
+  xor_bytes_inplace ipad key (blockLen a);
   let h0 = ST.get() in
-  part1 a ipad data len; 
+  part1 a acc ipad data len; 
   let h1 = ST.get() in 
-  let inner = Buffer.sub ipad 0ul (tagLen a) in (* Salvage memory *)
-  part2 a mac opad inner;
+  let inner = Buffer.sub ipad 0ul (tagLen a) in (* salvage memory *)
+  part2 a acc mac opad inner;
   let h2 = ST.get() in 
   ( 
     let k = as_seq h0 key in  
@@ -252,19 +262,38 @@ let hmac_core a mac key data len =
     assert_norm(blockLength a + tagLength a <= maxLength a);
     assert(Seq.length (k2 @| v1) <= maxLength a);
     let v2 = as_seq h2 mac in 
-    assume(as_seq h0 ipad = k1);
+
+    assume(as_seq h0 ipad = k1); 
     assume(as_seq h1 opad = k2);
     assert(v1 == spec a (k1 @| vdata));
     assert(v2 == spec a (k2 @| v1)));
   pop_frame ()
+  
 
-// not much point in separating hmac_core (verbose spec)
+// not much point in separating hmac_core? verbose, but it helps
+// monomorphise stack allocations.
 
 let compute a mac key keylen data datalen =
   push_frame (); 
   let keyblock = Buffer.create 0x00uy (blockLen a) in
   assert_norm(pow2 32 <= maxLength a);
   wrap_key a keyblock key keylen;
-  hmac_core a mac keyblock data datalen;
+  ( match a with 
+  | SHA256 -> 
+      push_frame();
+      let acc = Buffer.create 0ul (state_size a) in 
+      hmac_core SHA256 acc mac keyblock data datalen;
+      pop_frame()
+  | SHA384 -> 
+      push_frame();
+      let acc = Buffer.create 0UL (state_size a) in 
+      hmac_core SHA384 acc mac keyblock data datalen;
+      pop_frame()
+  | SHA512 -> 
+      push_frame();
+      let acc = Buffer.create 0UL (state_size a) in 
+      hmac_core SHA512 acc mac keyblock data datalen;
+      pop_frame());
   pop_frame ()
 
+ 

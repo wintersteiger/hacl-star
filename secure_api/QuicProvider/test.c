@@ -9,7 +9,7 @@
 
 #include "quic_provider.h"
 
-void dump(char buffer[], size_t len)
+void dump(unsigned char buffer[], size_t len)
 {
   size_t i;
   for(i=0; i<len; i++) {
@@ -20,8 +20,8 @@ void dump(char buffer[], size_t len)
 
 int main(int argc, char **argv)
 {
-  char hash[64] = {0};
-  char input[] = {};
+  unsigned char hash[64] = {0};
+  unsigned char input[] = {};
   printf("SHA256('') =\n");
   quic_crypto_hash(TLS_hash_SHA256, hash, input, 0);
   dump(hash, 32);
@@ -32,8 +32,8 @@ int main(int argc, char **argv)
   quic_crypto_hash(TLS_hash_SHA512, hash, input, 0);
   dump(hash, 64);
 
-  char *key = "Jefe";
-  char *data = "what do ya want for nothing?";
+  unsigned char key[] = "Jefe";
+  unsigned char data[] = "what do ya want for nothing?";
 
   printf("\nHMAC-SHA256('Jefe', 'what do ya want for nothing?') = \n");
   quic_crypto_hmac(TLS_hash_SHA256, hash, key, 4, data, 28);
@@ -50,19 +50,19 @@ int main(int argc, char **argv)
   dump(hash, 64);
   assert(memcmp(hash, "\x16\x4b\x7a\x7b\xfc\xf8\x19\xe2\xe3\x95\xfb\xe7\x3b\x56\xe0\xa3\x87\xbd\x64\x22\x2e\x83\x1f\xd6\x10\x27\x0c\xd7\xea\x25\x05\x54\x97\x58\xbf\x75\xc0\x5a\x99\x4a\x6d\x03\x4f\x65\xf8\xf0\xe6\xfd\xca\xea\xb1\xa3\x4d\x4a\x6b\x4b\x63\x6e\x07\x0a\x38\xbc\xe7\x37", 64) == 0);
 
-  char *salt = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c";
-  char *ikm = "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b";
-  char *info = "\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9";
+  unsigned char salt[] = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c";
+  unsigned char ikm[] = "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b";
+  unsigned char info[] = "\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9";
 
   printf("\nprk = HKDF-EXTRACT-SHA256('0x000102030405060708090a0b0c', '0x0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b')\n");
   quic_crypto_hkdf_extract(TLS_hash_SHA256, hash, salt, 13, ikm, 22);
   dump(hash, 32);
 
-  char prk[32] = {0};
+  unsigned char prk[32] = {0};
   memcpy(prk, hash, 32);
   dump(prk, 32);
 
-  char okm[42] = {0};
+  unsigned char okm[42] = {0};
   printf("\nokm = HKDF-EXPAND-SHA256(prk, '0xf0f1f2f3f4f5f6f7f8f9', 42)\n");
   if(!quic_crypto_hkdf_expand(TLS_hash_SHA256, okm, 42, prk, 32, info, 10))
   {
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  char cipher[128];
+  unsigned char cipher[128];
   printf("\nAES-128-GCM encrypt test:\n");
   quic_crypto_encrypt(k, cipher, 0, salt, 13, data, 28);
   dump(cipher, 28+16);
