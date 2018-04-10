@@ -105,14 +105,6 @@ val part1:
 #reset-options "--max_fuel 0 --z3rlimit 1000"
 [@"substitute"]
 let part1 a (acc: state a) keyblock data len =
-  (*
-  let t = state a in 
-  let acc: t = 
-    match a with 
-    | SHA256 -> Buffer.rcreate HyperStack.root 0ul (state_size a)
-    | SHA384 -> Buffer.rcreate HyperStack.root 0UL (state_size a)
-    | SHA512 -> Buffer.rcreate HyperStack.root 0UL (state_size a) in 
-  *)
   Math.Lemmas.lemma_div_mod (v len) (blockLength a);
   let n0 = len /^ blockLen a in
   let r0 = len %^ blockLen a in
@@ -149,9 +141,7 @@ let part1 a (acc: state a) keyblock data len =
     assert(acc3 == hash0 #a ((v1 @| vdata) @| vsuffix));
     assert(finish acc3 == spec a (v1 @| vdata)))
   
-
 // the two parts have the same stucture; let's keep their proofs in sync. 
-  
 [@"substitute"]
 val part2:
   a: alg ->
@@ -196,8 +186,7 @@ let part2 a acc mac opad tag =
     assert(acc2 == hash0 #a ((v1 @| vtag) @| vsuffix));
     assert(finish acc2 = spec a (v1 @| vtag)))
 
-(* same spec as hmac with keylen = blockLen a *)
-//#reset-options "--max_fuel 0  --z3rlimit 20"
+// similar spec as hmac with keylen = blockLen a 
 val hmac_core:
   a: alg ->
   acc: state a -> (
@@ -229,6 +218,8 @@ val hmac_core:
       as_seq h1 tag = spec a (k2 @| v1))))
       //harder: hmac a (as_seq h0 key) (as_seq h0 data)
 
+// todo functional correctness.
+// below, we only XOR with a constant bytemask.
 val xor_bytes_inplace:
   a: bptr ->
   b: bptr{ disjoint a b } ->
@@ -239,14 +230,15 @@ val xor_bytes_inplace:
     modifies_1 a h0 h1)
 let xor_bytes_inplace a b len =     
   C.Loops.in_place_map2 a b len (fun x y -> UInt8.logxor x y)
-// below, we only XOR with a constant bytemask.
 
+// TODO small improvement: part1 and part2 return their result in acc
+// so that we can reuse the pad.
 let hmac_core a acc mac key data len =
   push_frame ();
   let ipad = Buffer.create 0x36uy (blockLen a) in
   let opad = Buffer.create 0x5cuy (blockLen a) in
-  xor_bytes_inplace opad key (blockLen a);
   xor_bytes_inplace ipad key (blockLen a);
+  xor_bytes_inplace opad key (blockLen a);
   let h0 = ST.get() in
   part1 a acc ipad data len; 
   let h1 = ST.get() in 

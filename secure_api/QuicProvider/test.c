@@ -34,6 +34,8 @@ int main(int argc, char **argv)
 
   unsigned char key[] = "Jefe";
   unsigned char data[] = "what do ya want for nothing?";
+  //dump(key, 4);
+  //dump(data, 28);
 
   printf("\nHMAC-SHA256('Jefe', 'what do ya want for nothing?') = \n");
   quic_crypto_hmac(TLS_hash_SHA256, hash, key, 4, data, 28);
