@@ -75,7 +75,7 @@ abstract: $(CRYPTO_DIR)/Crypto_AEAD_Main.h base
 
 concrete: $(CRYPTO_DIR)/Crypto_AEAD_Main_Crypto_Indexing.h base
 
-base: $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash.h $(CRYPTO_DIR)/Crypto_Symmetric_Bytes.h
+base: $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash_Crypto_Hash_Test.h $(CRYPTO_DIR)/Crypto_Symmetric_Bytes.h
 
 %.test: %
 	./$<
@@ -95,7 +95,7 @@ FSTAR += --lax
 # The entry points
 FSTAR_FILES=aead/Crypto.AEAD.Main.fst test/KrmlTest.fst \
   LowCProvider/fst/LowCProvider.fst LowCProvider/fst/HaclProvider.fst \
-  hkdf/Crypto.HKDF.fst
+  hkdf/Crypto.HKDF.fst hkdf/Crypto.Hash.Test.fst
 
 EXTRACT='* -FStar -CryptoTypes'
 # Automatic dependency analysis; the hack forces this target to be rebuilt
@@ -150,8 +150,8 @@ $(CRYPTO_DIR)/%.h $(CRYPTO_DIR)/%.c: $(filter-out $(OUTPUT_DIR)/prims.krml,$(ALL
 $(CRYPTO_DIR)/Crypto_AEAD_Main_Crypto_Indexing.c \
   $(CRYPTO_DIR)/Crypto_AEAD_Main_Crypto_Indexing.h: BUNDLE=Crypto_AEAD_Main+Crypto_Indexing
 
-$(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash.c \
-  $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash.h: BUNDLE=Crypto_HKDF+Crypto_HMAC+Crypto_Hash
+$(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash_Crypto_Hash_Test.c \
+  $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash_Crypto_Hash_Test.h: BUNDLE=Crypto_HKDF+Crypto_HMAC+Crypto_Hash+Crypto_Hash_Test
 
 # This is without the indexing id.
 $(CRYPTO_DIR)/Crypto_AEAD_Main.h: EXTRA = -add-include '"testlib.h"' -add-include '"Crypto_Indexing.h"' -drop Crypto.Indexing
@@ -235,13 +235,13 @@ $(VALE_DIR)/sha256_main_i.o: $(DIST_DIR)/uint128/FStar_UInt128.h
 $(VALE_DIR)/Vale_Hash_SHA2_256.o: $(DIST_DIR)/uint128/FStar_UInt128.h
 $(CRYPTO_DIR)/Crypto_AEAD_Main_Crypto_Indexing.o: $(DIST_DIR)/uint128/FStar_UInt128.h
 $(CRYPTO_DIR)/Crypto_Symmetric_Bytes.o: $(DIST_DIR)/uint128/FStar_UInt128.h
-$(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash.o: $(DIST_DIR)/uint128/FStar_UInt128.h
+$(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash_Crypto_Hash_Test.o: $(DIST_DIR)/uint128/FStar_UInt128.h
 
 # Note: we don't use gcc -MM because this would need to happen after KreMLin
 # extraction, and then every run of this Makefile would start by extracting the
 # entire world just to get the dependencies between C files.
 $(CRYPTO_DIR)/Crypto_AEAD_Main_Crypto_Indexing.o: $(HEADERS)
-LowCProvider/lowc_stub.o: $(HEADERS) $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash.h
+LowCProvider/lowc_stub.o: $(HEADERS) $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash_Crypto_Hash_Test.h
 
 OCAMLOPTS=-package fstarlib,zarith -g -I $(FSTAR_HOME)/ulib/ml
 OCAMLOPT=OCAMLPATH="$(FSTAR_HOME)/bin" ocamlfind opt $(OCAMLOPTS)
@@ -277,7 +277,7 @@ $(DIST_DIR)/LowC.cmxa: \
 	  LowCProvider/HaclProvider.cmx \
 	  LowCProvider/lowc_stub.o \
 	  $(CRYPTO_DIR)/Crypto_AEAD_Main_Crypto_Indexing.o \
-	  $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash.o \
+	  $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash_Crypto_Hash_Test.o \
 	  $(CRYPTO_DIR)/Crypto_Symmetric_Bytes.o $(CURVE_DIR)/Curve25519.o \
 	  $(CURVE_DIR)/FStar.o $($(IMPL_CHOICE)_EXTRA)
 	$(OCAMLMKLIB) -I $(OUTPUT_DIR) $^ -o $(patsubst %.cmxa,%,$@)
@@ -301,12 +301,12 @@ $(DIST_DIR)/LowCTests.exe: $(DIST_DIR)/copied/kremstr.o \
 
 QUICPROVIDER_DIR = QuicProvider
 
-$(QUICPROVIDER_DIR)/quic_provider.o: $(HEADERS) $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash.h
-$(QUICPROVIDER_DIR)/test.o: $(HEADERS) $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash.h
+$(QUICPROVIDER_DIR)/quic_provider.o: $(HEADERS) $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash_Crypto_Hash_Test.h
+$(QUICPROVIDER_DIR)/test.o: $(HEADERS) $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash_Crypto_Hash_Test.h
 
 $(DIST_DIR)/libquicprovider.$(SO): $(VALE_OBJ) $(QUICPROVIDER_DIR)/quic_provider.o \
   $(CRYPTO_DIR)/Crypto_AEAD_Main_Crypto_Indexing.o \
-  $(CRYPTO_DIR)/Crypto_Symmetric_Bytes.o $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash.o \
+  $(CRYPTO_DIR)/Crypto_Symmetric_Bytes.o $(CRYPTO_DIR)/Crypto_HKDF_Crypto_HMAC_Crypto_Hash_Crypto_Hash_Test.o \
   $(DIST_DIR)/copied/kremstr.o $(DIST_DIR)/uint128/uint128_wrapper.o
 	$(CC) $^ -o $@ $(QUICPROVIDER_SO_LDOPTS) -shared
 

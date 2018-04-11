@@ -290,4 +290,20 @@ let compute a mac key keylen data datalen =
       pop_frame());
   pop_frame ()
 
- 
+(*
+// 18-04-11 this alternative is leaky and does not typecheck.
+// I get an error pointing to `sub_effect DIV ~> GST = lift_div_gst` in HyperStack
+
+let compute a mac key keylen data datalen =
+  push_frame (); 
+  let keyblock = Buffer.create 0x00uy (blockLen a) in
+  assert_norm(pow2 32 <= maxLength a);
+  wrap_key a keyblock key keylen;
+  let acc = 
+    match a with 
+    | SHA256 -> Buffer.rcreate HyperStack.root 0ul (state_size a) 
+    | SHA384 -> Buffer.rcreate HyperStack.root 0UL (state_size a)
+    | SHA512 -> Buffer.rcreate HyperStack.root 0UL (state_size a) in 
+  hmac_core SHA256 acc mac keyblock data datalen;
+  pop_frame ()
+*)  

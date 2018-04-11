@@ -11,7 +11,7 @@ open FStar.HyperStack.ST
 #reset-options "--initial_ifuel 2 --initial_fuel 2 --z3rlimit 50"
 
 type bseq = Seq.seq UInt8.t 
-noextract let lbseq (l:nat) = b:bseq {Seq.length b = l}
+let lbseq (l:nat) = b:bseq {Seq.length b = l}
 
 (* SUPPORTED ALGORITHMS; the first 3 are still required by TLS 1.2,
    included for legacy purpose only, and not provided by HACL*.  See
@@ -361,12 +361,6 @@ val agile_hash:
     Buffer.modifies_1 output h0 h1 /\
     v len <= maxLength a /\ (* required for subtyping the RHS below *)
     Buffer.as_seq h1 output = hash a (Buffer.as_seq h0 input))
-
-val test: len: UInt32.t -> input: lbptr (v len) -> Stack unit
-  (requires fun h0 -> 
-    Buffer.length input = v len /\
-    Buffer.live h0 input)
-  (ensures fun h0 _ h1 -> Buffer.modifies_0 h0 h1)
  
 (* TODO a third, incremental-hash implementation. *)
 

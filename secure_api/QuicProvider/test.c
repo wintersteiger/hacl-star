@@ -27,14 +27,12 @@ int main(int argc, char **argv)
   unsigned char hash[64] = {0};
   unsigned char input[] = "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu"; // 896 bits
 
-  // TODO actually check the outputs
+  // TODO actually check the outputs!
 
   size_t len = 0;
   dump("input",input, len);
-  quic_crypto_hash(TLS_hash_SHA256, hash, input, len);
-  dump("SHA256", hash, 32);
-  Crypto_Hash_compute256(len, input, hash);
-  dump("SHA256", hash, 32);
+  //quic_crypto_hash(TLS_hash_SHA256, hash, input, len);
+  //dump("SHA256", hash, 32);
   Crypto_Hash_compute(Crypto_Hash_SHA256, len, input, hash);
   dump("SHA256", hash, 32);
   quic_crypto_hash(TLS_hash_SHA384, hash, input, len);
@@ -44,10 +42,6 @@ int main(int argc, char **argv)
 
   len = 3;
   dump("input",input, len);
-  quic_crypto_hash(TLS_hash_SHA256, hash, input, len);
-  dump("SHA256", hash, 32);
-  Crypto_Hash_compute256(len, input, hash);
-  dump("SHA256", hash, 32);
   Crypto_Hash_compute(Crypto_Hash_SHA256, len, input, hash);
   dump("SHA256", hash, 32);
   quic_crypto_hash(TLS_hash_SHA384, hash, input, len);
@@ -58,8 +52,6 @@ int main(int argc, char **argv)
   len = 896 / 8;
   dump("input",input, len);
   quic_crypto_hash(TLS_hash_SHA256, hash, input, len);
-  dump("SHA256", hash, 32);
-  Crypto_Hash_compute256(len, input, hash);
   dump("SHA256", hash, 32);
   Crypto_Hash_compute(Crypto_Hash_SHA256, len, input, hash);
   dump("SHA256", hash, 32);
