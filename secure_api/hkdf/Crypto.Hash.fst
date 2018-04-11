@@ -79,9 +79,9 @@ let as_acc #a h st = admit() //TODO as_seq (sub st ...)
 
 let init a acc = 
  match a with
-  | SHA256 -> Hacl.Hash.SHA2_256.init acc
-  | SHA384 -> Hacl.Hash.SHA2_384.init acc
-  | SHA512 -> Hacl.Hash.SHA2_512.init acc 
+  | SHA256 -> Buffer.upd acc (state_size a -^ 1ul) 0ul; Hacl.Hash.SHA2_256.init acc 
+  | SHA384 -> Buffer.upd acc (state_size a -^ 1ul) 0UL; Hacl.Hash.SHA2_384.init acc
+  | SHA512 -> Buffer.upd acc (state_size a -^ 1ul) 0UL; Hacl.Hash.SHA2_512.init acc
 
 let update a st block = 
   match a with
@@ -115,3 +115,27 @@ let compute a len input output =
   | SHA512 -> Hacl.Hash.SHA2_512.hash output input len
 
 let agile_hash a output input len = compute a len input output 
+
+/// unit test
+
+// sanity check: the low-level API yields the same result as the basic one
+let compute256 len data (tag: lbptr (tagLength SHA256)) = 
+  let a = SHA256 in 
+  let acc = Buffer.create 0ul (state_size a) in 
+  Math.Lemmas.lemma_div_mod (v len) (blockLength a);
+  let n0 = len /^ blockLen a in
+  let r0 = len %^ blockLen a in
+  let data_blocks = Buffer.sub data 0ul (n0 *^ blockLen a) in
+  let data_last = Buffer.offset data (n0 *^ blockLen a) in
+  init a acc; 
+  update_multi a acc data_blocks (n0 *^ blockLen a); 
+  update_last a acc data_last len;
+  extract a acc tag
+  
+
+let test len data = 
+  let a = SHA256 in 
+  let tag0 = Buffer.create 0uy (tagLen a) in
+  let tag1 = Buffer.create 0uy (tagLen a) in
+  compute a len data tag0;
+  compute256 len data tag1

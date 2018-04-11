@@ -187,6 +187,7 @@ let part2 a acc mac opad tag =
     assert(finish acc2 = spec a (v1 @| vtag)))
 
 // similar spec as hmac with keylen = blockLen a 
+[@"substitute"]
 val hmac_core:
   a: alg ->
   acc: state a -> (
@@ -231,8 +232,9 @@ val xor_bytes_inplace:
 let xor_bytes_inplace a b len =     
   C.Loops.in_place_map2 a b len (fun x y -> UInt8.logxor x y)
 
-// TODO small improvement: part1 and part2 return their result in acc
-// so that we can reuse the pad.
+// TODO small improvements: part1 and part2 could return their tags in
+// mac, so that we can reuse the pad.
+[@"substitute"]
 let hmac_core a acc mac key data len =
   push_frame ();
   let ipad = Buffer.create 0x36uy (blockLen a) in

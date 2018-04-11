@@ -6,7 +6,6 @@
 
 #include "kremlib.h"
 #include "Crypto_HKDF_Crypto_HMAC_Crypto_Hash.h"
-//now included above: #include "Crypto_Symmetric_Bytes.h"
 #include "Crypto_AEAD_Main_Crypto_Indexing.h"
 #include "quic_provider.h"
 
