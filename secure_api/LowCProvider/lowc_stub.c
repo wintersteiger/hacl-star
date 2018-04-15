@@ -26,7 +26,7 @@
 #include "FStar_UInt128.h"
 #include "Crypto_AEAD_Main_Crypto_Indexing.h"
 #include "Crypto_Symmetric_Bytes.h"
-#include "Crypto_HKDF_Crypto_HMAC_Crypto_Hash.h"
+#include "Crypto_HKDF_Crypto_HMAC_Crypto_Hash_Crypto_Hash_Test.h"
 #include "Curve25519.h"
 #include "FStar.h"
 

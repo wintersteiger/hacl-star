@@ -1,18 +1,7 @@
 module Crypto.HKDF
 
-module ST = FStar.HyperStack.ST
-open FStar.HyperStack.All
-
 open FStar.Mul
-open FStar.Ghost
-open FStar.HyperStack
-open FStar.HyperStack.ST
-open FStar.Buffer
-open FStar.UInt32
-
-open Crypto.Hash
-open FStar.Mul
- 
+open Crypto.Hash 
 
 /// FUNCTIONAL SPECIFICATION:
 ///
@@ -23,6 +12,7 @@ open FStar.Mul
 
 open FStar.Seq 
 
+noextract let extract a salt ikm = HMAC.hmac a salt ikm
 
 noextract let rec expand0 : 
   a: Hash.alg13 ->
@@ -104,6 +94,11 @@ let expand_secret #a prk label hv = expand_label prk label hv (tagLength a)
 
 /// IMPLEMENTATION
 
+//open FStar.Ghost
+open FStar.HyperStack.All
+open FStar.Buffer
+open FStar.UInt32
+
 //18-03-05 TODO drop hkdf_ prefix!
 
 val hkdf_extract :
@@ -116,9 +111,9 @@ val hkdf_extract :
   (requires (fun h0 -> 
     live h0 prk /\ live h0 salt /\ live h0 ikm ))
   (ensures  (fun h0 r h1 -> 
-    live h1 prk /\ //18-04-09 TODO modifies_1 prk h0 h1 /\
+    live h1 prk /\ modifies_1 prk h0 h1 /\
     Buffer.length ikm + blockLength a <= maxLength a /\ 
-    as_seq h1 prk = Crypto.HMAC.hmac a (as_seq h0 salt) (as_seq h0 ikm)))
+    as_seq h1 prk == HMAC.hmac a (as_seq h0 salt) (as_seq h0 ikm)))
 
 val hkdf_expand :
   a       : alg13 ->
@@ -130,14 +125,13 @@ val hkdf_expand :
   len     : bptrlen okm { 
     disjoint okm prk /\
     HMAC.keysized a (v prklen) /\
-    tagLength a + v infolen + 1 < pow2 32 /\
+    tagLength a + v infolen + 1 + blockLength a < pow2 32 /\
     v len <= 255 * tagLength a } ->
   Stack unit
   (requires (fun h0 -> live h0 okm /\ live h0 prk /\ live h0 info))
   (ensures  (fun h0 r h1 -> 
-    live h1 okm /\ //18-04-09 TODO modifies_1 okm h0 h1 /\
+    live h1 okm /\ modifies_1 okm h0 h1 /\
     tagLength a + pow2 32 + blockLength a <= maxLength a /\ // required for v len below
     as_seq h1 okm = expand a (as_seq h0 prk) (as_seq h0 info) (v len) ))
-
 
 /// HIGH-LEVEL WRAPPERS (TBC)

@@ -3,6 +3,9 @@
 
 module Crypto.Hash
 
+open FStar.UInt32 
+open FStar.HyperStack.ST
+
 let string_of_alg = function
   | MD5    -> "MD5"
   | SHA1   -> "SHA1"
@@ -69,19 +72,41 @@ let suffix a l =
 
 let lemma_hash_spec a b = ()
 
+let state_word a = 
+  match a with 
+  | SHA256 -> UInt32.t
+  | SHA384 -> UInt64.t
+  | SHA512 -> UInt64.t
+let state_zero a = 
+  match a with 
+  | SHA256 -> 0ul
+  | SHA384  
+  | SHA512 -> 0UL
 let state_size a =
   match a with 
   | SHA256 -> Hacl.Hash.SHA2_256.size_state
-  | SHA384 -> (* 2ul *^ *) Hacl.Hash.SHA2_384.size_state
-  | SHA512 -> (* 2ul *^ *) Hacl.Hash.SHA2_512.size_state
+  | SHA384 -> Hacl.Hash.SHA2_384.size_state
+  | SHA512 -> Hacl.Hash.SHA2_512.size_state
 
 let as_acc #a h st = admit() //TODO as_seq (sub st ...)
 
+let init_SHA256 acc = Buffer.upd acc (state_size SHA256 -^ 1ul) 0ul; Hacl.Hash.SHA2_256.init acc 
+let init_SHA384 acc = Buffer.upd acc (state_size SHA256 -^ 1ul) 0UL; Hacl.Hash.SHA2_384.init acc 
+let init_SHA512 acc = Buffer.upd acc (state_size SHA256 -^ 1ul) 0UL; Hacl.Hash.SHA2_512.init acc 
+
+let init a acc = 
+ match a with
+  | SHA256 -> init_SHA256 acc
+  | SHA384 -> init_SHA384 acc
+  | SHA512 -> init_SHA512 acc
+
+(*
 let init a acc = 
  match a with
   | SHA256 -> Buffer.upd acc (state_size a -^ 1ul) 0ul; Hacl.Hash.SHA2_256.init acc 
   | SHA384 -> Buffer.upd acc (state_size a -^ 1ul) 0UL; Hacl.Hash.SHA2_384.init acc
   | SHA512 -> Buffer.upd acc (state_size a -^ 1ul) 0UL; Hacl.Hash.SHA2_512.init acc
+*)
 
 let update a st block = 
   match a with

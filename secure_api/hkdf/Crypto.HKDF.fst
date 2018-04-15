@@ -14,13 +14,8 @@ open FStar.UInt32
 
 open Crypto.Hash 
 
-(* Definition of aliases for modules *)
-module U8 = FStar.UInt8
-module U32 = FStar.UInt32
-module U64 = FStar.UInt64
-module HMAC = Crypto.HMAC
+// Definition of base types. Should go elsewhere if we keep using them
 
-(* Definition of base types *)
 let uint8_t   = FStar.UInt8.t
 let uint32_t  = FStar.UInt32.t
 let uint64_t  = FStar.UInt64.t
@@ -62,14 +57,15 @@ private val hkdf_expand_loop:
     let okm = as_seq h1 okm in 
     okm =  expand0 a prk info (v len) (UInt8.v i) last))
 
-#set-options "--z3rlimit 30"
+#set-options "--z3rlimit 100"
 [@"c_inline"]
 let rec hkdf_expand_loop a okm prk prklen infolen len hashed i =
   push_frame ();
   let tlen = tagLen a in 
-  let tag     = Buffer.sub hashed 0ul tlen in 
-  let info    = Buffer.sub hashed (tagLen a) infolen in 
-  let counter = Buffer.sub hashed (tagLen a +^ infolen) 1ul in 
+  let tag = Buffer.sub hashed 0ul tlen in 
+  let info_counter = Buffer.offset hashed tlen in 
+  // let hashed1 = Buffer.sub hashed (tagLen a) (infolen +^ 1ul) in
+  let info, counter = Buffer.split info_counter infolen in
   assert(disjoint tag info /\ disjoint tag counter /\ disjoint info counter);
 
   let i' = FStar.UInt8.(i +^ 1uy) in
@@ -83,25 +79,35 @@ let rec hkdf_expand_loop a okm prk prklen infolen len hashed i =
   Seq.lemma_eq_intro (Seq.upd (as_seq h0 counter) 0 i') (Seq.create 1 i');
   assert(as_seq h1 counter == Seq.create 1 i');
 
-  assume false;//18-04-09 
-
   // derive an extra tag 
   if i = 0uy then (
     // the first input is shorter, does not include the chaining block
     let len1 = infolen +^ 1ul in 
-    let hashed1 = Buffer.sub hashed tlen len1 in
-    HMAC.compute a tag prk prklen hashed1 len1;
+    HMAC.compute a tag prk prklen info_counter len1;
 
     let h2 = ST.get() in 
-    ( let v_info = as_seq h0 info in 
-      let v_ctr = as_seq h1 counter in 
-      let v_tag = as_seq h2 tag in 
-      let v_prk = as_seq h1 prk in 
-      assume(v_tag == HMAC.hmac a v_prk (v_info @| v_ctr))
-    ))
+    ( let info1 = as_seq h1 info in 
+      let ctr1 = as_seq h1 counter in 
+      let prk1 = as_seq h1 prk in 
+      let tag2 = as_seq h2 tag in 
+      let text = Seq.createEmpty @| info1 @| ctr1 in
 
+      // assert(tag2 == HMAC.hmac a v_prk (as_seq h1 hashed1)); 
+      Seq.lemma_eq_intro (as_seq h1 info_counter) text;
+      assert(tag2 == HMAC.hmac a prk1 text)  ))
   else (
-    HMAC.compute a tag prk prklen hashed (tlen +^ infolen +^ 1ul));
+    HMAC.compute a tag prk prklen hashed (tlen +^ infolen +^ 1ul);
+    let h2 = ST.get() in 
+    ( let info1 = as_seq h1 info in 
+      let ctr1 = as_seq h1 counter in 
+      let prk1 = as_seq h1 prk in 
+      let tag1 = as_seq h1 tag in 
+      let tag2 = as_seq h2 tag in 
+      let text = tag1 @| info1 @| ctr1 in
+      assert(tag2 == HMAC.hmac a prk1 (as_seq h1 hashed)); 
+      Seq.lemma_eq_intro (as_seq h1 hashed) text ; 
+      assert(tag2 == HMAC.hmac a prk1 text )
+    ));
 
   // copy it to the result, and iterate if required
   if len <=^ tlen then 
@@ -110,11 +116,16 @@ let rec hkdf_expand_loop a okm prk prklen infolen len hashed i =
     Buffer.blit tag 0ul okm 0ul tlen;
     let len = len -^ tlen in 
     let okm = Buffer.sub okm tlen len in 
-    hkdf_expand_loop a okm prk prklen infolen len hashed i');
+    hkdf_expand_loop a okm prk prklen infolen len hashed i'
+    );
 
+  assume false; // TODO complete functional correctness for the loop
   pop_frame()
 
 
+
+// | tagLen a | infolen | 1 | 
+  
 let hkdf_extract a prk salt saltlen ikm ikmlen =
   HMAC.compute a prk salt saltlen ikm ikmlen
 
@@ -124,6 +135,7 @@ let hkdf_expand a okm prk prklen info infolen len =
   let tlen = tagLen a in 
   let text = Buffer.create 0uy (tlen +^ infolen +^ 1ul) in 
   Buffer.blit info 0ul text tlen infolen; 
+  assert_norm(tagLength a + pow2 32 + blockLength a <= maxLength a);
   hkdf_expand_loop a okm prk prklen infolen len text 0uy;
   pop_frame()
 

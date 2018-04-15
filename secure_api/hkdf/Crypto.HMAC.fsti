@@ -37,10 +37,11 @@ val compute:
   data: bptr{ length data + blockLength a < pow2 32 } ->
   datalen: UInt32.t{ UInt32.v datalen = length data } -> 
   Stack unit
-  (requires (fun h0 -> live h0 tag /\ live h0 key /\ live h0 data))
-  (ensures  (fun h0 _ h1 -> 
+  (requires fun h0 -> live h0 tag /\ live h0 key /\ live h0 data)
+  (ensures fun h0 _ h1 -> 
     live h1 tag /\ live h0 tag /\
     live h1 key /\ live h0 key /\
-    live h1 data /\ live h0 data /\ // modifies_1 tag h0 h1 /\
+    live h1 data /\ live h0 data /\ 
+    modifies_1 tag h0 h1 /\
     ( length data + blockLength a <= maxLength a /\ (* required for subtyping the RHS below *)    
-      as_seq h1 tag = hmac a (as_seq h0 key) (as_seq h0 data))))
+      as_seq h1 tag == hmac a (as_seq h0 key) (as_seq h0 data)))

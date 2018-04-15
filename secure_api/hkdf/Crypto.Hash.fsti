@@ -3,6 +3,8 @@
 
 module Crypto.Hash
 
+include EverCrypt.Hash
+
 /// adapted from [tls/src/Hashing.*]
 
 open FStar.UInt32 
@@ -33,7 +35,7 @@ val string_of_alg: alg -> string
    only for constructions based on those. *)
 type alg13 = a:alg {a=SHA256 \/ a=SHA384 \/ a=SHA512}
 
-(* INTERNAL BLOCK SIZE, in bytes; useful to compute various lengths. *) 
+(* INPUT BLOCK SIZE, in bytes; useful to compute various lengths. *) 
 let blockLen = function
   | MD5 | SHA1 | SHA224 | SHA256 ->  64ul
   | SHA384 | SHA512              -> 128ul
@@ -94,6 +96,33 @@ noextract let rec hash2
     let c,b = Seq.split b (blockLength a) in
     hash2 (compress v c) b
 
+let lemma_compress 
+  (#a: alg) 
+  (a0: acc a)
+  (c: lbseq (blockLength a)): 
+  Lemma (compress a0 c == hash2 a0 c) = ()
+
+let rec lemma_hash2 
+  (#a: alg) 
+  (a0: acc a)
+  (b0 b1: (b:bseq{ Seq.length b % blockLength a = 0})): 
+  Lemma 
+    (ensures hash2 a0 (Seq.append b0 b1) == hash2 (hash2 a0 b0) b1)
+    (decreases (Seq.length b0)) 
+=
+  if Seq.length b0 = 0 then (
+    Seq.lemma_empty b0;
+    Seq.append_empty_l b1 )
+  else (
+    let c,b0' = Seq.split b0 (blockLength a) in
+    let c',b' = Seq.split (Seq.append b0 b1) (blockLength a) in
+    Seq.append_assoc c b0' b1;
+    //Seq.lemma_split b0 (blockLength a);
+    //Seq.lemma_eq_intro (Seq.append b0 b1) (Seq.append c' b');
+    Seq.lemma_eq_intro c c';
+    Seq.lemma_eq_intro b' (Seq.append b0' b1);
+    lemma_hash2 (hash2 a0 c) b0' b1)
+
 noextract let hash0 (#a:alg) (b:bseq {Seq.length b % blockLength a = 0}) = hash2 (acc0 #a) b
 
 (* PADDING AND LENGTH ENCODING *) 
@@ -122,9 +151,9 @@ noextract let spec (a:alg13) (b:hashable a): lbseq (tagLength a) =
   let tag = finish acc in
   tag
 
-noextract 
-abstract 
-let hash (a:alg13) (b: hashable a): lbseq (tagLength a) = spec a b 
+// TODO most users of the spec would prefer an opaque specification.
+// noextract abstract let hash (a:alg13) (b: hashable a): lbseq (tagLength a) = spec a b 
+
 
 (* ABSTRACT, EXTERNAL SPECIFICATION *) 
 
@@ -199,67 +228,56 @@ let bptrlen (b:bptr) = len:UInt32.t {UInt32.v len = Buffer.length b}
 // and rely on the implicit cast in C
 *)
 
+
+// experimenting with buffer abstraction--not so light.
+val state_word: alg13 -> Type0
+val state_zero: a: alg13 -> state_word a
 val state_size: alg13 -> UInt32.t 
 
 noextract 
-let state (a:alg13) =
+let state (a:alg13) = 
+  b: Buffer.buffer (state_word a) {Buffer.length b = v (state_size a)}
+
+(* the more concrete pattern-matching below require more type annotations
   match a with
   | SHA256 -> b:Buffer.buffer UInt32.t {Buffer.length b = v (state_size SHA256)}
   | SHA384 -> b:Buffer.buffer UInt64.t {Buffer.length b = v (state_size SHA384)}
   | SHA512 -> b:Buffer.buffer UInt64.t {Buffer.length b = v (state_size SHA512)}
+*)
+noextract val as_acc: #a:alg13 -> h:HyperStack.mem -> state a -> acc a
 
-noextract val as_acc: #a:alg13 -> h:FStar.HyperStack.mem -> state a -> acc a
-
-val init:
-  a:alg13 -> 
+let init_t  
+  (a:alg13) =  
   st:state a -> Stack unit 
-  (requires fun h0 -> Buffer.live #(if a = SHA256 then UInt32.t else UInt64.t) h0 st)
+  (requires fun h0 -> Buffer.live h0 st)
   (ensures fun h0 () h1 -> 
-    Buffer.live #(if a = SHA256 then UInt32.t else UInt64.t) h1 st /\
-    Buffer.modifies_1 #(if a = SHA256 then UInt32.t else UInt64.t) st h0 h1  /\ 
+    Buffer.live  h1 st /\
+    Buffer.modifies_1 st h0 h1  /\ 
     as_acc h1 st == acc0 #a)
+
+val init: a:alg13 -> init_t a
+
+// Our SHA2 interface is parametric in its supported tag lengths:
+// 224,256, 384, or 512 bits. (This is convenient but arbitrary.)
+//
+// A flat interface would provide instead:
+// val init_SHA256: init_t SHA256
+// val init_SHA384: init_t SHA384
+// val init_SHA512: init_t SHA512
 
 val update:
   a:alg13 -> 
   st:state a -> 
-  block: lbptr (blockLength a) {Buffer.disjoint #(if a = SHA256 then UInt32.t else UInt64.t) st block} -> 
+  block: lbptr (blockLength a) {Buffer.disjoint st block} -> 
   Stack unit 
   (requires fun h0 -> 
-    Buffer.live #(if a = SHA256 then UInt32.t else UInt64.t) h0 st /\ 
+    Buffer.live h0 st /\ 
     Buffer.live h0 block)
   (ensures fun h0 () h1 -> 
-    Buffer.live #(if a = SHA256 then UInt32.t else UInt64.t) h1 st /\ 
+    Buffer.live h1 st /\ 
     Buffer.live h1 block /\
-    Buffer.modifies_1 #(if a = SHA256 then UInt32.t else UInt64.t) st h0 h1 /\ 
+    Buffer.modifies_1 st h0 h1 /\ 
     as_acc h1 st == compress (as_acc h0 st) (Buffer.as_seq h0 block))
-
-
-let rec lemma_hash2 
-  (#a: alg) 
-  (a0: acc a)
-  (b0 b1: (b:bseq{ Seq.length b % blockLength a = 0})): 
-  Tot 
-    (_:unit{hash2 a0 (Seq.append b0 b1) == hash2 (hash2 a0 b0) b1})
-    (decreases (Seq.length b0)) 
-=
-  if Seq.length b0 = 0 then (
-    Seq.lemma_empty b0;
-    Seq.append_empty_l b1 )
-  else (
-    let c,b0' = Seq.split b0 (blockLength a) in
-    let c',b' = Seq.split (Seq.append b0 b1) (blockLength a) in
-    Seq.append_assoc c b0' b1;
-    //Seq.lemma_split b0 (blockLength a);
-    //Seq.lemma_eq_intro (Seq.append b0 b1) (Seq.append c' b');
-    Seq.lemma_eq_intro c c';
-    Seq.lemma_eq_intro b' (Seq.append b0' b1);
-    lemma_hash2 (hash2 a0 c) b0' b1)
-
-let lemma_compress 
-  (#a: alg) 
-  (a0: acc a)
-  (c: lbseq (blockLength a)): 
-  Lemma (compress a0 c == hash2 a0 c) = ()
 
 
 // 18-03-03 update_multi is a parametric loop best left to the
@@ -268,40 +286,40 @@ let lemma_compress
 val update_multi:
   a:alg13 -> 
   st:state a -> 
-  blocks: bptr {Buffer.length blocks % blockLength a = 0 /\ Buffer.disjoint #(if a = SHA256 then UInt32.t else UInt64.t) st blocks} -> 
+  blocks: bptr {Buffer.length blocks % blockLength a = 0 /\ Buffer.disjoint st blocks} -> 
   len: UInt32.t {v len = Buffer.length blocks} -> 
   Stack unit 
   (requires fun h0 -> 
-    Buffer.live #(if a = SHA256 then UInt32.t else UInt64.t) h0 st /\ 
+    Buffer.live h0 st /\ 
     Buffer.live h0 blocks)
   (ensures fun h0 () h1 -> 
-    Buffer.live #(if a = SHA256 then UInt32.t else UInt64.t) h1 st /\ 
+    Buffer.live h1 st /\ 
     Buffer.live h1 blocks /\
-    Buffer.modifies_1 #(if a = SHA256 then UInt32.t else UInt64.t) st h0 h1 /\ 
+    Buffer.modifies_1 st h0 h1 /\ 
     as_acc h1 st == hash2 (as_acc h0 st) (Buffer.as_seq h0 blocks))
 
 // 18-03-05 note the *new length-passsing convention*
 // 18-03-03 it would be simpler to let the caller keep track of lengths!
 // 18-03-03 the last block is *never* complete, so there is room for the 1st byte of padding.
+#set-options "--z3rlimit 100"
 val update_last:
   a:alg13 -> 
   st:state a -> 
-  last: bptr {Buffer.length last <= blockLength a /\ Buffer.disjoint #(if a = SHA256 then UInt32.t else UInt64.t) st last} -> 
+  last: bptr {Buffer.length last <= blockLength a /\ Buffer.disjoint st last} -> 
   total_len: UInt32.t {
     let l = v total_len in 
     l <= maxLength a /\ 
     Buffer.length last = l % blockLength a } ->
   Stack unit 
   (requires fun h0 -> 
-    Buffer.live #(if a = SHA256 then UInt32.t else UInt64.t) h0 st /\ Buffer.live h0 last)
+    Buffer.live #(state_word a) h0 st /\ Buffer.live h0 last)
   (ensures fun h0 () h1 -> 
-    Buffer.live #(if a = SHA256 then UInt32.t else UInt64.t) h1 st /\ Buffer.live h1 last /\
-    Buffer.modifies_1 #(if a = SHA256 then UInt32.t else UInt64.t) st h0 h1 /\ 
-    as_acc h1 st == hash2 (as_acc h0 st) (Seq.append (Buffer.as_seq h0 last) (suffix a (v total_len))))
-      
-// forall (prior: lbseq l0).{:pattern (as_acc h0 st == hash2 (acc0 #a) prior)} 
-// ( as_acc h0 st == hash2 acc0 prior ==>
-// finish #a (as_acc h1 st) == spec a (Seq.append prior (Buffer.as_seq h0 last)) ))))
+    Buffer.live #(state_word a) h1 st /\ Buffer.live h1 last /\
+    Buffer.modifies_1 #(state_word a) st h0 h1 /\ (
+    let last0 = Buffer.as_seq h0 last in 
+    as_acc h1 st == hash2 (as_acc h0 st) (Seq.append last0 (suffix a (v total_len)))))
+// 18-04-13 typing above is brittle, not sure why
+
 
 // for HandshakeLog we will need a variant that copies the state,
 // finalizes, and extracts to compute successive hashes of the
@@ -311,15 +329,14 @@ val update_last:
 val extract: 
   a:alg13 -> 
   st:state a -> 
-  output: lbptr (tagLength a) {Buffer.disjoint #(if a = SHA256 then UInt32.t else UInt64.t) st output} -> 
+  output: lbptr (tagLength a) {Buffer.disjoint st output} -> 
   Stack unit 
   (requires fun h0 -> 
-    Buffer.live #(if a = SHA256 then UInt32.t else UInt64.t) h0 st /\ Buffer.live h0 output)
+    Buffer.live h0 st /\ Buffer.live h0 output)
   (ensures fun h0 () h1 -> 
-    Buffer.live #(if a = SHA256 then UInt32.t else UInt64.t) h1 st /\ Buffer.live h1 output /\
+    Buffer.live h1 st /\ Buffer.live h1 output /\
     Buffer.modifies_1 output h0 h1 /\ 
     Buffer.as_seq h1 output = finish (as_acc h0 st))
-
 
 
 (* ONE-SHOT IMPLEMENTATION; implementatable from the lower-level
@@ -342,7 +359,7 @@ val compute:
     Buffer.live h1 input /\ Buffer.live h1 output /\
     Buffer.modifies_1 output h0 h1 /\
     v len <= maxLength a /\ (* required for subtyping the RHS below *)
-    Buffer.as_seq h1 output = hash a (Buffer.as_seq h0 input))
+    Buffer.as_seq h1 output = spec a (Buffer.as_seq h0 input))
 
 // same as compute with permuted arguments; included for backward
 // compatibility with secure_api
@@ -360,7 +377,7 @@ val agile_hash:
     Buffer.live h1 input /\ Buffer.live h1 output /\
     Buffer.modifies_1 output h0 h1 /\
     v len <= maxLength a /\ (* required for subtyping the RHS below *)
-    Buffer.as_seq h1 output = hash a (Buffer.as_seq h0 input))
+    Buffer.as_seq h1 output = spec a (Buffer.as_seq h0 input))
  
 (* TODO a third, incremental-hash implementation. *)
 

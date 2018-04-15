@@ -10,23 +10,25 @@ module ST = FStar.HyperStack.ST
 
 // sanity check: the low-level API yields the same result as the basic one
 
-val compute256:
+[@"c_inline"] // due to variable-length stack allocation
+val compute': 
+  a: alg13 ->
   len: UInt32.t -> 
   text: lbptr (v len) -> 
-  tag: lbptr (tagLength SHA256){ disjoint text tag } -> Stack unit
+  tag: lbptr (tagLength a){ disjoint text tag } -> Stack unit
   (requires fun h0 -> 
     live h0 text /\ live h0 tag)
   (ensures fun h0 () h1 -> 
     live h1 text /\ live h1 tag /\
     modifies_1 tag h0 h1 /\
-    v len <= maxLength SHA256 /\ (* required for subtyping the RHS below *)
-    as_seq h1 tag = spec SHA256 (as_seq h0 text))
+    v len <= maxLength a /\ (* required for subtyping the RHS below *)
+    as_seq h1 tag = spec a (as_seq h0 text))
 
 #reset-options "--max_fuel 0 --z3rlimit 100"
-let compute256 len data tag = 
+[@"c_inline"] // due to variable-length stack allocation
+let compute' a len data tag = 
   push_frame();
-  let a: alg13 = SHA256 in 
-  let acc = Buffer.create 0ul (state_size a) in 
+  let acc = Buffer.create (state_zero a) (state_size a) in 
   assert_norm(v len <= maxLength a);
   let ll = len %^ blockLen a in
   let lb = len -^ ll  in
@@ -46,18 +48,37 @@ let compute256 len data tag =
     lemma_hash2 (acc0 #a) vblocks (vlast @| vsuffix); 
     Seq.append_assoc vblocks vlast vsuffix )
 
-
-val test: len: UInt32.t -> input: lbptr (v len) -> Stack unit
+val compute: 
+  a: alg13 ->
+  len: UInt32.t -> 
+  text: lbptr (v len) -> 
+  tag: lbptr (tagLength a){ disjoint text tag } -> Stack unit
   (requires fun h0 -> 
-    Buffer.length input = v len /\
-    Buffer.live h0 input)
-  (ensures fun h0 _ h1 -> Buffer.modifies_0 h0 h1)
+    live h0 text /\ live h0 tag)
+  (ensures fun h0 () h1 -> 
+    live h1 text /\ live h1 tag /\
+    modifies_1 tag h0 h1 /\
+    v len <= maxLength a /\ (* required for subtyping the RHS below *)
+    as_seq h1 tag = spec a (as_seq h0 text))
+let compute a len test tag = 
+  match a with 
+  | SHA256 -> compute a len test tag
+  | SHA384 -> compute a len test tag
+  | SHA512 -> compute a len test tag 
+  
+// we could similarly provide a shared implementation of 
+// the [update_multi loop from [update]
 
-let test len data = 
+val test: a: alg13 -> len: UInt32.t -> input: lbptr (v len) -> Stack unit
+  (requires fun h0 -> 
+    length input = v len /\
+    live h0 input)
+  (ensures fun h0 _ h1 -> modifies_0 h0 h1)
+
+let test a len data = 
   push_frame();
-  let a = SHA256 in 
-  let tag0 = Buffer.create 0uy (tagLen a) in
-  let tag1 = Buffer.create 0uy (tagLen a) in
-  compute a len data tag0;
-  compute256 len data tag1;
+  let tag0 = create 0uy (tagLen a) in
+  let tag1 = create 0uy (tagLen a) in
+  Crypto.Hash.compute a len data tag0;
+  compute a len data tag1;
   pop_frame()
