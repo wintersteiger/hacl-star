@@ -280,25 +280,21 @@ let hmac_core a acc mac key data len =
 let compute a mac key keylen data datalen =
   push_frame (); 
   assert_norm(pow2 32 <= maxLength a);
+  let keyblock = Buffer.create 0x00uy (blockLen a) in
+  wrap_key a keyblock key keylen;
   ( match a with 
   | SHA256 -> 
       push_frame();
-      let keyblock = Buffer.create 0x00uy (blockLen a) in
-      wrap_key a keyblock key keylen;
       let acc = Buffer.create (state_zero a) (state_size a) in 
       hmac_core SHA256 acc mac keyblock data datalen;
       pop_frame()
   | SHA384 -> 
       push_frame();
-      let keyblock = Buffer.create 0x00uy (blockLen a) in
-      wrap_key a keyblock key keylen;
       let acc = Buffer.create (state_zero a) (state_size a) in 
       hmac_core SHA384 acc mac keyblock data datalen;
       pop_frame()
   | SHA512 -> 
       push_frame();
-      let keyblock = Buffer.create 0x00uy (blockLen a) in
-      wrap_key a keyblock key keylen;
       let acc = Buffer.create (state_zero a) (state_size a) in 
       hmac_core SHA512 acc mac keyblock data datalen;
       pop_frame());

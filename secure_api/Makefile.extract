@@ -95,7 +95,7 @@ FSTAR += --lax
 # The entry points
 FSTAR_FILES=aead/Crypto.AEAD.Main.fst test/KrmlTest.fst \
   LowCProvider/fst/LowCProvider.fst LowCProvider/fst/HaclProvider.fst \
-  hkdf/Crypto.HKDF.fst hkdf/Crypto.Hash.Test.fst
+  hkdf/Crypto.Hash.fsti hkdf/Crypto.HMAC.fsti hkdf/Crypto.HKDF.fsti hkdf/Crypto.Hash.Test.fst
 
 EXTRACT='* -FStar -CryptoTypes'
 # Automatic dependency analysis; the hack forces this target to be rebuilt
