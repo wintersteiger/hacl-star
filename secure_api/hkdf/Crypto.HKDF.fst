@@ -64,8 +64,8 @@ let rec hkdf_expand_loop a okm prk prklen infolen len hashed i =
   let tlen = tagLen a in 
   let tag = Buffer.sub hashed 0ul tlen in 
   let info_counter = Buffer.offset hashed tlen in 
-  // let hashed1 = Buffer.sub hashed (tagLen a) (infolen +^ 1ul) in
-  let info, counter = Buffer.split info_counter infolen in
+  let info = Buffer.sub info_counter 0ul infolen in
+  let counter = Buffer.offset info_counter infolen in 
   assert(disjoint tag info /\ disjoint tag counter /\ disjoint info counter);
 
   let i' = FStar.UInt8.(i +^ 1uy) in

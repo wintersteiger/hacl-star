@@ -72,6 +72,7 @@ let suffix a l =
 
 let lemma_hash_spec a b = ()
 
+(* temporarily transparent:
 let state_word a = 
   match a with 
   | SHA256 -> UInt32.t
@@ -82,6 +83,7 @@ let state_zero a =
   | SHA256 -> 0ul
   | SHA384  
   | SHA512 -> 0UL
+  *)
 let state_size a =
   match a with 
   | SHA256 -> Hacl.Hash.SHA2_256.size_state

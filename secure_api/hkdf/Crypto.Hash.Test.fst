@@ -24,7 +24,7 @@ val compute':
     v len <= maxLength a /\ (* required for subtyping the RHS below *)
     as_seq h1 tag = spec a (as_seq h0 text))
 
-#reset-options "--max_fuel 0 --z3rlimit 100"
+#reset-options "--max_fuel 0 --z3rlimit 300"
 [@"c_inline"] // due to variable-length stack allocation
 let compute' a len data tag = 
   push_frame();

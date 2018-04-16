@@ -229,11 +229,27 @@ let bptrlen (b:bptr) = len:UInt32.t {UInt32.v len = Buffer.length b}
 *)
 
 
-// experimenting with buffer abstraction--not so light.
-val state_word: alg13 -> Type0
-val state_zero: a: alg13 -> state_word a
-val state_size: alg13 -> UInt32.t 
 
+(* temporarily transparent: 
+// experimenting with buffer abstraction--not so light.
+// this fails: abstraction cause extraction errors/
+inline_for_extraction val state_word: alg13 -> Type0
+inline_for_extraction val state_zero: a: alg13 -> state_word a
+inline_for_extraction val state_size: alg13 -> UInt32.t 
+*)
+
+let state_word (a:alg13) = 
+  match a with 
+  | SHA256 -> UInt32.t
+  | SHA384 -> UInt64.t
+  | SHA512 -> UInt64.t
+let state_zero (a:alg13): state_word a = 
+  match a with 
+  | SHA256 -> 0ul
+  | SHA384  
+  | SHA512 -> 0UL
+val state_size: alg13 -> UInt32.t
+ 
 noextract 
 let state (a:alg13) = 
   b: Buffer.buffer (state_word a) {Buffer.length b = v (state_size a)}

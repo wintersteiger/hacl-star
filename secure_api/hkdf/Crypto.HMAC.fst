@@ -146,8 +146,7 @@ let part1 a (acc: state a) key data len =
     Seq.append_assoc v2 last1 suffix1; 
     Seq.append_assoc key1 blocks1 last1;
     assert(acc3 == hash0 #a ((key1 @| data1) @| suffix1));
-    assert(finish acc3 == spec a (key1 @| data1))
-    )
+    assert(finish acc3 == spec a (key1 @| data1)))
 
 // the two parts have the same stucture; let's keep their proofs in sync. 
 [@"substitute"]
@@ -285,17 +284,18 @@ let compute a mac key keylen data datalen =
   ( match a with 
   | SHA256 -> 
       push_frame();
-      let acc = Buffer.create (state_zero a) (state_size a) in 
+      // 18-04-15 hardcoding the type to prevent extraction errors :(
+      let acc = Buffer.create #UInt32.t (state_zero a) (state_size a) in 
       hmac_core SHA256 acc mac keyblock data datalen;
       pop_frame()
   | SHA384 -> 
       push_frame();
-      let acc = Buffer.create (state_zero a) (state_size a) in 
+      let acc = Buffer.create #UInt64.t (state_zero a) (state_size a) in 
       hmac_core SHA384 acc mac keyblock data datalen;
       pop_frame()
   | SHA512 -> 
       push_frame();
-      let acc = Buffer.create (state_zero a) (state_size a) in 
+      let acc = Buffer.create #UInt64.t (state_zero a) (state_size a) in 
       hmac_core SHA512 acc mac keyblock data datalen;
       pop_frame());
   pop_frame ()
