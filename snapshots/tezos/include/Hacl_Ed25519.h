@@ -74,6 +74,12 @@ typedef void *Hacl_Bignum25519_seqelem;
 
 typedef uint64_t *Hacl_Impl_Ed25519_ExtPoint_point;
 
+typedef uint64_t *Hacl_Impl_Ed25519_SwapConditional_felem;
+
+typedef uint8_t *Hacl_Impl_Ed25519_Ladder_Step_uint8_p;
+
+typedef uint64_t *Hacl_Impl_Ed25519_Ladder_elemB;
+
 typedef uint8_t *Hacl_Impl_Store51_uint8_p;
 
 typedef uint64_t *Hacl_Impl_Store51_felem;
@@ -82,11 +88,15 @@ typedef uint8_t *Hacl_Impl_Ed25519_PointCompress_hint8_p;
 
 typedef uint64_t *Hacl_Impl_Ed25519_PointCompress_hint64_p;
 
-typedef uint64_t *Hacl_Impl_Ed25519_SwapConditional_felem;
+typedef uint64_t *Hacl_Impl_Ed25519_RecoverX_elemB;
 
-typedef uint8_t *Hacl_Impl_Ed25519_Ladder_Step_uint8_p;
+typedef uint32_t Hacl_Impl_Load51_u32;
 
-typedef uint64_t *Hacl_Impl_Ed25519_Ladder_elemB;
+typedef uint8_t Hacl_Impl_Load51_h8;
+
+typedef uint64_t Hacl_Impl_Load51_h64;
+
+typedef uint8_t *Hacl_Impl_Load51_hint8_p;
 
 typedef uint8_t *Hacl_Hash_Lib_LoadStore_uint8_p;
 
@@ -180,16 +190,6 @@ typedef uint64_t Hacl_Impl_Load56_h64;
 
 typedef uint8_t *Hacl_Impl_Load56_hint8_p;
 
-typedef uint64_t *Hacl_Impl_Ed25519_RecoverX_elemB;
-
-typedef uint32_t Hacl_Impl_Load51_u32;
-
-typedef uint8_t Hacl_Impl_Load51_h8;
-
-typedef uint64_t Hacl_Impl_Load51_h64;
-
-typedef uint8_t *Hacl_Impl_Load51_hint8_p;
-
 typedef uint8_t *Hacl_Impl_Store56_hint8_p;
 
 typedef uint64_t *Hacl_Impl_Store56_qelem;
@@ -227,4 +227,13 @@ void Hacl_Ed25519_sign(uint8_t *signature, uint8_t *secret, uint8_t *msg, uint32
 bool Hacl_Ed25519_verify(uint8_t *public, uint8_t *msg, uint32_t len1, uint8_t *signature);
 
 void Hacl_Ed25519_secret_to_public(uint8_t *out, uint8_t *secret);
+
+void Hacl_Ed25519_secret_to_public_expanded(uint8_t *out, uint8_t *secret_expanded);
+
+bool Hacl_Ed25519_point_add_compressed(uint8_t *o, uint8_t *p11, uint8_t *p21);
+
+bool Hacl_Ed25519_point_mul_compressed(uint8_t *o, uint8_t *scalar, uint8_t *p10);
+
+void
+Hacl_Ed25519_sign_expanded(uint8_t *signature, uint8_t *secret, uint8_t *msg, uint32_t len1);
 #endif

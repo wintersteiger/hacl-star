@@ -47,3 +47,40 @@ val secret_to_public:
     (requires (fun h -> live h out /\ live h secret))
     (ensures (fun h0 _ h1 -> live h0 out /\ live h0 secret /\ live h1 out /\ modifies_1 out h0 h1 /\
       as_seq h1 out == Spec.Ed25519.secret_to_public h0.[secret]))
+
+val secret_to_public_expanded:
+  out:hint8_p{length out = 32} ->
+  expanded:hint8_p{length expanded = 64 /\ disjoint expanded out} ->
+  Stack unit
+    (requires (fun h -> live h out /\ live h expanded))
+    (ensures (fun h0 _ h1 -> live h0 out /\ live h1 out /\ modifies_1 out h0 h1))
+
+val point_add_compressed:
+  out:hint8_p{length out = 32} ->
+  in1:hint8_p{length out = 32} ->
+  in2:hint8_p{length out = 32} ->
+  Stack bool
+    (requires (fun h -> live h in1 /\ live h in2 /\ live h out))
+    (ensures (fun h0 _ h1 -> live h1 in1 /\ live h1 in2 /\ live h1 out /\ modifies_1 out h0 h1))
+
+
+val point_mul_compressed:
+  out:hint8_p{length out = 32} ->
+  in1:hint8_p{length out = 32} ->
+  in2:hint8_p{length out = 32} ->
+  Stack bool
+    (requires (fun h -> live h in1 /\ live h in2 /\ live h out))
+    (ensures (fun h0 _ h1 -> live h1 in1 /\ live h1 in2 /\ live h1 out /\ modifies_1 out h0 h1))
+
+
+val sign_expanded:
+  signature:hint8_p{length signature = 64} ->
+  secret:hint8_p{length secret = 64} ->
+  msg:hint8_p{length msg < pow2 32 - 64} ->
+  len:UInt32.t{UInt32.v len = length msg} ->
+  Stack unit
+    (requires (fun h -> live h signature /\ live h msg /\ live h secret))
+    (ensures (fun h0 _ h1 -> live h0 signature /\ live h0 msg /\ live h0 secret /\
+      live h1 signature /\ modifies_1 signature h0 h1))
+
+

@@ -70,9 +70,21 @@ let secret_to_public_ out secret expanded_secret =
   pop_frame()
 
 
+#reset-options "--max_fuel 0 --z3rlimit 100"
+
 let secret_to_public out secret =
   push_frame();
   let expanded = create (Hacl.Cast.uint8_to_sint8 0uy) 64ul in
   secret_expand expanded secret;
   secret_to_public_ out secret expanded;
   pop_frame()
+
+let secret_to_public_expanded out expanded_secret =
+  let a               = sub expanded_secret 0ul 32ul in
+  push_frame();
+  let res             = create (Hacl.Cast.uint64_to_sint64 0uL) 20ul in
+  point_mul_g res a;
+  point_compress out res;
+  pop_frame()
+
+

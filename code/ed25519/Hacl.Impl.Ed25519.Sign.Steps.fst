@@ -217,6 +217,20 @@ let sign_step_1 secret tmp_bytes =
   no_upd_lemma_1 h1 h2 a'' prefix
 
 
+let sign_step_1_expanded secret tmp_bytes =
+  let a''  = Buffer.sub tmp_bytes 96ul  32ul in
+  let apre = Buffer.sub tmp_bytes 224ul 64ul in
+  let a      = Buffer.sub apre 0ul 32ul in
+  let prefix = Buffer.sub apre 32ul 32ul in
+  let h0 = ST.get() in
+  copy_bytes apre secret 64ul;
+  let h1 = ST.get() in
+  point_mul_g_compress a'' a;
+  let h2 = ST.get() in
+  no_upd_lemma_1 h1 h2 a'' a;
+  no_upd_lemma_1 h1 h2 a'' prefix
+
+
 #reset-options "--max_fuel 0 --z3rlimit 20"
 
 [@ "substitute"]

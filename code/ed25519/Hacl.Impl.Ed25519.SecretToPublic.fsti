@@ -21,3 +21,10 @@ val secret_to_public:
     (requires (fun h -> live h out /\ live h secret))
     (ensures (fun h0 _ h1 -> live h0 out /\ live h0 secret /\ live h1 out /\ modifies_1 out h0 h1 /\
       h1.[out] == Spec.Ed25519.secret_to_public h0.[secret]))
+
+val secret_to_public_expanded:
+  out:hint8_p{length out = 32} ->
+  expanded:hint8_p{length expanded = 64 /\ disjoint expanded out} ->
+  Stack unit
+    (requires (fun h -> live h out /\ live h expanded))
+    (ensures (fun h0 _ h1 -> live h0 out /\ live h1 out /\ modifies_1 out h0 h1))

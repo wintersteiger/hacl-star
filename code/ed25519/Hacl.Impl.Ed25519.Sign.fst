@@ -126,6 +126,60 @@ let sign__ signature secret msg len tmp_bytes tmp_ints =
   ()
 
 
+[@ "substitute"]
+private
+val sign__expanded:
+  signature:hint8_p{length signature = 64} ->
+  secret:hint8_p{length secret = 64} ->
+  msg:hint8_p{length msg < pow2 32 - 64} ->
+  len:UInt32.t{UInt32.v len = length msg} ->
+  tmp_bytes:hint8_p{length tmp_bytes = 352 /\ disjoint tmp_bytes signature /\ disjoint tmp_bytes secret /\ disjoint tmp_bytes msg} ->
+  tmp_ints:buffer Hacl.UInt64.t{length tmp_ints = 65 /\ disjoint tmp_ints tmp_bytes /\ disjoint tmp_ints signature /\ disjoint tmp_ints secret /\ disjoint tmp_ints msg} ->
+  Stack unit
+    (requires (fun h -> live h signature /\ live h msg /\ live h secret /\
+      live h tmp_bytes /\ live h tmp_ints))
+    (ensures (fun h0 _ h1 -> live h0 signature /\ live h0 msg /\ live h0 secret /\
+      live h1 signature /\ modifies_3 signature tmp_bytes tmp_ints h0 h1))
+
+
+#reset-options "--max_fuel 0 --z3rlimit 500"
+
+// TODO: REFACTOR THIS CODE AND VERIFY
+let sign__expanded signature secret msg len tmp_bytes tmp_ints =
+  assert_norm(pow2 56 = 0x100000000000000);
+  assert_norm(Spec.Ed25519.q = 0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed);
+  assert_norm(pow2 256 = 0x10000000000000000000000000000000000000000000000000000000000000000);
+  let r    = Buffer.sub tmp_ints 20ul 5ul  in
+  let h    = Buffer.sub tmp_ints 60ul 5ul  in
+  let rs'  = Buffer.sub tmp_bytes 160ul 32ul in
+  let s'   = Buffer.sub tmp_bytes 192ul 32ul in
+  let h0 = ST.get() in
+  sign_step_1_expanded secret tmp_bytes;
+  let h1 = ST.get() in
+  no_upd_lemma_1 h0 h1 tmp_bytes msg;
+  no_upd_lemma_1 h0 h1 tmp_bytes tmp_ints;
+  sign_step_2 msg len tmp_bytes tmp_ints;
+  let h2 = ST.get() in
+  no_upd_lemma_1 h1 h2 tmp_ints msg;
+  no_upd_lemma_1 h1 h2 tmp_ints tmp_bytes;
+  sign_step_3 tmp_bytes tmp_ints;
+  let h3 = ST.get() in
+  no_upd_lemma_1 h2 h3 tmp_bytes msg;
+  no_upd_lemma_1 h2 h3 tmp_bytes tmp_ints;
+  sign_step_4 msg len tmp_bytes tmp_ints;
+  let h4 = ST.get() in
+  no_upd_lemma_1 h2 h3 tmp_bytes msg;
+  no_upd_lemma_1 h2 h3 tmp_bytes tmp_ints;
+  assert(Hacl.Spec.BignumQ.Eval.eval_q (reveal_h64s (as_seq h4 r)) < 0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed);
+  assert(Hacl.Spec.BignumQ.Eval.eval_q (reveal_h64s (as_seq h4 h)) < 0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed);
+  sign_step_5 tmp_bytes tmp_ints;
+  let h5 = ST.get() in
+  append_to_sig signature rs' s';
+  let h6 = ST.get() in
+  lemma_modifies_3 h0 h1 h2 h3 h4 h5 h6 signature tmp_bytes tmp_ints;
+  ()
+
+
 #reset-options "--max_fuel 0 --z3rlimit 20"
 
 
@@ -186,6 +240,40 @@ let sign_ signature secret msg len =
   ()
 
 
+val sign_expanded_:
+  signature:hint8_p{length signature = 64} ->
+  secret:hint8_p{length secret = 64} ->
+  msg:hint8_p{length msg < pow2 32 - 64} ->
+  len:UInt32.t{UInt32.v len = length msg} ->
+  Stack unit
+    (requires (fun h -> live h signature /\ live h msg /\ live h secret))
+    (ensures (fun h0 _ h1 -> live h0 signature /\ live h0 msg /\ live h0 secret /\
+      live h1 signature /\ modifies_1 signature h0 h1))
+
+#reset-options "--max_fuel 0 --z3rlimit 100"
+
+let sign_expanded_ signature secret msg len =
+  let hh0 = ST.get() in
+  push_frame();
+  let hh1 = ST.get() in
+  let tmp_bytes = Buffer.create (Hacl.Cast.uint8_to_sint8 0uy) (352ul) in
+  let h0 = ST.get() in
+  push_frame();
+  let h1 = ST.get() in
+  let tmp_ints  = Buffer.create (Hacl.Cast.uint64_to_sint64 0uL) 65ul in
+  let h2 = ST.get() in
+  no_upd_lemma_0 h1 h2 secret;
+  no_upd_lemma_0 h1 h2 msg;
+  sign__expanded signature secret msg len tmp_bytes tmp_ints;
+  let h3 = ST.get() in
+  pop_frame();
+  let h4 = ST.get() in
+  lemma_modifies_3_to_modifies_2 h0 h1 h2 h3 h4 signature tmp_bytes tmp_ints;
+  pop_frame();
+  let hh1 = ST.get() in
+  ()
+
+
 val sign:
   signature:hint8_p{length signature = 64} ->
   secret:hint8_p{length secret = 32} ->
@@ -201,3 +289,18 @@ val sign:
 
 let sign signature secret msg len =
   sign_ signature secret msg len
+
+val sign_expanded:
+  signature:hint8_p{length signature = 64} ->
+  secret:hint8_p{length secret = 64} ->
+  msg:hint8_p{length msg < pow2 32 - 64} ->
+  len:UInt32.t{UInt32.v len = length msg} ->
+  Stack unit
+    (requires (fun h -> live h signature /\ live h msg /\ live h secret))
+    (ensures (fun h0 _ h1 -> live h0 signature /\ live h0 msg /\ live h0 secret /\
+      live h1 signature /\ modifies_1 signature h0 h1))
+
+#reset-options "--max_fuel 0 --z3rlimit 20"
+
+let sign_expanded signature secret msg len =
+  sign_expanded_ signature secret msg len
