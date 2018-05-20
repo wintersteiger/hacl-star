@@ -1,5 +1,5 @@
-#include "testlib.h"
-#include "Random.h"
+#include "kremlin/testlib.h"
+#include "Hacl_Unverified_Random.h"
 #include "Hacl_RSAPSS.h"
 #include "openssl/opensslv.h"
 #include "openssl/err.h"
@@ -328,7 +328,7 @@ test_rsapss()
       msg);
   bool res = check_sgnt && verify_sgnt;
   printf("\n Unit-test: %d \n", res);
-  return exit_success;
+  return res;
 }
 
 bool
@@ -479,7 +479,7 @@ int perf_rsapss() {
   // Message
   const size_t msg_len = 256;
   uint8_t msg[msg_len];
-  random_bytes(msg,msg_len);
+  randombytes(msg,msg_len);
 
   // Sgnt
   uint8_t sgnt[256U];
@@ -551,14 +551,14 @@ int perf_rsapss() {
   double ratio2 = (double) (t1 - t0) / (t3 - t2);
   printf("\n Ratio =  %lf \n", ratio2);
  
-  return 0;
+  return 1;
 }
 
 int32_t main(int argc, char *argv[])
 {
   if (argc < 2 || strcmp(argv[1], "perf") == 0 ) {
     int32_t res = test_rsapss();
-    if (res == exit_success) {
+    if (res) {
       res = perf_rsapss();
     }
     return res;
@@ -566,6 +566,6 @@ int32_t main(int argc, char *argv[])
     return test_rsapss();
   } else {
     printf("Error: expected arguments 'perf' (default) or 'unit-test'.\n");
-    return exit_failure;
+    return 0;
   }
 }
