@@ -27,7 +27,7 @@
 inline static void Hacl_Impl_Chacha20_Vec128_State_state_incr(vec *k)
 {
   vec k3 = k[3U];
-  k[3U] = vec_add(k3, one_le);
+  k[3U] = vec_increment(k3);
 }
 
 inline static void
@@ -182,10 +182,10 @@ inline static void Hacl_Impl_Chacha20_Vec128_chacha20_core3(vec *k0, vec *k1, ve
 
 inline static void Hacl_Impl_Chacha20_Vec128_chacha20_block(uint8_t *stream_block, vec *st)
 {
-  KRML_CHECK_SIZE(zero, (uint32_t)4U);
+  KRML_CHECK_SIZE(sizeof(vec_zero()), (uint32_t)4U);
   vec k[4U];
   for (uint32_t _i = 0U; _i < (uint32_t)4U; ++_i)
-    k[_i] = zero;
+    k[_i] = vec_zero();
   Hacl_Impl_Chacha20_Vec128_chacha20_core(k, st);
   Hacl_Impl_Chacha20_Vec128_State_state_to_key_block(stream_block, k);
 }
@@ -210,19 +210,6 @@ Hacl_Impl_Chacha20_Vec128_update_last(uint8_t *output, uint8_t *plain, uint32_t 
   }
 }
 
-static void
-Hacl_Impl_Chacha20_Vec128_store_4_vec(uint8_t *output, vec v0, vec v1, vec v2, vec v3)
-{
-  uint8_t *o0 = output;
-  uint8_t *o1 = output + (uint32_t)16U;
-  uint8_t *o2 = output + (uint32_t)32U;
-  uint8_t *o3 = output + (uint32_t)48U;
-  vec_store_le(o0, v0);
-  vec_store_le(o1, v1);
-  vec_store_le(o2, v2);
-  vec_store_le(o3, v3);
-}
-
 static void Hacl_Impl_Chacha20_Vec128_xor_block(uint8_t *output, uint8_t *plain, vec *st)
 {
   vec p0 = vec_load_le(plain);
@@ -233,37 +220,44 @@ static void Hacl_Impl_Chacha20_Vec128_xor_block(uint8_t *output, uint8_t *plain,
   vec k1 = st[1U];
   vec k2 = st[2U];
   vec k3 = st[3U];
-  vec o0 = vec_xor(p0, k0);
-  vec o1 = vec_xor(p1, k1);
-  vec o2 = vec_xor(p2, k2);
-  vec o3 = vec_xor(p3, k3);
-  Hacl_Impl_Chacha20_Vec128_store_4_vec(output, o0, o1, o2, o3);
+  vec o00 = vec_xor(p0, k0);
+  vec o10 = vec_xor(p1, k1);
+  vec o20 = vec_xor(p2, k2);
+  vec o30 = vec_xor(p3, k3);
+  uint8_t *o0 = output;
+  uint8_t *o1 = output + (uint32_t)16U;
+  uint8_t *o2 = output + (uint32_t)32U;
+  uint8_t *o3 = output + (uint32_t)48U;
+  vec_store_le(o0, o00);
+  vec_store_le(o1, o10);
+  vec_store_le(o2, o20);
+  vec_store_le(o3, o30);
 }
 
 static void Hacl_Impl_Chacha20_Vec128_update(uint8_t *output, uint8_t *plain, vec *st)
 {
-  KRML_CHECK_SIZE(zero, (uint32_t)4U);
+  KRML_CHECK_SIZE(sizeof(vec_zero()), (uint32_t)4U);
   vec k[4U];
   for (uint32_t _i = 0U; _i < (uint32_t)4U; ++_i)
-    k[_i] = zero;
+    k[_i] = vec_zero();
   Hacl_Impl_Chacha20_Vec128_chacha20_core(k, st);
   Hacl_Impl_Chacha20_Vec128_xor_block(output, plain, k);
 }
 
 static void Hacl_Impl_Chacha20_Vec128_update3(uint8_t *output, uint8_t *plain, vec *st)
 {
-  KRML_CHECK_SIZE(zero, (uint32_t)4U);
+  KRML_CHECK_SIZE(sizeof(vec_zero()), (uint32_t)4U);
   vec k0[4U];
   for (uint32_t _i = 0U; _i < (uint32_t)4U; ++_i)
-    k0[_i] = zero;
-  KRML_CHECK_SIZE(zero, (uint32_t)4U);
+    k0[_i] = vec_zero();
+  KRML_CHECK_SIZE(sizeof(vec_zero()), (uint32_t)4U);
   vec k1[4U];
   for (uint32_t _i = 0U; _i < (uint32_t)4U; ++_i)
-    k1[_i] = zero;
-  KRML_CHECK_SIZE(zero, (uint32_t)4U);
+    k1[_i] = vec_zero();
+  KRML_CHECK_SIZE(sizeof(vec_zero()), (uint32_t)4U);
   vec k2[4U];
   for (uint32_t _i = 0U; _i < (uint32_t)4U; ++_i)
-    k2[_i] = zero;
+    k2[_i] = vec_zero();
   Hacl_Impl_Chacha20_Vec128_chacha20_core3(k0, k1, k2, st);
   uint8_t *p0 = plain;
   uint8_t *p1 = plain + (uint32_t)64U;
@@ -365,11 +359,10 @@ Hacl_Impl_Chacha20_Vec128_chacha20(
   uint32_t ctr
 )
 {
-  KRML_CHECK_SIZE(zero, (uint32_t)4U);
-  vec buf[4U];
+  KRML_CHECK_SIZE(sizeof(vec_zero()), (uint32_t)4U);
+  vec st[4U];
   for (uint32_t _i = 0U; _i < (uint32_t)4U; ++_i)
-    buf[_i] = zero;
-  vec *st = buf;
+    st[_i] = vec_zero();
   Hacl_Impl_Chacha20_Vec128_init(st, k, n1, ctr);
   Hacl_Impl_Chacha20_Vec128_chacha20_counter_mode(output, plain, len, st);
 }

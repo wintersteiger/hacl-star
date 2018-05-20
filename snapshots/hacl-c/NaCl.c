@@ -295,24 +295,10 @@ Hacl_Box_ZeroPad_crypto_box_open_easy_afternm(
   uint8_t *k1
 )
 {
-  uint8_t *mac = c;
+  uint8_t *mac = c + (uint32_t)16U;
   uint32_t t = Hacl_Box_ZeroPad_crypto_box_open_detached_afternm(m, c, mac, mlen, n1, k1);
   return t;
 }
-
-Prims_int NaCl_crypto_box_NONCEBYTES = (krml_checked_int_t)24;
-
-Prims_int NaCl_crypto_box_PUBLICKEYBYTES = (krml_checked_int_t)32;
-
-Prims_int NaCl_crypto_box_SECRETKEYBYTES = (krml_checked_int_t)32;
-
-Prims_int NaCl_crypto_box_MACBYTES = (krml_checked_int_t)16;
-
-Prims_int NaCl_crypto_secretbox_NONCEBYTES = (krml_checked_int_t)24;
-
-Prims_int NaCl_crypto_secretbox_KEYBYTES = (krml_checked_int_t)32;
-
-Prims_int NaCl_crypto_secretbox_MACBYTES = (krml_checked_int_t)16;
 
 uint32_t
 NaCl_crypto_secretbox_detached(

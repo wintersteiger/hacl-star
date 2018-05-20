@@ -32,7 +32,7 @@ clean:
 KREMLIN_ARGS+= \
 		-verbose -tmpdir hmac-c \
 		-I $(HACL_HOME)/code/hash \
-		-drop Prims \
+		-drop FStar,Prims,C.Loops.Spec.Loops \
 		-drop Hacl.Cast,Hacl.UInt8,Hacl.UInt16,Hacl.UInt32,Hacl.UInt64,Hacl.UInt128 \
 		-drop Hacl.Spec.Endianness,Hacl.Endianness,Seq.Create,Spec.*,Hacl.Impl.SHA2_256.Lemmas \
 		-bundle "Hacl.HMAC.SHA2_256=Hacl.Hash.Lib.Create,Hacl.Hash.Lib.LoadStore,Hacl.Impl.SHA2_256,Hacl.Impl.HMAC.SHA2_256,Hacl.HMAC.SHA2_256" \
@@ -40,11 +40,11 @@ KREMLIN_ARGS+= \
 		$(KREMLIN_TESTLIB)
 
 hmac-c/out.krml: Hacl.HMAC.SHA2_256.fst Hacl.Test.HMAC.SHA2_256.fst
-	$(KREMLIN) $(KREMLIN_ARGS) -skip-translation -no-prefix Hacl.HMAC.SHA2_256 \
+	$(KREMLIN) $(KREMLIN_ARGS) -skip-translation \
 	$^ -o $@
 
 hmac-c/Hacl_HMAC_SHA2_256.c: hmac-c/out.krml
-	$(KREMLIN) $(KREMLIN_ARGS) -skip-compilation -no-prefix Hacl.HMAC.SHA2_256 \
+	$(KREMLIN) $(KREMLIN_ARGS) -skip-compilation \
 		$^ -o $@
 
 test-hmac_sha2_256.exe: hmac-c/out.krml

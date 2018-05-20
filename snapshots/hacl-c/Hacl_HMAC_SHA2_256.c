@@ -48,6 +48,7 @@ Hacl_Hash_Lib_LoadStore_uint32s_to_be_bytes(uint8_t *output, uint32_t *input, ui
 
 static void Hacl_Impl_SHA2_256_init(uint32_t *state)
 {
+  uint32_t *n1 = state + (uint32_t)136U;
   uint32_t *k1 = state;
   uint32_t *h_01 = state + (uint32_t)128U;
   uint32_t *p10 = k1;
@@ -152,6 +153,7 @@ static void Hacl_Impl_SHA2_256_init(uint32_t *state)
   p2[1U] = (uint32_t)0x9b05688cU;
   p2[2U] = (uint32_t)0x1f83d9abU;
   p2[3U] = (uint32_t)0x5be0cd19U;
+  n1[0U] = (uint32_t)0U;
 }
 
 static void Hacl_Impl_SHA2_256_update(uint32_t *state, uint8_t *data)
@@ -192,7 +194,7 @@ static void Hacl_Impl_SHA2_256_update(uint32_t *state, uint8_t *data)
     uint32_t c = hash_0[2U];
     uint32_t d = hash_0[3U];
     uint32_t e = hash_0[4U];
-    uint32_t f1 = hash_0[5U];
+    uint32_t f = hash_0[5U];
     uint32_t g = hash_0[6U];
     uint32_t h = hash_0[7U];
     uint32_t kt = k_w[i];
@@ -205,7 +207,7 @@ static void Hacl_Impl_SHA2_256_update(uint32_t *state, uint8_t *data)
         ^
           ((e >> (uint32_t)11U | e << ((uint32_t)32U - (uint32_t)11U))
           ^ (e >> (uint32_t)25U | e << ((uint32_t)32U - (uint32_t)25U))))
-      + ((e & f1) ^ (~e & g))
+      + ((e & f) ^ (~e & g))
       + kt
       + wst;
     uint32_t
@@ -225,7 +227,7 @@ static void Hacl_Impl_SHA2_256_update(uint32_t *state, uint8_t *data)
     p1[3U] = c;
     p2[0U] = x5;
     p2[1U] = e;
-    p2[2U] = f1;
+    p2[2U] = f;
     p2[3U] = g;
   }
   for (uint32_t i = (uint32_t)0U; i < (uint32_t)8U; i = i + (uint32_t)1U)
@@ -268,8 +270,9 @@ static void Hacl_Impl_SHA2_256_update_last(uint32_t *state, uint8_t *data, uint3
   pad0len = ((uint32_t)64U - (len + (uint32_t)8U + (uint32_t)1U) % (uint32_t)64U) % (uint32_t)64U;
   uint8_t *buf1 = padding;
   uint8_t *buf2 = padding + (uint32_t)1U + pad0len;
-  uint64_t
-  encodedlen = ((uint64_t)n1 * (uint64_t)(uint32_t)64U + (uint64_t)len) * (uint64_t)(uint32_t)8U;
+  uint64_t l_0 = (uint64_t)n1 * (uint64_t)(uint32_t)64U;
+  uint64_t l_1 = (uint64_t)len;
+  uint64_t encodedlen = (l_0 + l_1) * (uint64_t)(uint32_t)8U;
   buf1[0U] = (uint8_t)0x80U;
   store64_be(buf2, encodedlen);
   Hacl_Impl_SHA2_256_update_multi(state, final_blocks, nb);
@@ -356,12 +359,19 @@ Hacl_Impl_HMAC_SHA2_256_hmac(
   Hacl_Impl_HMAC_SHA2_256_hmac_core(mac, nkey, data, datalen);
 }
 
-void hmac_core(uint8_t *mac, uint8_t *key, uint8_t *data, uint32_t len)
+void Hacl_HMAC_SHA2_256_hmac_core(uint8_t *mac, uint8_t *key, uint8_t *data, uint32_t len)
 {
   Hacl_Impl_HMAC_SHA2_256_hmac_core(mac, key, data, len);
 }
 
-void hmac(uint8_t *mac, uint8_t *key, uint32_t keylen, uint8_t *data, uint32_t datalen)
+void
+Hacl_HMAC_SHA2_256_hmac(
+  uint8_t *mac,
+  uint8_t *key,
+  uint32_t keylen,
+  uint8_t *data,
+  uint32_t datalen
+)
 {
   Hacl_Impl_HMAC_SHA2_256_hmac(mac, key, keylen, data, datalen);
 }

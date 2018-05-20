@@ -2,9 +2,11 @@ UNAME := $(shell uname)
 .DEFAULT_GOAL=all
 
 ifndef HACL_HOME
-  HACL_HOME:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+	HACL_HOME:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+	HACL_HOME:=$(HACL_HOME:/=)
 else
-  HACL_HOME:=$(abspath $(HACL_HOME))
+	HACL_HOME:=$(abspath $(HACL_HOME))
+	HACL_HOME:=$(HACL_HOME:/=)
 endif
 
 ifndef FSTAR_HOME
@@ -55,6 +57,11 @@ KREMLIN_ARGS?=
 KREMLIN_ARGS+=$(KOPTS)
 KREMLIN_ARGS+=-I $(HACL_KREMLIN) -I $(KREMLIB) -I $(HACL_HOME)/specs -I .
 
+ifneq (,$(EVEREST_WINDOWS))
+KREMLIN_ARGS+=-falloca -ftail-calls -fnouint128 -drop FStar.UInt128 \
+  -add-early-include '"FStar_UInt128.h"'
+endif
+
 # Compiler options
 ifdef USE_CCOMP
   KREMLIN_ARGS+=-cc compcert $(VERBOSE)
@@ -68,17 +75,12 @@ endif
 ifdef HACL_RELEASE
   KREMLIN_TESTLIB=
 else
-  KREMLIN_TESTLIB=-add-include '"testlib.h"' $(KREMLIB)/testlib.c
+  KREMLIN_TESTLIB=-add-include '"kremlin/testlib.h"' $(KREMLIB)/testlib.c
 endif
 
 # License header
 ifdef HACL_LICENSE
   KREMLIN_ARGS+=-header $(HACL_LICENSE)
-endif
-
-# Linux specific compilation instruction for PneuTube
-ifeq ($(UNAME), Linux)
-  KREMLIN_ARGS+=-ccopt -D_GNU_SOURCE
 endif
 
 #
@@ -87,7 +89,7 @@ endif
 
 FSTAR_LIB=$(FSTAR_HOME)/ulib
 HINTS_ENABLED?=--use_hints
-FSTAR_INCLUDES+=--include $(HACL_KREMLIN) --include $(KREMLIB) --include $(HACL_HOME)/specs
+FSTAR_INCLUDES+=--include $(HACL_KREMLIN) --include $(KREMLIB) --include $(HACL_HOME)/specs --query_stats
 
 FSTAR=$(FSTAR_HOME)/bin/fstar.exe $(HINTS_ENABLED) $(OTHERFLAGS) $(FSTAR_INCLUDES)
 
@@ -127,6 +129,7 @@ GFIND=$(shell which gfind >/dev/null 2>&1 && echo gfind || echo find)
 
 ifeq ($(OS),Windows_NT)
   GCC=x86_64-w64-mingw32-gcc.exe
+  MSVC=cl.exe
 else
   GCC=$(shell which gcc-7 >/dev/null 2>&1 && echo gcc-7 || (which gcc-6 >/dev/null 2>&1 && echo gcc-6 || echo gcc))
   CMAKE_COMPILER_OPTION := -DCMAKE_C_COMPILER=$(GCC)
@@ -135,7 +138,7 @@ endif
 GCC_OPTS=$(ENABLE_LTO) -std=c11 -D_GNU_SOURCE
 
 #
-# HaCl* generalized targets
+# HACL* generalized targets
 #
 
 ml-lib:

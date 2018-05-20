@@ -15,7 +15,6 @@ open FStar.Int.Cast
 open FStar.Buffer
 
 (* Module abbreviations *)
-module HH = FStar.HyperHeap
 module HS = FStar.HyperStack
 
 module U8  = FStar.UInt8
@@ -215,6 +214,10 @@ private let rec access_aux: sb:sbox -> byte -> ctr:UInt32.t{v ctr <= 256} -> byt
 private val access: sb:sbox -> idx:byte -> STL byte
   (requires (fun h -> live h sb))
   (ensures  (fun h0 _ h1 -> h1 == h0))
+[@
+  (CPrologue "#ifdef _MSC_VER\n// Work around a /Ox code-gen bug in AES key expansion, in the MSVC compiler\n#pragma optimize(\"\", off)\n#pragma optimize(\"s\", on)\n#endif")
+  (CEpilogue "#ifdef _MSC_VER\n#pragma optimize(\"\", on)\n#endif")
+]
 let access sbox i =
   if Flag.aes_ct then access_aux sbox i 0ul 0uy
   else sbox.(Int.Cast.uint8_to_uint32 i)
@@ -239,7 +242,7 @@ private val subBytes_sbox: state:block -> sbox:sbox{disjoint state sbox} -> STL 
   (ensures  (fun h0 _ h1 -> modifies_1 state h0 h1 /\ live h1 state))
 let subBytes_sbox state sbox =
   subBytes_aux_sbox state sbox 0ul
-
+o
 private val shiftRows: state:block -> STL unit
   (requires (fun h -> live h state))
   (ensures  (fun h0 _ h1 -> live h1 state /\ modifies_1 state h0 h1))
