@@ -7,6 +7,8 @@
 
 #include "Hacl_RSAPSS.h"
 #include "Hacl_SHA2_256.h"
+#include <immintrin.h>
+#include <x86intrin.h>
 
 inline static bool Hacl_Impl_Lib_bn_is_bit_set(uint32_t len, uint64_t *input, uint32_t ind)
 {
@@ -36,13 +38,9 @@ inline static uint64_t Hacl_Impl_Lib_bval(uint32_t len, uint64_t *b, uint32_t i)
 inline static void Hacl_Impl_Lib_fill(uint32_t len, uint64_t *b, uint64_t z)
 {
   KRML_CHECK_SIZE(sizeof(z), len);
-  uint64_t buf[len];
-  for (uint32_t _i = 0U; _i < len; ++_i)
-    buf[_i] = z;
   for (uint32_t i = (uint32_t)0U; i < len; i = i + (uint32_t)1U)
   {
-    uint64_t src_i = buf[i];
-    b[i] = src_i;
+    b[i] = z;
   }
 }
 
@@ -151,50 +149,6 @@ typedef struct K___uint64_t_uint64_t_s
 }
 K___uint64_t_uint64_t;
 
-inline static K___uint64_t_uint64_t
-Hacl_Impl_Addition_addcarry_u64(uint64_t carry1, uint64_t a, uint64_t b)
-{
-  uint64_t t1 = a + carry1;
-  uint64_t carry2;
-  if (t1 < carry1)
-    carry2 = (uint64_t)1U;
-  else
-    carry2 = (uint64_t)0U;
-  uint64_t res = t1 + b;
-  uint64_t carry3;
-  if (res < t1)
-    carry3 = carry2 + (uint64_t)1U;
-  else
-    carry3 = carry2;
-  return ((K___uint64_t_uint64_t){ .fst = carry3, .snd = res });
-}
-
-inline static K___uint64_t_uint64_t
-Hacl_Impl_Addition_subborrow_u64(uint64_t carry1, uint64_t a, uint64_t b)
-{
-  uint64_t res = a - b - carry1;
-  uint64_t carry2;
-  if (carry1 == (uint64_t)1U)
-  {
-    uint64_t ite;
-    if (a <= b)
-      ite = (uint64_t)1U;
-    else
-      ite = (uint64_t)0U;
-    carry2 = ite;
-  }
-  else
-  {
-    uint64_t ite;
-    if (a < b)
-      ite = (uint64_t)1U;
-    else
-      ite = (uint64_t)0U;
-    carry2 = ite;
-  }
-  return ((K___uint64_t_uint64_t){ .fst = carry2, .snd = res });
-}
-
 inline static uint64_t
 Hacl_Impl_Addition_bn_sub(
   uint32_t aLen,
@@ -204,19 +158,11 @@ Hacl_Impl_Addition_bn_sub(
   uint64_t *res
 )
 {
-  uint64_t buf[1U] = { 0U };
-  for (uint32_t i = (uint32_t)0U; i < aLen; i = i + (uint32_t)1U)
-  {
-    uint64_t t1 = a[i];
-    uint64_t t2 = Hacl_Impl_Lib_bval(bLen, b, i);
-    K___uint64_t_uint64_t scrut = Hacl_Impl_Addition_subborrow_u64(buf[0U], t1, t2);
-    uint64_t c = scrut.fst;
-    uint64_t res_i = scrut.snd;
-    buf[0U] = c;
-    res[i] = res_i;
+  uint8_t carry2 = 0;
+  for(int i = 0; i < aLen; i++) {
+    carry2 = _subborrow_u64(carry2,Hacl_Impl_Lib_bval(bLen,b,i),a[i],&res[i]);
   }
-  uint64_t r = buf[0U];
-  return r;
+  return carry2;
 }
 
 inline static uint64_t
@@ -228,19 +174,11 @@ Hacl_Impl_Addition_bn_add(
   uint64_t *res
 )
 {
-  uint64_t buf[1U] = { 0U };
-  for (uint32_t i = (uint32_t)0U; i < aLen; i = i + (uint32_t)1U)
-  {
-    uint64_t t1 = a[i];
-    uint64_t t2 = Hacl_Impl_Lib_bval(bLen, b, i);
-    K___uint64_t_uint64_t scrut = Hacl_Impl_Addition_addcarry_u64(buf[0U], t1, t2);
-    uint64_t c = scrut.fst;
-    uint64_t res_i = scrut.snd;
-    buf[0U] = c;
-    res[i] = res_i;
+  uint8_t carry2 = 0;
+  for(int i = 0; i < aLen; i++) {
+    carry2 = _addcarry_u64(carry2,a[i],Hacl_Impl_Lib_bval(bLen,b,i),&res[i]);
   }
-  uint64_t r = buf[0U];
-  return r;
+  return carry2;
 }
 
 inline static K___uint64_t_uint64_t
@@ -561,10 +499,7 @@ Hacl_Impl_Montgomery_mont_reduction_a(
       c[ij] = res_ij1;
     }
     uint64_t c_ni = c[nLen + i0];
-    K___uint64_t_uint64_t scrut = Hacl_Impl_Addition_addcarry_u64((uint64_t)0U, c_ni, buf[0U]);
-    uint64_t c1 = scrut.fst;
-    uint64_t c_ni1 = scrut.snd;
-    c[nLen + i0] = c_ni1;
+    uint8_t c1 = _addcarry_u64(0,c_ni,buf[0U],&c[nLen+i0]);
     uint64_t c_ni11 = c[nLen + i0 + (uint32_t)1U];
     c[nLen + i0 + (uint32_t)1U] = c_ni11 + c1;
   }
