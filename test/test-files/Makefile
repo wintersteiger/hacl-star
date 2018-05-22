@@ -27,12 +27,11 @@ test-perf-rsapss: test-rsapss.exe
 	./test-rsapss.exe perf
 
 test-mult.exe:
-	$(CC) $(CFLAGS) -c $(KREMLIN_HOME)/kremlib/testlib.c -o testlib.o -I$(KREMLIN_HOME)/kremlib
-	$(CC) $(CFLAGS) -c $(KREMLIN_HOME)/kremlib/kremlib.c -o kremlib.o -I$(KREMLIN_HOME)/kremlib
-	$(CC) $(CFLAGS) -c Hacl_Mult.c -o Hacl_Mult.o -I$(KREMLIN_HOME)/kremlib
-	$(CC) $(CFLAGS) -c random.c -o random.o -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/snapshots/hacl-c-experimental
-	$(CC) $(CFLAGS) -c Hacl_Perf_Mult.c -o Hacl_Perf_Mult.o  -I$(KREMLIN_HOME)/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental
-	$(CC) $(CFLAGS) -o test-mult.exe random.o kremlib.o testlib.o Hacl_Mult.o Hacl_Perf_Mult.o -L$(OPENSSL_LIB) -I$(OPENSSL_INCLUDE) -I/opt/kremlin/kremlib -I$(HACL_HOME)/snapshots/hacl-c -I$(HACL_HOME)/snapshots/hacl-c-experimental -lcrypto
+	$(CC) $(CFLAGS) -c $(KREMLIN_HOME)/kremlib/testlib.c -o testlib.o
+	$(CC) $(CFLAGS) -c Hacl_Mult.c -o Hacl_Mult.o
+	$(CC) $(CFLAGS) -c $(HACL_HOME)/snapshots/hacl-c/Hacl_Unverified_Random.c -o Hacl_Unverified_Random.o
+	$(CC) $(CFLAGS) -c Hacl_Perf_Mult.c -o Hacl_Perf_Mult.o
+	$(CC) $(CFLAGS) -o test-mult.exe testlib.o Hacl_Unverified_Random.o Hacl_Mult.o Hacl_Perf_Mult.o -L$(OPENSSL_LIB) -I$(OPENSSL_INCLUDE) -lcrypto
 
 test-mult: test-mult.exe
 	./test-mult.exe

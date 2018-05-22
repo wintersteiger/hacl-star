@@ -3,39 +3,35 @@
 #ifndef __Hacl_RSAPSS_H
 #define __Hacl_RSAPSS_H
 
-bool Hacl_Impl_Lib_eq_b(Prims_nat len, uint32_t clen, uint64_t *b1, uint64_t *b2);
+bool Hacl_Impl_Lib_eq_b(uint32_t len, uint8_t *b1, uint8_t *b2);
 
-typedef struct 
-{
-  uint64_t fst;
-  uint64_t snd;
-}
-K___uint64_t_uint64_t;
-
+void Hacl_Impl_Convert_text_to_nat(uint32_t len, uint8_t *input, uint64_t *res);
 
 typedef enum { Hacl_Impl_Multiplication_Positive, Hacl_Impl_Multiplication_Negative }
 Hacl_Impl_Multiplication_sign;
 
+bool
+__eq__Hacl_Impl_Multiplication_sign(
+  Hacl_Impl_Multiplication_sign y,
+  Hacl_Impl_Multiplication_sign x
+);
+
 void
-Hacl_Impl_Multiplication_karatsuba(
+Hacl_Impl_Multiplication_karatsuba_(
   uint32_t k,
-  Prims_nat aLen,
   uint32_t pow2_i,
-  uint32_t iLen,
-  uint32_t aaLen,
+  uint32_t aLen,
   uint64_t *a,
   uint64_t *b,
-  uint64_t *st_mult,
+  uint64_t *tmp,
   uint64_t *res
 );
 
 void
 Hacl_Impl_Multiplication_bn_mul(
-  Prims_nat aLen,
-  Prims_nat bLen,
-  uint32_t aaLen,
+  uint32_t aLen,
   uint64_t *a,
-  uint32_t bbLen,
+  uint32_t bLen,
   uint64_t *b,
   uint64_t *res
 );
