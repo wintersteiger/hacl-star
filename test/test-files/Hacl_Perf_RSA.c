@@ -55,6 +55,54 @@ uint8_t n1[256U] =
 
 uint8_t e[3U] = { (uint8_t)0x01U, (uint8_t)0x00U, (uint8_t)0x01U };
 
+uint8_t
+  r2[256U] =
+    {
+      (uint8_t)0x4aU, (uint8_t)0x68U, (uint8_t)0x36U, (uint8_t)0x42U, (uint8_t)0xc4U, (uint8_t)0x4fU,
+      (uint8_t)0xc2U, (uint8_t)0xfbU, (uint8_t)0xb0U, (uint8_t)0xc4U, (uint8_t)0x5dU, (uint8_t)0x16U,
+      (uint8_t)0x47U, (uint8_t)0x7bU, (uint8_t)0x79U, (uint8_t)0xb5U, (uint8_t)0xddU, (uint8_t)0x61U,
+      (uint8_t)0x50U, (uint8_t)0x21U, (uint8_t)0x66U, (uint8_t)0xc1U, (uint8_t)0x13U, (uint8_t)0x7fU,
+      (uint8_t)0x43U, (uint8_t)0x68U, (uint8_t)0xd0U, (uint8_t)0x68U, (uint8_t)0x34U, (uint8_t)0x4aU,
+      (uint8_t)0x2cU, (uint8_t)0xf3U, (uint8_t)0xddU, (uint8_t)0x80U, (uint8_t)0x22U, (uint8_t)0xe6U,
+      (uint8_t)0xccU, (uint8_t)0xf1U, (uint8_t)0x12U, (uint8_t)0x7eU, (uint8_t)0x69U, (uint8_t)0x13U,
+      (uint8_t)0x64U, (uint8_t)0x28U, (uint8_t)0x5cU, (uint8_t)0x61U, (uint8_t)0x29U, (uint8_t)0x51U,
+      (uint8_t)0xeeU, (uint8_t)0x95U, (uint8_t)0x5fU, (uint8_t)0x63U, (uint8_t)0xcfU, (uint8_t)0x62U,
+      (uint8_t)0x70U, (uint8_t)0x00U, (uint8_t)0x20U, (uint8_t)0xc3U, (uint8_t)0xc8U, (uint8_t)0xdfU,
+      (uint8_t)0x9dU, (uint8_t)0x52U, (uint8_t)0x2dU, (uint8_t)0x50U, (uint8_t)0x14U, (uint8_t)0x7aU,
+      (uint8_t)0x25U, (uint8_t)0x01U, (uint8_t)0x1bU, (uint8_t)0x70U, (uint8_t)0xf1U, (uint8_t)0xb9U,
+      (uint8_t)0xf0U, (uint8_t)0x09U, (uint8_t)0x89U, (uint8_t)0xefU, (uint8_t)0x90U, (uint8_t)0xd7U,
+      (uint8_t)0x7dU, (uint8_t)0xe0U, (uint8_t)0x48U, (uint8_t)0xb0U, (uint8_t)0xffU, (uint8_t)0x02U,
+      (uint8_t)0xd8U, (uint8_t)0x9dU, (uint8_t)0x74U, (uint8_t)0x7eU, (uint8_t)0xfaU, (uint8_t)0x4cU,
+      (uint8_t)0x61U, (uint8_t)0x3dU, (uint8_t)0x1dU, (uint8_t)0x71U, (uint8_t)0xf1U, (uint8_t)0xf6U,
+      (uint8_t)0xc8U, (uint8_t)0xccU, (uint8_t)0xbeU, (uint8_t)0xdbU, (uint8_t)0xddU, (uint8_t)0xd4U,
+      (uint8_t)0xdbU, (uint8_t)0x01U, (uint8_t)0x46U, (uint8_t)0x83U, (uint8_t)0xffU, (uint8_t)0xcdU,
+      (uint8_t)0x88U, (uint8_t)0x90U, (uint8_t)0x98U, (uint8_t)0xf5U, (uint8_t)0x58U, (uint8_t)0x50U,
+      (uint8_t)0x65U, (uint8_t)0x6cU, (uint8_t)0x62U, (uint8_t)0xf7U, (uint8_t)0x40U, (uint8_t)0x36U,
+      (uint8_t)0xe9U, (uint8_t)0xd9U, (uint8_t)0x33U, (uint8_t)0x1eU, (uint8_t)0x0fU, (uint8_t)0x32U,
+      (uint8_t)0x3eU, (uint8_t)0xdeU, (uint8_t)0xf3U, (uint8_t)0x99U, (uint8_t)0xddU, (uint8_t)0x8bU,
+      (uint8_t)0x68U, (uint8_t)0xb5U, (uint8_t)0x4bU, (uint8_t)0x9aU, (uint8_t)0xf6U, (uint8_t)0xddU,
+      (uint8_t)0x91U, (uint8_t)0x17U, (uint8_t)0xa4U, (uint8_t)0xd6U, (uint8_t)0xbcU, (uint8_t)0x34U,
+      (uint8_t)0xa0U, (uint8_t)0x74U, (uint8_t)0x6dU, (uint8_t)0x7eU, (uint8_t)0x55U, (uint8_t)0xc1U,
+      (uint8_t)0x14U, (uint8_t)0xacU, (uint8_t)0x0dU, (uint8_t)0x48U, (uint8_t)0xe8U, (uint8_t)0xe0U,
+      (uint8_t)0x4bU, (uint8_t)0x32U, (uint8_t)0x63U, (uint8_t)0xddU, (uint8_t)0x45U, (uint8_t)0xe5U,
+      (uint8_t)0x41U, (uint8_t)0xa1U, (uint8_t)0x9aU, (uint8_t)0x88U, (uint8_t)0xf0U, (uint8_t)0xabU,
+      (uint8_t)0xa6U, (uint8_t)0xe6U, (uint8_t)0x07U, (uint8_t)0x3aU, (uint8_t)0xdbU, (uint8_t)0xb0U,
+      (uint8_t)0x33U, (uint8_t)0xc7U, (uint8_t)0x69U, (uint8_t)0xeeU, (uint8_t)0x2aU, (uint8_t)0xabU,
+      (uint8_t)0x4dU, (uint8_t)0x0eU, (uint8_t)0x5aU, (uint8_t)0x7eU, (uint8_t)0x80U, (uint8_t)0x9eU,
+      (uint8_t)0xcaU, (uint8_t)0x81U, (uint8_t)0xc3U, (uint8_t)0xa7U, (uint8_t)0x43U, (uint8_t)0xd9U,
+      (uint8_t)0xfbU, (uint8_t)0x57U, (uint8_t)0x11U, (uint8_t)0xffU, (uint8_t)0x19U, (uint8_t)0xc6U,
+      (uint8_t)0x62U, (uint8_t)0xe9U, (uint8_t)0x91U, (uint8_t)0x6eU, (uint8_t)0xc5U, (uint8_t)0x94U,
+      (uint8_t)0xd3U, (uint8_t)0xf1U, (uint8_t)0x37U, (uint8_t)0x09U, (uint8_t)0x88U, (uint8_t)0x13U,
+      (uint8_t)0x65U, (uint8_t)0xd2U, (uint8_t)0x5dU, (uint8_t)0x50U, (uint8_t)0x62U, (uint8_t)0xf3U,
+      (uint8_t)0x20U, (uint8_t)0xb6U, (uint8_t)0x1bU, (uint8_t)0x27U, (uint8_t)0xd2U, (uint8_t)0xafU,
+      (uint8_t)0x64U, (uint8_t)0x2bU, (uint8_t)0x56U, (uint8_t)0x79U, (uint8_t)0xdbU, (uint8_t)0x11U,
+      (uint8_t)0x56U, (uint8_t)0xd3U, (uint8_t)0xbaU, (uint8_t)0x95U, (uint8_t)0xffU, (uint8_t)0x52U,
+      (uint8_t)0x93U, (uint8_t)0xfeU, (uint8_t)0x80U, (uint8_t)0x9aU, (uint8_t)0xfdU, (uint8_t)0x8dU,
+      (uint8_t)0xffU, (uint8_t)0x5aU, (uint8_t)0x1aU, (uint8_t)0x8cU, (uint8_t)0x92U, (uint8_t)0x84U,
+      (uint8_t)0xbfU, (uint8_t)0x76U, (uint8_t)0x80U, (uint8_t)0x00U, (uint8_t)0x72U, (uint8_t)0xb5U,
+      (uint8_t)0x74U, (uint8_t)0x3bU, (uint8_t)0x9cU, (uint8_t)0x72U
+    };
+
 uint8_t d[256U] =
     {
       (uint8_t)0x2dU, (uint8_t)0x2fU, (uint8_t)0xf5U, (uint8_t)0x67U, (uint8_t)0xb3U, (uint8_t)0xfeU,
@@ -173,18 +221,20 @@ test_rsapss()
   uint32_t pLen = (pTLen - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
   uint32_t qLen = (qTLen - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
   uint32_t nTLen = (modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
-  
-  uint32_t pkeyLen = nLen + eLen;
+
+  uint32_t pkeyLen = nLen + eLen + nLen;
   uint32_t skeyLen = pkeyLen + dLen + pLen + qLen;
   uint64_t skey[skeyLen];
   memset(skey, 0U, skeyLen * sizeof skey[0U]);
   uint64_t *nNat = skey;
   uint64_t *eNat = skey + nLen;
-  uint64_t *dNat = skey + nLen + eLen;
+  uint64_t *r2Nat = skey + nLen + eLen;
+  uint64_t *dNat = skey + pkeyLen;
   uint64_t *pNat = skey + pkeyLen + dLen;
   uint64_t *qNat = skey + pkeyLen + dLen + pLen;
   Hacl_Impl_Convert_text_to_nat((modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U, n1, nNat);
   Hacl_Impl_Convert_text_to_nat((pkeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U, e, eNat);
+  Hacl_Impl_Convert_text_to_nat((modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U, r2, r2Nat);
   Hacl_Impl_Convert_text_to_nat((skeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U, d, dNat);
   Hacl_Impl_Convert_text_to_nat(pTLen, p, pNat);
   Hacl_Impl_Convert_text_to_nat(qTLen, q, qNat);
@@ -307,17 +357,19 @@ hacl_sign(
   uint32_t pLen = (pTLen - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
   uint32_t qLen = (qTLen - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U;
 
-  uint32_t pkeyLen = nLen + eLen;
+  uint32_t pkeyLen = nLen + eLen + nLen;
   uint32_t skeyLen = pkeyLen + dLen + pLen + qLen;
   uint64_t skey[skeyLen];
   memset(skey, 0U, skeyLen * sizeof skey[0U]);
   uint64_t *nNat = skey;
   uint64_t *eNat = skey + nLen;
-  uint64_t *dNat = skey + nLen + eLen;
+  uint64_t *r2Nat = skey + nLen + eLen;
+  uint64_t *dNat = skey + pkeyLen;
   uint64_t *pNat = skey + pkeyLen + dLen;
   uint64_t *qNat = skey + pkeyLen + dLen + pLen;
   Hacl_Impl_Convert_text_to_nat((modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U, n1, nNat);
   Hacl_Impl_Convert_text_to_nat((pkeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U, e, eNat);
+  Hacl_Impl_Convert_text_to_nat((modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U, r2, r2Nat);
   Hacl_Impl_Convert_text_to_nat((skeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U, d, dNat);
   Hacl_Impl_Convert_text_to_nat(pTLen, p, pNat);
   Hacl_Impl_Convert_text_to_nat(qTLen, q, qNat);
@@ -341,13 +393,15 @@ hacl_verify(
 {
   uint32_t nLen = (modBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
   uint32_t eLen = (pkeyBits - (uint32_t)1U) / (uint32_t)64U + (uint32_t)1U;
-  uint32_t pkeyLen = nLen + eLen;
+  uint32_t pkeyLen = nLen + eLen + nLen;
   uint64_t pkey[pkeyLen];
   memset(pkey, 0U, pkeyLen * sizeof pkey[0U]);
   uint64_t *nNat = pkey;
   uint64_t *eNat = pkey + nLen;
+  uint64_t *r2Nat = pkey + nLen + eLen;
   Hacl_Impl_Convert_text_to_nat((modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U, n1, nNat);
   Hacl_Impl_Convert_text_to_nat((pkeyBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U, e, eNat);
+  Hacl_Impl_Convert_text_to_nat((modBits - (uint32_t)1U) / (uint32_t)8U + (uint32_t)1U, r2, r2Nat);
 
   bool verify_sgnt = Hacl_RSAPSS_rsa_pss_verify (pow2_i, modBits, pkeyBits, pkey, saltLen, sgnt, msgLen, msg);
   return verify_sgnt;
@@ -457,7 +511,7 @@ int perf_rsapss() {
 
   //bool check_sgnt = Hacl_Impl_Lib_eq_b(256, sgnt, sgnt1);
   //printf("hacl* sgnt == openssl sgnt %d", check_sgnt);
-  
+
   printf("\n VERIFICATION: \n");
 
   t0 = TestLib_cpucycles_begin();
