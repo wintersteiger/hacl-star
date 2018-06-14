@@ -451,15 +451,15 @@ let chacha20_block log stream_block st ctr =
   (**) let h1 = ST.get() in
   let log' = chacha20_core log st' st ctr in
   (**) let h2 = ST.get() in
-  (**) lemma_modifies_0_2' st st' h0 h1 h2;
+//  (**) lemma_modifies_0_2' st st' h0 h1 h2;
   uint32s_to_le_bytes stream_block st' 16ul;
   (**) let h = ST.get() in
-  (**) lemma_modifies_2_1'' st stream_block h0 h2 h;
+//  (**) lemma_modifies_2_1'' st stream_block h0 h2 h;
   (**) assert (reveal_sbytes (as_seq h stream_block) == chacha20_block (Ghost.reveal log').k (Ghost.reveal log').n (U32.v ctr));
-  (**) assert (modifies_3_2 stream_block st h_0 h);
+//  (**) assert (modifies_3_2 stream_block st h_0 h);
   pop_frame();
   (**) let hfin = ST.get() in
-  (**) modifies_popped_3_2 stream_block st hinit h0 h hfin;
+//  (**) modifies_popped_3_2 stream_block st hinit h0 h hfin;
   (**) Ghost.elift1 (fun l -> match l with | MkLog k n -> MkLog k n) log'
 
 
@@ -594,24 +594,24 @@ let update output plain log st ctr =
   let ob = Buffer.sub b 32ul 16ul in
   let l  = chacha20_core log k st ctr in
   (**) let h3 = ST.get() in
-  (**) modifies_subbuffer_2 h2 h3 k st b;
+//  (**) modifies_subbuffer_2 h2 h3 k st b;
   uint32s_from_le_bytes ib plain 16ul;
   (**) let h  = ST.get() in
-  (**) modifies_subbuffer_1 h3 h ib b;
+//  (**) modifies_subbuffer_1 h3 h ib b;
   map2 ob ib k 16ul (fun x y -> H32.(x ^^ y));
   (**) let h4  = ST.get() in
-  (**) modifies_subbuffer_1 h h4 ob b;
-  (**) lemma_modifies_1_trans b h3 h h4;
-  (**) lemma_modifies_2_1' b st h2 h3 h4;
-  (**) lemma_modifies_0_2 st b h1 h2 h4;
+//  (**) modifies_subbuffer_1 h h4 ob b;
+//  (**) lemma_modifies_1_trans b h3 h h4;
+//  (**) lemma_modifies_2_1' b st h2 h3 h4;
+//  (**) lemma_modifies_0_2 st b h1 h2 h4;
   uint32s_to_le_bytes output ob 16ul;
   (**) let h5  = ST.get() in
-  (**) lemma_modifies_2_1'' st output h1 h4 h5;
+//  (**) lemma_modifies_2_1'' st output h1 h4 h5;
   Hacl.Impl.Xor.Lemmas.lemma_xor_uint32s_to_bytes (reveal_sbytes (as_seq h0 plain))
                                                        (reveal_h32s (as_seq h k));
   pop_frame();
   (**) let hfin = ST.get() in
-  (**) modifies_popped_3_2 st output h0 h1 h5 hfin;
+//  (**) modifies_popped_3_2 st output h0 h1 h5 hfin;
   l
 
 val update_last:
@@ -639,26 +639,28 @@ let update_last output plain len log st ctr =
   (**) let h' = ST.get() in
   let l = chacha20_block log block st ctr in
   (**) let h'' = ST.get() in
-  (**) lemma_modifies_0_2' st block h h' h'';
+//  (**) lemma_modifies_0_2' st block h h' h'';
   let mask = Buffer.sub block 0ul len in
   map2 output plain mask len (fun x y -> H8.(x ^^ y));
   (**) let h1 = ST.get() in
-  (**) lemma_modifies_2_1'' st output h h'' h1;
+//  (**) lemma_modifies_2_1'' st output h h'' h1;
   (**) lemma_chacha20_counter_mode_1 h1 output h0 plain len (Ghost.reveal log).k (Ghost.reveal log).n ctr;
   pop_frame();
   (**) let hfin = ST.get() in
-  (**) modifies_popped_3_2 st output h0 h h1 hfin;
+//  (**) modifies_popped_3_2 st output h0 h h1 hfin;
   l
 
 
 #reset-options " --max_fuel 0 --z3rlimit 100"
 
+(*
 private
 val lemma_aux_modifies_2: #a:Type -> #a':Type -> h:mem -> b:buffer a{live h b} -> b':buffer a'{live h b'} -> Lemma
   (requires (True))
   (ensures (modifies_2 b b' h h))
 let lemma_aux_modifies_2 #a #a' h b b' =
   lemma_intro_modifies_2 b b' h h
+*)
 
 private
 val lemma_chacha20_counter_mode_def_0:
@@ -712,8 +714,8 @@ let chacha20_counter_mode_blocks output plain num_blocks log st ctr =
     let o' = Buffer.sub output 0ul (64ul *^ i)  in
     let log' = update o b log st FStar.UInt32.(ctr+^ i) in
     let h' = ST.get() in
-    (**) modifies_subbuffer_2 h h' o st output;
-    (**) lemma_modifies_2_trans output st h0 h h';
+//    (**) modifies_subbuffer_2 h h' o st output;
+//    (**) lemma_modifies_2_trans output st h0 h h';
     no_upd_lemma_2 h h' o st b;
     no_upd_lemma_2 h h' o st b';
     no_upd_lemma_2 h h' o st o';
@@ -739,7 +741,7 @@ let chacha20_counter_mode_blocks output plain num_blocks log st ctr =
   let i0 = Buffer.sub plain  0ul 0ul in
   Seq.lemma_eq_intro (as_seq h0 o0) (Seq.slice (as_seq h0 output) 0 0);
   Seq.lemma_eq_intro (as_seq h0 i0) (Seq.slice (as_seq h0 plain) 0 0);
-  lemma_aux_modifies_2 h0 output st;
+//  lemma_aux_modifies_2 h0 output st;
   lemma_chacha20_counter_mode_def_0 (Seq.slice (as_seq h0 plain) 0 0) (Ghost.reveal log).k (Ghost.reveal log).n ctr;
   Seq.lemma_eq_intro (Seq.slice (as_seq h0 plain) 0 0) Seq.createEmpty;
   Seq.lemma_eq_intro (Seq.slice (as_seq h0 output) 0 0) Seq.createEmpty;
@@ -779,15 +781,19 @@ let chacha20_counter_mode output plain len log st ctr =
   let plain''  = Buffer.sub plain  (64ul *^ blocks_len) part_len in
   chacha20_counter_mode_blocks output' plain' blocks_len log st ctr;
   (**) let h1 = ST.get() in
-  (**) modifies_subbuffer_2 h0 h1 output' st output;
+//  (**) modifies_subbuffer_2 h0 h1 output' st output;
   if FStar.UInt32.(part_len >^ 0ul) then (
     let _ = update_last output'' plain'' part_len log st FStar.UInt32.(ctr +^ blocks_len) in
     (**) let h' = ST.get() in
-    (**) modifies_subbuffer_2 h1 h' output'' st output)
-  else
-    (**) lemma_modifies_sub_2 h1 h1 output st;
+//    (**) modifies_subbuffer_2 h1 h' output'' st output;
+    ()
+  )
+  else begin
+//    (**) lemma_modifies_sub_2 h1 h1 output st;
+    ()
+  end;
   let h = ST.get() in
-  (**) lemma_modifies_2_trans output st h0 h1 h;
+//  (**) lemma_modifies_2_trans output st h0 h1 h;
   Seq.lemma_eq_intro (Seq.append (as_seq h output') Seq.createEmpty) (as_seq h output');
   Seq.lemma_eq_intro (as_seq h output) (Seq.append (as_seq h output') (as_seq h output''));
   Seq.lemma_eq_intro (as_seq h0 plain) (Seq.append (as_seq h0 plain') (as_seq h0 plain''));
@@ -822,10 +828,11 @@ let chacha20 output plain len k n ctr =
   (**) let h1 = ST.get() in
   let l  = init st k n in
   (**) let h2 = ST.get() in
-  (**) lemma_modifies_0_1' st h0 h1 h2;
+//  (**) lemma_modifies_0_1' st h0 h1 h2;
   let l' = chacha20_counter_mode output plain len l st ctr in
   (**) let h3 = ST.get() in
-  (**) lemma_modifies_0_2 output st h0 h2 h3;
+//  (**) lemma_modifies_0_2 output st h0 h2 h3;
   pop_frame();
   (**) let hfin = ST.get() in
-  (**) modifies_popped_1 output hinit h0 h3 hfin
+//  (**) modifies_popped_1 output hinit h0 h3 hfin;
+  ()
