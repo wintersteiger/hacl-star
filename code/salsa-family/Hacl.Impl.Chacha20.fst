@@ -22,7 +22,7 @@ module H32 = Hacl.UInt32
 
 open LowStar.BufferOps
 module B = LowStar.Buffer
-module M = LowStar.Modifies
+module M = LowStar.ModifiesPat
 module T = LowStar.ToFStarBuffer
 
 let u32 = U32.t
@@ -774,7 +774,7 @@ let chacha20 output plain len k n ctr =
   assert (M.modifies (M.loc_buffer output) h h');
   assert (B.live h' output);
 *)
-  M.popped_modifies h1 h';
+//  M.popped_modifies h1 h';
 (*  
   assert (B.as_seq h' output == B.as_seq h1 output);
   assume (
