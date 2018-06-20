@@ -52,6 +52,7 @@ val constant_setup_:
          v (Seq.index s 2) = 0x79622d32 /\
          v (Seq.index s 3) = 0x6b206574)))
 let constant_setup_ st =
+  M.modifies_left_intro ();
   st.(0ul)  <- (uint32_to_sint32 0x61707865ul);
   st.(1ul)  <- (uint32_to_sint32 0x3320646eul);
   st.(2ul)  <- (uint32_to_sint32 0x79622d32ul);
@@ -82,6 +83,7 @@ val keysetup:
          let k = reveal_sbytes (B.as_seq h0 k) in
          s == Spec.Lib.uint32s_from_le 8 k)))
 let keysetup st k =
+  M.modifies_left_intro ();
   let st = T.new_to_old_st st in
   let k = T.new_to_old_st k in
   uint32s_from_le_bytes st k 8ul
