@@ -23,7 +23,7 @@ let uint8_p = b:buffer Hacl.UInt8.t
 val uint32s_from_le_bytes:
   output:buffer H32.t ->
   input:uint8_p{disjoint output input} ->
-  len:U32.t{length output = U32.v len /\ 4 * U32.v len = length input} ->
+  len:U32.t{length output == U32.v len /\ 4 * U32.v len == length input} ->
   Stack unit
     (requires (fun h -> live h output /\ live h input))
     (ensures  (fun h0 _ h1 -> live h1 output /\ live h0 input /\ modifies_1 output h0 h1 /\
