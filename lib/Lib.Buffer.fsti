@@ -877,8 +877,8 @@ val slice: #a:Type0 -> b:buffer a -> start:size_t -> fin:size_t{v start <= v fin
     (requires (fun h0 -> live h0 b))
     (ensures (fun h0 r h1 -> h0 == h1 /\ r == gslice #a b start fin))
 
-inline_for_extraction
+inline_for_extraction unfold
 let op_Array_Assignment #a l = upd #a l
 
-inline_for_extraction
+inline_for_extraction unfold
 let op_Array_Access #a l = index #a l
