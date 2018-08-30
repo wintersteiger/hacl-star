@@ -16,17 +16,17 @@ let string_of_alg =
   | SHA512 -> !$"SHA512"
 
 let type_of a =
-  match Ghost.reveal a with
+  match a with
   | MD5 | SHA1 | SHA224 | SHA256 -> UInt32.t // uint_32
   | SHA384 | SHA512              -> UInt64.t // uint_64
 
-let size_of_k a: GTot nat =
-  match Ghost.reveal a with
+let size_of_k a: nat =
+  match a with
   | SHA256 -> 64
   | SHA384 -> 80
   | _      -> 0 //TBC
 
-type acc (a: e_alg) = {
+type acc (a:alg) = {
   k: Seq.lseq (type_of a) (size_of_k a);
   hash: Seq.lseq (type_of a) 8;
   counter: nat;
@@ -34,7 +34,7 @@ type acc (a: e_alg) = {
 
 // 18-07-10 in principle k would suffice.
 let acc0 #a =
-  match Ghost.reveal a with
+  match a with
   | SHA256 -> {
       hash = EverCrypt.Spec.SHA2_256.h_0;
       k = EverCrypt.Spec.SHA2_256.k;
@@ -46,7 +46,7 @@ let acc0 #a =
       counter = 0
     }
   | _ -> {
-      hash = Seq.create 8 (if Ghost.reveal a = SHA512 then 0UL else 0ul);
+      hash = Seq.create 8 (if a = SHA512 then 0UL else 0ul);
       k = Seq.empty;
       counter = 0
     }
@@ -61,7 +61,7 @@ let acc0 #a =
 // intermediate hash.
 
 let compress #a st b =
-  match Ghost.reveal a with
+  match a with
   | SHA256 ->
      { k       = EverCrypt.Spec.SHA2_256.k;
        hash    = EverCrypt.Spec.SHA2_256.update st.hash b;
@@ -75,7 +75,7 @@ let compress #a st b =
 // using the same be library as in hacl*; to be reconsidered.
 // 18-07-10 why do I need type annotations? why passing the same constant 3 types?
 let extract #a st =
-  match Ghost.reveal a with
+  match a with
   | SHA224 -> Spec.Lib.uint32s_to_be 7 (Seq.slice st.hash 0 7)
   | SHA256 -> Spec.Lib.uint32s_to_be 8 st.hash
   | SHA384 -> Spec.Lib.uint64s_to_be 6 (Seq.slice st.hash 0 6)
@@ -104,7 +104,7 @@ let suffix a l =
   let l1 = l % blockLength a in
   let l0 = l - l1 in
   assert(l0 % blockLength a = 0);
-  match Ghost.reveal a with
+  match a with
   | SHA256 ->
       assert_norm(maxLength a < Spec.SHA2_256.max_input_len_8);
       let pad = Spec.SHA2_256.pad l0 l1 in
@@ -134,7 +134,6 @@ open FStar.HyperStack.ST
 module HS = FStar.HyperStack
 module B = LowStar.Buffer
 module M = LowStar.Modifies
-module G = FStar.Ghost
 module T = LowStar.ToFStarBuffer
 
 module AC = EverCrypt.AutoConfig
@@ -154,15 +153,12 @@ let uint32_p = B.buffer uint_32
 let uint64_p = B.buffer uint_64
 
 noeq
-type state_s: (G.erased alg) -> Type0 =
-| SHA256_Hacl: p:uint32_p{ B.freeable p /\ B.length p = v Hacl.SHA2_256.size_state } ->
-    state_s (G.hide SHA256)
-| SHA256_Vale: p:uint32_p{ B.freeable p /\ B.length p = v ValeGlue.sha256_size_state } ->
-    state_s (G.hide SHA256)
-| SHA384_Hacl: p:uint64_p{ B.freeable p /\ B.length p = v Hacl.SHA2_384.size_state } ->
-    state_s (G.hide SHA384)
+type state_s: alg -> Type0 =
+| SHA256_Hacl: p:uint32_p{ B.freeable p /\ B.length p = v Hacl.SHA2_256.size_state }   -> state_s SHA256
+| SHA256_Vale: p:uint32_p{ B.freeable p /\ B.length p = v ValeGlue.sha256_size_state } -> state_s SHA256
+| SHA384_Hacl: p:uint64_p{ B.freeable p /\ B.length p = v Hacl.SHA2_384.size_state }   -> state_s SHA384
 
-let footprint_s #a (s: state_s a): GTot M.loc =
+let footprint_s #a (s: state_s a) =
   match s with
   | SHA256_Hacl p -> M.loc_addr_of_buffer p
   | SHA256_Vale p -> M.loc_addr_of_buffer p
@@ -178,6 +174,7 @@ let invariant_s #a s h =
 
 //#set-options "--z3rlimit 40"
 
+// 18-08-30 regression after moving ghosts around; strange error?!
 let repr #a s h: GTot _ =
   let s = B.get h s 0 in
   match s with
@@ -203,7 +200,7 @@ let repr #a s h: GTot _ =
       }
   | _ -> admit()
 
-let repr_eq (#a:e_alg) (r1 r2: acc a) =
+let repr_eq (#a:alg) (r1 r2: acc a) =
   Seq.equal r1.k r2.k /\
   Seq.equal r1.hash r2.hash /\
   r1.counter = r2.counter
@@ -219,7 +216,7 @@ let frame_invariant #a l s h0 h1 =
 let create a =
   let h0 = ST.get () in
   let i = AC.sha256_impl () in
-  let s: state_s (G.hide a) =
+  let s: state_s a =
     match a with
     | SHA256 ->
         if SC.vale && i = AC.Vale then
@@ -236,14 +233,14 @@ let create a =
   in
   B.malloc HS.root s 1ul
 
-let has_k (#a:e_alg) (st:acc a) =
-  match G.reveal a with
+let has_k (#a:alg) (st:acc a) =
+  match a with
   | SHA256 -> st.k == EverCrypt.Spec.SHA2_256.k
   | SHA384 -> st.k == EverCrypt.Spec.SHA2_384.k
   | _ -> True
 
 let rec lemma_hash2_has_k
-  (#a:e_alg)
+  (#a:alg)
   (v:acc a {has_k v})
   (b:bytes {Seq.length b % blockLength a = 0}):
   GTot (_:unit{has_k (hash2 v b)}) (decreases (Seq.length b))
@@ -262,7 +259,7 @@ let rec lemma_hash2_has_k
 
 let lemma_hash0_has_k #a b = lemma_hash2_has_k (acc0 #a) b
 
-let rec lemma_has_counter (#a:e_alg) (b:bytes {Seq.length b % blockLength a = 0}):
+let rec lemma_has_counter (#a:alg) (b:bytes {Seq.length b % blockLength a = 0}):
   GTot (_:unit{
     blockLength a <> 0 /\
     (hash0 #a b).counter == Seq.length b / blockLength a}) (decreases (Seq.length b))
@@ -271,7 +268,7 @@ let rec lemma_has_counter (#a:e_alg) (b:bytes {Seq.length b % blockLength a = 0}
 
 #set-options "--max_fuel 0"
 let init #a s =
-  assert_norm(acc0 #a == hash0 #a (Seq.empty #UInt8.t));
+  assert_norm(let a = Ghost.reveal a in acc0 == hash0 (Seq.empty #UInt8.t));
   match !*s with
   | SHA256_Hacl p -> Hacl.SHA2_256.init (T.new_to_old_st p)
   | SHA384_Hacl p -> Hacl.SHA2_384.init (T.new_to_old_st p)
