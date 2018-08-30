@@ -268,7 +268,7 @@ let rec lemma_has_counter (#a:alg) (b:bytes {Seq.length b % blockLength a = 0}):
 
 #set-options "--max_fuel 0"
 let init #a s =
-  assert_norm(let a = Ghost.reveal a in acc0 == hash0 (Seq.empty #UInt8.t));
+  assert_norm(acc0 #(Ghost.reveal a) == hash0 #(Ghost.reveal a) (Seq.empty #UInt8.t));
   match !*s with
   | SHA256_Hacl p -> Hacl.SHA2_256.init (T.new_to_old_st p)
   | SHA384_Hacl p -> Hacl.SHA2_384.init (T.new_to_old_st p)
@@ -277,15 +277,16 @@ let init #a s =
 #set-options "--z3rlimit 20"
 let update #a prior s data =
   ( let h0 = ST.get() in
-    let r0 = repr s h0 in
-    let prior = Ghost.reveal prior in
-    let fresh = B.as_seq h0 data in
-    lemma_hash0_has_k #a prior;
-    lemma_has_counter #a prior;
-    lemma_compress r0 fresh;
-    lemma_hash2 (acc0 #a) prior fresh;
-    //TODO 18-07-10 weaken hacl* update to tolerate overflows; they
-    // are now statically prevented in [update_last]
+    let r0 = repr #(Ghost.reveal a) s h0 in
+    let fresh = B.as_seq h0 data in 
+    //18-08-30 annoyingly, let-binding does not work for those
+    // let a = Ghost.reveal a in 
+    lemma_hash0_has_k #(Ghost.reveal a) (Ghost.reveal prior);
+    lemma_has_counter #(Ghost.reveal a) (Ghost.reveal prior);
+    lemma_compress #(Ghost.reveal a) r0 fresh;
+    lemma_hash2 #(Ghost.reveal a) (acc0 #(Ghost.reveal a)) (Ghost.reveal prior) fresh;
+  //TODO 18-07-10 weaken hacl* update to tolerate overflows; they
+  // are now statically prevented in [update_last]
     assume (r0.counter < pow2 32 - 1));
 
   match !*s with
