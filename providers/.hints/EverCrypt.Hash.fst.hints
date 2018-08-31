@@ -1728,7 +1728,7 @@
         "typing_LowStar.Monotonic.Buffer.loc_not_unused_in"
       ],
       0,
-      "bc1d2e6fd010467e46d208595d577e01"
+      "5ff27aea7fd68bc011d2cc6fb2a3deb9"
     ],
     [
       "EverCrypt.Hash.frame_invariant",
@@ -1977,7 +1977,7 @@
         "typing_LowStar.Monotonic.Buffer.loc_buffer"
       ],
       0,
-      "24575be708e07ad742c2f89458a44a48"
+      "17a15cca8dd0c0d288dda919fa11a905"
     ],
     [
       "EverCrypt.Hash.create",
@@ -3995,10 +3995,12 @@
         "constructor_distinct_EverCrypt.Hash.SHA384_Hacl",
         "constructor_distinct_FStar.Integers.Unsigned",
         "constructor_distinct_FStar.Integers.W32",
+        "constructor_distinct_FStar.Integers.W64",
         "disc_equation_EverCrypt.Hash.SHA256_Hacl",
         "disc_equation_EverCrypt.Hash.SHA256_Vale",
         "disc_equation_EverCrypt.Hash.SHA384_Hacl",
         "equality_tok_FStar.Integers.W32@tok",
+        "equality_tok_FStar.Integers.W64@tok",
         "equation_EverCrypt.Hash.e_alg", "equation_EverCrypt.Hash.footprint",
         "equation_EverCrypt.Hash.footprint_s",
         "equation_EverCrypt.Hash.invariant",
@@ -4006,6 +4008,7 @@
         "equation_EverCrypt.Hash.state", "equation_EverCrypt.Hash.uint32_p",
         "equation_EverCrypt.Hash.uint64_p",
         "equation_EverCrypt.Helpers.uint32_t",
+        "equation_EverCrypt.Helpers.uint64_t",
         "equation_EverCrypt.StaticConfig.bcrypt",
         "equation_EverCrypt.StaticConfig.hacl",
         "equation_EverCrypt.ValeGlue.sha256_size_state",
@@ -4062,7 +4065,7 @@
         "typing_LowStar.Monotonic.Buffer.loc_buffer"
       ],
       0,
-      "78d338490c2b91bb9279ec8ad8a0b917"
+      "82cee2c4d4fad798994d534092833cee"
     ],
     [
       "EverCrypt.Hash.hash",
