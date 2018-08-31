@@ -47,6 +47,6 @@ val compute:
     live h1 data /\
     LowStar.Modifies.(modifies (loc_buffer tag) h0 h1) /\
     length data + blockLength a <= maxLength a /\ (* required for subtyping the RHS below *)
-      as_seq h1 tag == hmac a (as_seq h0 key) (as_seq h0 data))
+    as_seq h1 tag == hmac a (as_seq h0 key) (as_seq h0 data))
 
 //18-07-13 pick uniform names? hash{spec} vs compute{hmac}

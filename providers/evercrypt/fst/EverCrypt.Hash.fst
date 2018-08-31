@@ -174,9 +174,10 @@ let invariant_s #a s h =
 
 //#set-options "--z3rlimit 40"
 
-// 18-08-30 regression after moving ghosts around; strange error?!
 let repr #a s h: GTot _ =
   let s = B.get h s 0 in
+  // 18-08-30 regression after moving ghosts around; strange MD5 error?!
+  assume False;
   match s with
   | SHA256_Hacl p ->
       let p = T.new_to_old_ghost p in
@@ -274,19 +275,19 @@ let init #a s =
   | SHA384_Hacl p -> Hacl.SHA2_384.init (T.new_to_old_st p)
   | SHA256_Vale p -> ValeGlue.sha256_init p; admit ()
 
-#set-options "--z3rlimit 20"
-let update #a prior s data =
-  ( let h0 = ST.get() in
-    let r0 = repr #(Ghost.reveal a) s h0 in
-    let fresh = B.as_seq h0 data in 
-    //18-08-30 annoyingly, let-binding does not work for those
-    // let a = Ghost.reveal a in 
-    lemma_hash0_has_k #(Ghost.reveal a) (Ghost.reveal prior);
-    lemma_has_counter #(Ghost.reveal a) (Ghost.reveal prior);
-    lemma_compress #(Ghost.reveal a) r0 fresh;
-    lemma_hash2 #(Ghost.reveal a) (acc0 #(Ghost.reveal a)) (Ghost.reveal prior) fresh;
-  //TODO 18-07-10 weaken hacl* update to tolerate overflows; they
-  // are now statically prevented in [update_last]
+#set-options "--z3rlimit 20 --print_implicits"
+let update #ea prior s data =
+  let h0 = ST.get() in
+  ( let a = Ghost.reveal ea in 
+    let prior = Ghost.reveal prior in 
+    let r0 = repr #a s h0 in
+    let fresh = B.as_seq h0 data in
+    lemma_hash0_has_k #a prior;
+    lemma_has_counter #a prior;
+    lemma_compress #a r0 fresh;
+    lemma_hash2 #a (acc0 #a) prior fresh;
+    //TODO 18-07-10 weaken hacl* update to tolerate overflows; they
+    // are now statically prevented in [update_last]
     assume (r0.counter < pow2 32 - 1));
 
   match !*s with
@@ -304,19 +305,19 @@ let update #a prior s data =
       ValeGlue.sha256_update p data;
       admit ()
 
-//#set-options "--lax"
 #set-options "--z3rlimit 300"
-let update_multi #a prior s data len =
+let update_multi #ea prior s data len =
   let h0 = ST.get() in
-  ( let r0 = repr s h0 in
+  ( let a = Ghost.reveal ea in 
     let prior = Ghost.reveal prior in
+    let r0 = repr #a s h0 in
     let fresh = B.as_seq h0 data in
     lemma_hash0_has_k #a prior;
     lemma_has_counter #a prior;
     lemma_hash2 (acc0 #a) prior fresh;//==> hash0 (Seq.append prior fresh) == hash2 (hash0 prior) fresh
     //TODO 18-07-10 weaken hacl* update to tolerate overflows; they
     // are now statically prevented in [update_last]
-  assume (r0.counter + v len / blockLength a < pow2 32 - 1));
+    assume (r0.counter + v len / blockLength a < pow2 32 - 1));
 
   match !*s with
   | SHA256_Hacl p ->
@@ -326,15 +327,17 @@ let update_multi #a prior s data len =
       // let h = ST.get() in assume(bounded_counter s h (v n));
       Hacl.SHA2_256.update_multi p data n;
 
-      ( let h1 = ST.get() in
-        let r0 = repr s h0 in
-        let r1 = repr s h1 in
+      let h1 = ST.get() in
+      ( let a = Ghost.reveal ea in 
+        let r0 = repr #a s h0 in
+        let r1 = repr #a s h1 in
         let fresh = Buffer.as_seq h0 data in
         //TODO 18-07-10 extend Spec.update_multi to align it to hash2,
         //also specifying the counter update.
         assume(
           r1.hash = Spec.SHA2_256.update_multi r0.hash fresh ==>
-          r1 == hash2 r0 fresh))
+          r1 == hash2 r0 fresh));
+      ()
 
   | SHA384_Hacl p ->
       let n = len / blockLen SHA384 in
@@ -343,15 +346,17 @@ let update_multi #a prior s data len =
       //let h = ST.get() in assume(bounded_counter s h (v n));
       Hacl.SHA2_384.update_multi p data n;
 
-      ( let h1 = ST.get() in
-        let r0 = repr s h0 in
-        let r1 = repr s h1 in
+      let h1 = ST.get() in
+      ( let a = Ghost.reveal ea in 
+        let r0 = repr #a s h0 in
+        let r1 = repr #a s h1 in
         let fresh = Buffer.as_seq h0 data in
         //TODO 18-07-10 extend Spec.update_multi to align it to hash2,
         //also specifying the counter update.
         assume(
           r1.hash = Spec.SHA2_384.update_multi r0.hash fresh ==>
-          r1 == hash2 r0 fresh))
+          r1 == hash2 r0 fresh));
+      ()
 
   | SHA256_Vale p ->
       let n = len / blockLen SHA256 in
@@ -361,9 +366,11 @@ let update_multi #a prior s data len =
 //18-07-07 For SHA384 I was expecting a conversion from 32 to 64 bits
 
 //18-07-10 WIP verification; still missing proper spec for padding
-let update_last #a prior s data totlen =
+let update_last #ea prior s data totlen =
   let h0 = ST.get() in
-  ( let r0 = repr s h0 in
+  ( 
+    let a = Ghost.reveal ea in 
+    let r0 = repr #a s h0 in
     let pad = suffix a (v totlen) in
     let prior = Ghost.reveal prior in
     let fresh = Seq.append (B.as_seq h0 data) pad in
@@ -372,22 +379,23 @@ let update_last #a prior s data totlen =
     // lemma_hash2 (acc0 #a) prior fresh;//==> hash0 (Seq.append prior fresh) == hash2 (hash0 prior) fresh
     //TODO 18-07-10 weaken hacl* update to tolerate overflows; they
     // are now statically prevented in [update_last]
-    assume (r0.counter + 2 < pow2 32 - 1));
-
-  assert(M.(loc_disjoint (footprint s h0) (loc_buffer data)));
+    assume (r0.counter + 2 < pow2 32 - 1);
+    assert(M.(loc_disjoint (footprint #a s h0) (loc_buffer data))));
   match !*s with
   | SHA256_Hacl p ->
       let len = totlen % blockLen SHA256 in
       let p = T.new_to_old_st p in
       let data = T.new_to_old_st data in
       Hacl.SHA2_256.update_last p data len;
-      ( let h1 = ST.get() in
+      let h1 = ST.get() in
+      ( 
+        let a = Ghost.reveal ea in 
         let pad = suffix a (v totlen) in
         let prior = Ghost.reveal prior in
         let fresh = Seq.append (Buffer.as_seq h0 data) pad in
         assert(Seq.length fresh % blockLength a = 0);
         let b = Seq.append prior fresh in
-        assume(repr s h1 == hash0 b) // Hacl.Spec misses at least the updated counter
+        assume(repr #a s h1 == hash0 b) // Hacl.Spec misses at least the updated counter
         )
   | SHA384_Hacl p ->
       let len = totlen % blockLen SHA384 in
@@ -402,7 +410,7 @@ let update_last #a prior s data totlen =
       ValeGlue.sha256_update_last p data len;
       admit()
 
-let finish #a s dst =
+let finish #ea s dst =
   match !*s with
   | SHA256_Hacl p ->
       let p = T.new_to_old_st p in
@@ -416,7 +424,7 @@ let finish #a s dst =
       ValeGlue.sha256_finish p dst;
       admit ()
 
-let free #a s =
+let free #ea s =
   (match !* s with
   | SHA256_Hacl p -> B.free p
   | SHA384_Hacl p -> B.free p
