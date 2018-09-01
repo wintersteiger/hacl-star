@@ -115,8 +115,8 @@ val part1:
   acc: state a ->
   s2: uint8_pl (blockLength a) ->
   data: uint8_p {
-    length data + blockLength a  < pow2 32 /\
-    length data + blockLength a  <= maxLength a /\
+    length data + blockLength a  < pow2 32 /\ (*required by 32-bit length for update_last *)
+    // length data + blockLength a <= maxLength a /\ (*always true*)
     disjoint data s2} ->
   len: UInt32.t {length data = v len} ->
   ST unit
@@ -133,32 +133,15 @@ val part1:
       modifies (loc_union (footprint acc h0) (loc_buffer s2)) h0 h1 /\
       (
       let hash0 = Seq.slice (as_seq h1 s2) 0 (tagLength a) in
+      length data + blockLength a <= maxLength a /\ (*always true, required by spec below*)
       hash0 == spec a (Seq.append (as_seq h0 s2) (as_seq h0 data))))
-
-(*
-//18-07-12 helpful to guide the proof?
-let loc_disjoint_gsub_buffer1
-  (#t: Type)
-  (l0: loc)
-  (b: buffer t)
-  (i: UInt32.t)
-  (len: UInt32.t)
-: Lemma
-  (requires (
-    UInt32.v i + UInt32.v len <= length b /\
-    loc_disjoint l0 (loc_buffer b)
-  ))
-  (ensures (
-    UInt32.v i + UInt32.v len <= length b /\
-    loc_disjoint l0 (loc_buffer (gsub b i len))
-  )) = ()
-*)
 
 #reset-options "--max_fuel 0 --z3rlimit 1000" // without hints
 
 // we use auxiliary functions only for clarity and proof modularity
 [@"substitute"]
 let part1 a (acc: state a) key data len =
+  assert_norm(pow2 32 + blockLength a <= maxLength a);
   let ll = len % blockLen a in
   let lb = len - ll in
   let blocks = sub data 0ul lb in
@@ -179,6 +162,7 @@ let part1 a (acc: state a) key data len =
     (Ghost.hide (as_seq h0 key))
     acc blocks lb;
   let h2 = ST.get() in
+  assert_norm(blockLength a + v len <= maxLength a);
   Hash.update_last 
     #(Ghost.hide a)
     (Ghost.hide (Seq.append (as_seq h0 key) (as_seq h2 blocks)))
@@ -287,8 +271,8 @@ val hmac_core:
   tag: uint8_pl (tagLength a) ->
   key: uint8_pl (blockLength a) {disjoint key tag} ->
   data: uint8_p{
-    length data + blockLength a < pow2 32 /\
-    length data + blockLength a <= maxLength a /\
+    length data + blockLength a < pow2 32 /\ (*required for 32-bit allocation*)
+    // length data + blockLength a <= maxLength a /\ (*always true*)
     disjoint data key } ->
   datalen: UInt32.t {v datalen = length data} ->
   ST unit
@@ -307,9 +291,10 @@ val hmac_core:
     ( let k = as_seq h0 key in
       let k1 = xor 0x36uy k in
       let k2 = xor 0x5cuy k in
+      length data + blockLength a <= maxLength a /\ ( (*always true*)
       let v1 = spec a (k1 @| as_seq h0 data) in
       Seq.length (k2 @| v1) <= maxLength a /\
-      as_seq h1 tag == spec a (k2 @| v1)))
+      as_seq h1 tag == spec a (k2 @| v1))))
 
 [@"substitute"]
 val xor_bytes_inplace:
@@ -402,7 +387,8 @@ let hmac_core a acc tag key data len =
 let compute a mac key keylen data datalen =
   let h00 = ST.get() in
   push_frame ();
-  assert_norm(pow2 32 <= maxLength a);
+  assert_norm(pow2 32 + blockLength a <= maxLength a);
+  assert(length data + blockLength a <= maxLength a);
   let keyblock = alloca 0x00uy (blockLen a) in
   let acc = Hash.create a in
   let h0 = ST.get() in
@@ -414,10 +400,9 @@ let compute a mac key keylen data datalen =
   let h2 = ST.get() in
   Hash.free #(Ghost.hide a) acc;
   pop_frame ();
-  //18-08-02 not provable from the current postcondition of Hash.free
-  // TR: modifies clause now proven by erasing all memory locations
-  // that were unused in h00:
   let hf = ST.get () in
+  // TR: modifies clause proven by erasing all memory locations that
+  // were unused in h00:
   LowStar.Buffer.modifies_only_not_unused_in (loc_buffer mac) h00 hf
 
 
