@@ -34,6 +34,10 @@ type alg =
 //| SHAKE128 of (n:nat{n >= 8})
 //| SHAKE256 of (n:nat{n >= 16})
 
+// kept only for functional backward compatibility,
+// never assumed to be secure.
+type broken_alg = a:alg {a = MD5 \/ a = SHA1}
+
 val string_of_alg: alg -> C.String.t
 
 

@@ -4,7 +4,7 @@ module EverCrypt.HMAC
 
 open EverCrypt.Hash
 
-let ha = a: alg {a = SHA256 \/ a = SHA384 \/ a = SHA512}
+let ha = a:alg {a = SHA1 \/ a = SHA256 \/ a = SHA384 \/ a = SHA512}
 
 //18-07-09 rename to Hash's bytes and lbytes?
 noextract
