@@ -4,6 +4,8 @@ open EverCrypt.Helpers
 open EverCrypt.Specs
 open FStar.HyperStack.ST
 
+module M = LowStar.Modifies
+
 /// An OpenSSL provider that implements a subset of EverCrypt.fsti
 
 val random_init: unit ->
@@ -147,3 +149,41 @@ val ecdh_compute:
   (requires fun h0 -> False)
   (ensures fun h0 _ h1 -> True)
 
+/// SHA256 compression
+/// This is only used to benchmark the Vale implementation
+/// of Merkle trees.
+
+type halg =
+| MD5
+| SHA1
+| SHA224
+| SHA256
+| SHA384
+| SHA512
+
+val hash_create:
+  alg: halg ->
+  ST Dyn.dyn
+  (requires fun h0 -> True)
+  (ensures fun h0 _ h1 -> M.(modifies loc_none h0 h1))
+
+val hash_update:
+  st: Dyn.dyn ->
+  data: uint8_p ->
+  len: uint32_t ->
+  ST unit
+  (requires fun h0 -> True)
+  (ensures fun h0 _ h1 -> M.(modifies loc_none h0 h1))
+
+val hash_final:
+  st: Dyn.dyn ->
+  out: uint8_p ->
+  ST uint32_t
+  (requires fun h0 -> True)
+  (ensures fun h0 _ h1 -> M.(modifies loc_none h0 h1))
+
+val hash_free:
+  st: Dyn.dyn ->
+  ST unit
+  (requires fun h0 -> True)
+  (ensures fun h0 _ h1 -> M.(modifies loc_none h0 h1))

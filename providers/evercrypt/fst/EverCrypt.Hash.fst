@@ -138,31 +138,33 @@ module T = LowStar.ToFStarBuffer
 
 module AC = EverCrypt.AutoConfig
 module SC = EverCrypt.StaticConfig
+
 module Vale = EverCrypt.Vale
 module Hacl = EverCrypt.Hacl
 module ValeGlue = EverCrypt.ValeGlue
+module OpenSSL = EverCrypt.OpenSSL
 
 module ST = FStar.HyperStack.ST
 module MP = LowStar.ModifiesPat
 
 open LowStar.BufferOps
 open FStar.Integers
-open C.Failure
 
 let uint32_p = B.buffer uint_32
 let uint64_p = B.buffer uint_64
 
-noeq
-type state_s: alg -> Type0 =
+noeq type state_s: alg -> Type0 =
 | SHA256_Hacl: p:uint32_p{ B.freeable p /\ B.length p = v Hacl.SHA2_256.size_state }   -> state_s SHA256
 | SHA256_Vale: p:uint32_p{ B.freeable p /\ B.length p = v ValeGlue.sha256_size_state } -> state_s SHA256
 | SHA384_Hacl: p:uint64_p{ B.freeable p /\ B.length p = v Hacl.SHA2_384.size_state }   -> state_s SHA384
+| HASH_OPENSSL: st:Dyn.dyn -> p:uint8_p{B.freeable p /\ B.length p = 1} -> a:alg -> state_s AGILE
 
 let footprint_s #a (s: state_s a) =
   match s with
   | SHA256_Hacl p -> M.loc_addr_of_buffer p
   | SHA256_Vale p -> M.loc_addr_of_buffer p
   | SHA384_Hacl p -> M.loc_addr_of_buffer p
+  | HASH_OPENSSL _ p _ -> M.loc_addr_of_buffer p
 
 #set-options "--max_fuel 0 --max_ifuel 1"
 
@@ -171,6 +173,7 @@ let invariant_s #a s h =
   | SHA256_Hacl p -> B.live h p
   | SHA256_Vale p -> B.live h p
   | SHA384_Hacl p -> B.live h p
+  | HASH_OPENSSL _ p _ -> B.live h p
 
 //#set-options "--z3rlimit 40"
 
@@ -214,23 +217,63 @@ let frame_invariant #a l s h0 h1 =
   let state = B.deref h0 s in
   assert (repr_eq (repr s h0) (repr s h1))
 
+// C.Failure.failwith ensures True
+// but we mainly use it to rule out impossible
+// code paths that depend on dynamic configuration
+// and are not proved statically
+let failwith (#a:Type) (s:C.String.t) : ST a
+  (requires fun h0 -> True)
+  (ensures fun h0 _ h1 -> False)
+  = assume false; C.Failure.failwith s
+
 let create a =
-  let h0 = ST.get () in
-  let i = AC.sha256_impl () in
   let s: state_s a =
     match a with
     | SHA256 ->
-        if SC.vale && i = AC.Vale then
-          let b = B.malloc HS.root 0ul ValeGlue.sha256_size_state in
-          SHA256_Vale b
-        else
-          let b = B.malloc HS.root 0ul Hacl.SHA2_256.size_state in
-          SHA256_Hacl b
+      let i = AC.sha256_impl () in
+      if SC.vale && i = AC.Vale then
+        let b = B.malloc HS.root 0ul ValeGlue.sha256_size_state in
+        SHA256_Vale b
+      else if SC.hacl && i = AC.Hacl then
+        let b = B.malloc HS.root 0ul Hacl.SHA2_256.size_state in
+        SHA256_Hacl b
+      else if SC.openssl && i = AC.OpenSSL then
+        let st = OpenSSL.hash_create OpenSSL.SHA256 in
+	let p = B.malloc HS.root 0uy 1ul in
+	HASH_OPENSSL st p a
+      else
+        failwith !$"inconsistent configuration"
     | SHA384 ->
+      let i = AC.sha384_impl () in
+      if SC.hacl && i = AC.Hacl then
         let b = B.malloc HS.root 0UL Hacl.SHA2_384.size_state in
         SHA384_Hacl b
-    | _ ->
+      else if SC.openssl && i = AC.OpenSSL then
+        let st = OpenSSL.hash_create OpenSSL.SHA384 in
+	let p = B.malloc HS.root 0uy 1ul in
+	HASH_OPENSSL st p a
+      else
+        failwith !$"inconsistent configuration"
+    | SHA512 ->
+      let i = AC.sha512_impl () in
+      if SC.openssl && i = AC.OpenSSL then
+        let st = OpenSSL.hash_create OpenSSL.SHA512 in
+	let p = B.malloc HS.root 0uy 1ul in
+	HASH_OPENSSL st p a
+      else
+        failwith !$"inconsistent configuration"
+    | MD5 | SHA1 | SHA224 ->
+      if SC.openssl then
+        let a' = match a with
+	  | MD5 -> OpenSSL.MD5
+	  | SHA1 -> OpenSSL.SHA1
+	  | SHA224 -> OpenSSL.SHA224 in
+        let st = OpenSSL.hash_create a' in
+	let p = B.malloc HS.root 0uy 1ul in
+	HASH_OPENSSL st p a
+      else
         failwith !$"not implemented"
+    | AGILE -> failwith !$"impossible"
   in
   B.malloc HS.root s 1ul
 
@@ -273,7 +316,8 @@ let init #a s =
   match !*s with
   | SHA256_Hacl p -> Hacl.SHA2_256.init (T.new_to_old_st p)
   | SHA384_Hacl p -> Hacl.SHA2_384.init (T.new_to_old_st p)
-  | SHA256_Vale p -> ValeGlue.sha256_init p; admit ()
+  | SHA256_Vale p -> assume false; ValeGlue.sha256_init p // hashing empty
+  | HASH_OPENSSL _ _ _ -> assume false; () // hashing empty
 
 #set-options "--z3rlimit 20 --print_implicits"
 let update #ea prior s data =
@@ -292,18 +336,34 @@ let update #ea prior s data =
 
   match !*s with
   | SHA256_Hacl p ->
+    if SC.hacl then
       let p = T.new_to_old_st p in
       let data = T.new_to_old_st data in
       Hacl.SHA2_256.update p data
-
+    else failwith !$"impossible"
+    
   | SHA384_Hacl p ->
+    if SC.hacl then
       let p = T.new_to_old_st p in
       let data = T.new_to_old_st data in
       Hacl.SHA2_384.update p data
+    else failwith !$"impossible"
 
   | SHA256_Vale p ->
-      ValeGlue.sha256_update p data;
-      admit ()
+    if SC.vale then
+     begin
+      assume false; // TODO: functional correctness
+      ValeGlue.sha256_update p data
+     end
+    else failwith !$"impossible"
+      
+  | HASH_OPENSSL st _ a ->
+    if SC.openssl then
+     begin
+      assume false; // TODO: functional correctness
+      OpenSSL.hash_update st data (blockLen a)
+     end
+    else failwith !$"impossible"
 
 #set-options "--z3rlimit 300"
 let update_multi #ea prior s data len =
@@ -359,9 +419,21 @@ let update_multi #ea prior s data len =
       ()
 
   | SHA256_Vale p ->
+    if SC.vale then
+     begin
       let n = len / blockLen SHA256 in
-      ValeGlue.sha256_update_multi p data n;
-      admit ()
+      assume false; // Functional correctness
+      ValeGlue.sha256_update_multi p data n
+     end
+    else failwith !$"impossible"
+
+  | HASH_OPENSSL st _ _ ->
+    if SC.openssl then
+     begin
+      assume false; // Functional correctness
+      OpenSSL.hash_update st data len
+     end
+    else failwith !$"impossible"
 
 //18-07-07 For SHA384 I was expecting a conversion from 32 to 64 bits
 
@@ -383,6 +455,7 @@ let update_last #ea prior s data totlen =
     assert(M.(loc_disjoint (footprint #a s h0) (loc_buffer data))));
   match !*s with
   | SHA256_Hacl p ->
+    if SC.hacl then
       let len = totlen % blockLen SHA256 in
       let p = T.new_to_old_st p in
       let data = T.new_to_old_st data in
@@ -396,59 +469,126 @@ let update_last #ea prior s data totlen =
         assert(Seq.length fresh % blockLength a = 0);
         let b = Seq.append prior fresh in
         assume(repr #a s h1 == hash0 b) // Hacl.Spec misses at least the updated counter
-        )
+      )
+    else failwith !$"impossible"
+      
   | SHA384_Hacl p ->
+    if SC.hacl then
+     begin
       let len = totlen % blockLen SHA384 in
       let p = T.new_to_old_st p in
       let data = T.new_to_old_st data in
-      admit();//18-07-12 unclear what's missing here
-      Hacl.SHA2_384.update_last p data len;
-      admit()
+      assume false; // TODO: functional correctness
+      Hacl.SHA2_384.update_last p data len
+     end
+    else failwith !$"impossible"
 
   | SHA256_Vale p ->
+    if SC.vale then
+     begin
       let len = totlen % blockLen SHA256 in
-      ValeGlue.sha256_update_last p data len;
-      admit()
+      assume false; // TODO: functional correctness
+      ValeGlue.sha256_update_last p data len
+     end
+    else failwith !$"impossible"
+    
+  | HASH_OPENSSL st _ a ->
+    if SC.openssl then
+     begin
+      assume(false); // TODO: functional correctness
+      OpenSSL.hash_update st data (totlen % (blockLen a))
+     end
+    else failwith !$"impossible"
 
 let finish #ea s dst =
   match !*s with
   | SHA256_Hacl p ->
+    if SC.hacl then
       let p = T.new_to_old_st p in
       let dst = T.new_to_old_st dst in
       Hacl.SHA2_256.finish p dst
+    else failwith !$"impossible"
   | SHA384_Hacl p ->
+    if SC.hacl then
       let p = T.new_to_old_st p in
       let dst = T.new_to_old_st dst in
       Hacl.SHA2_384.finish p dst
+    else failwith !$"impossible"
   | SHA256_Vale p ->
-      ValeGlue.sha256_finish p dst;
-      admit ()
+    if SC.vale then
+     begin
+      assume false; // TODO: functional correctness
+      ValeGlue.sha256_finish p dst
+     end
+    else failwith !$"impossible"
+  | HASH_OPENSSL st _ _ ->
+    if SC.openssl then
+     begin
+      assume false; // TODO: functional correctness
+      let _ = OpenSSL.hash_final st dst in ()
+     end
+    else failwith !$"impossible"
 
 let free #ea s =
   (match !* s with
   | SHA256_Hacl p -> B.free p
   | SHA384_Hacl p -> B.free p
-  | SHA256_Vale p -> B.free p);
+  | SHA256_Vale p -> B.free p
+  | HASH_OPENSSL st p _ -> OpenSSL.hash_free st; B.free p);
   B.free s
+
+private let hash_openssl a dst input len
+  : ST unit
+  (requires fun h0 -> True)
+  (ensures fun h0 _ h1 -> False) =
+  assume false; // Functional correctness
+  if SC.openssl && a <> AGILE then
+   let a' = match a with
+   | MD5 -> OpenSSL.MD5
+   | SHA1 -> OpenSSL.SHA1
+   | SHA224 -> OpenSSL.SHA224
+   | SHA256 -> OpenSSL.SHA256
+   | SHA384 -> OpenSSL.SHA384
+   | SHA512 -> OpenSSL.SHA512 in
+   let st = OpenSSL.hash_create a' in
+   OpenSSL.hash_update st input len;
+   let _ = OpenSSL.hash_final st dst in
+   OpenSSL.hash_free st
+  else
+    failwith !$"not implemented"
 
 let hash a dst input len =
   match a with
   | SHA256 ->
       let i = AC.sha256_impl () in
-      if SC.vale && i = AC.Vale then begin
-        ValeGlue.sha256_hash dst input len;
-        admit ()
-      end else begin
+      if SC.vale && i = AC.Vale then
+       begin
+        assume false;
+        ValeGlue.sha256_hash dst input len
+       end
+      else if SC.hacl && i = AC.Hacl then
+       begin
         let input = T.new_to_old_st input in
         let dst = T.new_to_old_st dst in
-        Hacl.SHA2_256.hash dst input len;
-        admit() //18-07-07 TODO align the specs
-      end
+	assume false;
+        Hacl.SHA2_256.hash dst input len
+       end
+      else if SC.openssl && i = AC.OpenSSL then
+       hash_openssl SHA256 dst input len
+      else failwith !$"not implemented"
   | SHA384 ->
+    let i = AC.sha384_impl () in
+    if SC.hacl && i = AC.Hacl then
+     begin
       let input = T.new_to_old_st input in
       let dst = T.new_to_old_st dst in
-      Hacl.SHA2_384.hash dst input len;
-      admit() //18-07-07 TODO align the specs
-  | _ ->
-      admit ();
+      assume false;
+      Hacl.SHA2_384.hash dst input len
+     end
+    else if SC.openssl && i = AC.OpenSSL then
+      hash_openssl SHA384 dst input len
+    else
       failwith !$"not implemented"
+  | a ->
+    hash_openssl a dst input len
+

@@ -113,7 +113,7 @@ $(OUTPUT_DIR)/%.krml: | .depend
 
 # 2. Generation of the .c files
 ifneq (,$(EVEREST_WINDOWS))
-KOPTS		+=-falloca -ftail-calls
+KOPTS+=-falloca -ftail-calls -fparentheses
 endif
 
 $(GENERATED_DIR)/Makefile.include: $(ALL_KRML_FILES) | .depend
@@ -135,7 +135,7 @@ $(GENERATED_DIR)/Makefile.include: $(ALL_KRML_FILES) | .depend
 $(INCLUDE_DIR)/EverCrypt.h: $(ALL_KRML_FILES) | .depend
 	$(KREMLIN_HOME)/krml -skip-compilation -minimal \
 	  $(KOPTS) \
-	  -bundle EverCrypt+EverCrypt.Bytes+EverCrypt.AutoConfig+EverCrypt.HKDF+EverCrypt.HMAC+EverCrypt.Hash=* \
+	  -bundle EverCrypt+EverCrypt.Bytes+EverCrypt.AutoConfig+EverCrypt.Hash+EverCrypt.HMAC+EverCrypt.HKDF=* \
 	  -library EverCrypt,EverCrypt.* \
 	  -add-include '<inttypes.h>' \
 	  -add-include '<stdbool.h>' \
@@ -143,7 +143,7 @@ $(INCLUDE_DIR)/EverCrypt.h: $(ALL_KRML_FILES) | .depend
 	  -add-include '<kremlin/internal/compat.h>' \
 	  -tmpdir $(INCLUDE_DIR) $^
 	rm -rf $(INCLUDE_DIR)/Makefile.include $(INCLUDE_DIR)/*.c
-	mv $(INCLUDE_DIR)/EverCrypt_EverCrypt_Bytes_EverCrypt_AutoConfig_EverCrypt_HKDF_EverCrypt_HMAC_EverCrypt_Hash.h $@
+	mv $(INCLUDE_DIR)/EverCrypt_EverCrypt_Bytes_EverCrypt_AutoConfig_EverCrypt_Hash_EverCrypt_HMAC_EverCrypt_HKDF.h $@
 
 
 

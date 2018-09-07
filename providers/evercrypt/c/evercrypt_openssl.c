@@ -2,6 +2,7 @@
 #include <openssl/rand.h>
 #include <openssl/dh.h>
 #include <openssl/ec.h>
+#include <openssl/sha.h>
 #include <inttypes.h>
 
 #include "kremlin/internal/target.h"
@@ -318,3 +319,50 @@ bool CoreCrypto_ec_is_on_curve_(CoreCrypto_ec_params *x0,
 }
 
 */
+
+void* EverCrypt_OpenSSL_hash_create(uint8_t alg)
+{
+  EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+  const EVP_MD *md;
+  printf(" \n\n\n **** OPENSSL HASH CREATE ***** \n\n\n");
+  switch(alg)
+  {
+    case 0:
+      md = EVP_md5(); break;
+    case 1:
+      md = EVP_sha1(); break;
+    case 2:
+      md = EVP_sha224(); break;
+    case 3:
+      md = EVP_sha256(); break;
+    case 4:
+      md = EVP_sha384(); break;
+    case 5:
+      md = EVP_sha512(); break;
+    default:
+      handleErrors();
+  }
+  
+  EVP_DigestInit(ctx, md);
+  return (void*)ctx;
+}
+
+void EverCrypt_OpenSSL_hash_update(void* st, uint8_t *data, uint32_t len)
+{
+  EVP_MD_CTX *ctx = (EVP_MD_CTX*)st;
+  EVP_DigestUpdate(ctx, data, len);
+}
+
+uint32_t EverCrypt_OpenSSL_hash_final(void* st, uint8_t *out)
+{
+  unsigned int hlen;
+  EVP_MD_CTX *ctx = (EVP_MD_CTX*)st;
+  EVP_DigestFinal(ctx, out, &hlen);
+  return hlen;
+}
+
+void EverCrypt_OpenSSL_hash_free(void* st)
+{
+  EVP_MD_CTX *ctx = (EVP_MD_CTX*)st;
+  EVP_MD_CTX_free(ctx);
+}

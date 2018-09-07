@@ -462,13 +462,14 @@ let main (): St C.exit_code =
 
   print !$"===========Vale===========\n";
   AC.(init (Prefer Vale));
-  test_aead aead_vectors_low;
   test_hash hash_vectors_low;
+  test_aead aead_vectors_low;
   test_cipher block_cipher_vectors_low;
   Test.Hash.main ();
 
   print !$"==========OpenSSL=========\n";
   AC.(init (Prefer OpenSSL));
+  test_hash hash_vectors_low;
   test_aead aead_vectors_low;
   test_cipher block_cipher_vectors_low;
 

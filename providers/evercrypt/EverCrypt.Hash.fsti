@@ -31,6 +31,7 @@ type alg =
   | SHA256
   | SHA384
   | SHA512
+  | AGILE // FIXME workaround for erasure inference of agile state
 //| SHAKE128 of (n:nat{n >= 8})
 //| SHAKE256 of (n:nat{n >= 16})
 
