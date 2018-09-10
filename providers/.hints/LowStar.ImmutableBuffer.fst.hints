@@ -1,0 +1,130 @@
+[
+  "\tZÏ¤JKG¬î'œ¡8Þ*ç",
+  [
+    [
+      "LowStar.ImmutableBuffer.immutable_preorder",
+      1,
+      2,
+      1,
+      [
+        "@query", "equation_FStar.Preorder.preorder_rel",
+        "equation_Prims.logical",
+        "interpretation_LowStar.ImmutableBuffer_Tm_abs_0b3b0af91f4388f6cd594da84b353312",
+        "lemma_FStar.Seq.Base.lemma_eq_elim",
+        "lemma_FStar.Seq.Base.lemma_eq_refl"
+      ],
+      0,
+      "e90895e3cbbc00607e0d8090c3436506"
+    ],
+    [
+      "LowStar.ImmutableBuffer.igcmalloc",
+      1,
+      2,
+      1,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "FStar.Seq.Base_pretyping_7efa52b424e80c83ad68a652aa3561e4",
+        "Prims_pretyping_ae567c2fb75be05905677af440075565", "b2t_def",
+        "equation_FStar.Preorder.preorder",
+        "equation_FStar.Preorder.preorder_rel", "equation_FStar.UInt.fits",
+        "equation_FStar.UInt.min_int", "equation_FStar.UInt.size",
+        "equation_FStar.UInt32.n", "equation_LowStar.ImmutableBuffer.cpred",
+        "equation_LowStar.ImmutableBuffer.immutable_preorder",
+        "equation_Prims.logical", "equation_Prims.nat",
+        "function_token_typing_FStar.UInt32.n",
+        "function_token_typing_LowStar.ImmutableBuffer.cpred",
+        "function_token_typing_LowStar.ImmutableBuffer.immutable_preorder",
+        "interpretation_LowStar.ImmutableBuffer_Tm_abs_0b3b0af91f4388f6cd594da84b353312",
+        "interpretation_LowStar.ImmutableBuffer_Tm_abs_3e5fcae826c9d59ef1e843dd2ff11d0b",
+        "lemma_FStar.Seq.Base.lemma_eq_elim",
+        "lemma_FStar.Seq.Base.lemma_eq_refl", "primitive_Prims.op_AmpAmp",
+        "primitive_Prims.op_LessThanOrEqual",
+        "projection_inverse_BoxBool_proj_0",
+        "refinement_interpretation_FStar.Preorder_Tm_refine_bd10f09297e0e7dc08314f7d9211801c",
+        "refinement_interpretation_LowStar.ImmutableBuffer_Tm_refine_97d7efb4c09595b4bea8dedfb1201608",
+        "refinement_interpretation_LowStar.ImmutableBuffer_Tm_refine_e5741246f011944b88f151c871fc34fd",
+        "refinement_interpretation_Prims_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
+        "typing_LowStar.ImmutableBuffer.immutable_preorder",
+        "typing_LowStar.Monotonic.Buffer.length"
+      ],
+      0,
+      "b756d24162da6f5bae403c70a4d11836"
+    ],
+    [
+      "LowStar.ImmutableBuffer.igcmalloc_of_list",
+      1,
+      2,
+      1,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "FStar.Seq.Base_pretyping_7efa52b424e80c83ad68a652aa3561e4",
+        "equation_FStar.Monotonic.HyperStack.mem",
+        "equation_FStar.Preorder.preorder",
+        "equation_FStar.Preorder.preorder_rel",
+        "equation_LowStar.ImmutableBuffer.cpred",
+        "equation_LowStar.ImmutableBuffer.immutable_preorder",
+        "equation_Prims.logical",
+        "function_token_typing_LowStar.ImmutableBuffer.immutable_preorder",
+        "interpretation_LowStar.ImmutableBuffer_Tm_abs_0b3b0af91f4388f6cd594da84b353312",
+        "interpretation_LowStar.ImmutableBuffer_Tm_abs_3e5fcae826c9d59ef1e843dd2ff11d0b",
+        "lemma_FStar.Seq.Base.lemma_eq_elim",
+        "lemma_FStar.Seq.Base.lemma_eq_refl",
+        "refinement_interpretation_FStar.Preorder_Tm_refine_bd10f09297e0e7dc08314f7d9211801c",
+        "refinement_interpretation_FStar.Seq.Properties_Tm_refine_d2d1ea66f2b3a92c2deb42edcbb784ce",
+        "refinement_interpretation_LowStar.ImmutableBuffer_Tm_refine_87c995f5f3d0d2f451658a4c018ea563",
+        "refinement_interpretation_LowStar.ImmutableBuffer_Tm_refine_fb1b732460e2f06dbff453fe93d45221",
+        "token_correspondence_LowStar.ImmutableBuffer.cpred",
+        "typing_FStar.Seq.Properties.seq_of_list",
+        "typing_LowStar.ImmutableBuffer.immutable_preorder",
+        "typing_LowStar.Monotonic.Buffer.as_seq"
+      ],
+      0,
+      "cfc88f228c54b01aaa6ee5f171ae3d74"
+    ],
+    [
+      "LowStar.ImmutableBuffer.witness_contents",
+      1,
+      2,
+      1,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "equation_FStar.Monotonic.HyperStack.mem",
+        "equation_LowStar.ImmutableBuffer.cpred",
+        "equation_LowStar.ImmutableBuffer.ibuffer",
+        "equation_LowStar.ImmutableBuffer.immutable_preorder",
+        "equation_Prims.logical",
+        "function_token_typing_LowStar.ImmutableBuffer.immutable_preorder",
+        "interpretation_LowStar.ImmutableBuffer_Tm_abs_0b3b0af91f4388f6cd594da84b353312",
+        "interpretation_LowStar.ImmutableBuffer_Tm_abs_3e5fcae826c9d59ef1e843dd2ff11d0b",
+        "lemma_FStar.Seq.Base.lemma_eq_elim",
+        "lemma_FStar.Seq.Base.lemma_eq_refl",
+        "refinement_interpretation_LowStar.ImmutableBuffer_Tm_refine_8bfd923a270edf301013b75d531d6885",
+        "token_correspondence_LowStar.ImmutableBuffer.cpred",
+        "typing_LowStar.ImmutableBuffer.immutable_preorder",
+        "typing_LowStar.Monotonic.Buffer.as_seq"
+      ],
+      0,
+      "25d9b23868af1703a556a0ae2a03706e"
+    ],
+    [
+      "LowStar.ImmutableBuffer.recall_contents",
+      1,
+      2,
+      1,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "equation_FStar.Monotonic.HyperStack.mem",
+        "equation_LowStar.ImmutableBuffer.cpred",
+        "equation_LowStar.ImmutableBuffer.ibuffer",
+        "interpretation_LowStar.ImmutableBuffer_Tm_abs_3e5fcae826c9d59ef1e843dd2ff11d0b",
+        "lemma_FStar.Seq.Base.lemma_eq_elim",
+        "refinement_interpretation_LowStar.ImmutableBuffer_Tm_refine_a1f25ccbc3677ecd11f7efb4d47860dd",
+        "token_correspondence_LowStar.ImmutableBuffer.cpred",
+        "typing_LowStar.ImmutableBuffer.immutable_preorder",
+        "typing_LowStar.Monotonic.Buffer.as_seq"
+      ],
+      0,
+      "27d08f5dd7179438eddc2759b3633e1c"
+    ]
+  ]
+]
