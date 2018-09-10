@@ -153,13 +153,19 @@ open FStar.Integers
 let uint32_p = B.buffer uint_32
 let uint64_p = B.buffer uint_64
 
-noeq type state_s: alg -> Type0 =
-| SHA256_Hacl: p:uint32_p{ B.freeable p /\ B.length p = v Hacl.SHA2_256.size_state }   -> state_s SHA256
-| SHA256_Vale: p:uint32_p{ B.freeable p /\ B.length p = v ValeGlue.sha256_size_state } -> state_s SHA256
-| SHA384_Hacl: p:uint64_p{ B.freeable p /\ B.length p = v Hacl.SHA2_384.size_state }   -> state_s SHA384
-| HASH_OPENSSL: st:Dyn.dyn -> p:uint8_p{B.freeable p /\ B.length p = 1} -> a:alg -> state_s AGILE
+noeq type state_s: Type0 =
+| SHA256_Hacl: p:uint32_p{ B.freeable p /\ B.length p = v Hacl.SHA2_256.size_state }   -> state_s
+| SHA256_Vale: p:uint32_p{ B.freeable p /\ B.length p = v ValeGlue.sha256_size_state } -> state_s
+| SHA384_Hacl: p:uint64_p{ B.freeable p /\ B.length p = v Hacl.SHA2_384.size_state }   -> state_s
+| HASH_OPENSSL: st:Dyn.dyn -> p:uint8_p{B.freeable p /\ B.length p = 1} -> a:alg -> state_s
 
-let footprint_s #a (s: state_s a) =
+let alg_of = function
+  | SHA256_Hacl _ -> SHA256
+  | SHA256_Vale _ -> SHA256
+  | SHA384_Hacl _ -> SHA384
+  | HASH_OPENSSL _ _ a -> a
+
+let footprint_s (s: state_s) =
   match s with
   | SHA256_Hacl p -> M.loc_addr_of_buffer p
   | SHA256_Vale p -> M.loc_addr_of_buffer p
@@ -168,7 +174,7 @@ let footprint_s #a (s: state_s a) =
 
 #set-options "--max_fuel 0 --max_ifuel 1"
 
-let invariant_s #a s h =
+let invariant_s s h =
   match s with
   | SHA256_Hacl p -> B.live h p
   | SHA256_Vale p -> B.live h p
@@ -177,7 +183,7 @@ let invariant_s #a s h =
 
 //#set-options "--z3rlimit 40"
 
-let repr #a s h: GTot _ =
+let repr s h : GTot _ =
   let s = B.get h s 0 in
   // 18-08-30 regression after moving ghosts around; strange MD5 error?!
   assume False;
@@ -211,10 +217,11 @@ let repr_eq (#a:alg) (r1 r2: acc a) =
 
 let fresh_is_disjoint l1 l2 h0 h1 = ()
 
-let invariant_loc_in_footprint #a s m = ()
+let invariant_loc_in_footprint s m = ()
 
-let frame_invariant #a l s h0 h1 =
+let frame_invariant l s h0 h1 =
   let state = B.deref h0 s in
+  assume (B.deref h1 s == state); // FIXME Immutablebuffer
   assert (repr_eq (repr s h0) (repr s h1))
 
 // C.Failure.failwith ensures True
@@ -273,7 +280,6 @@ let create a =
 	HASH_OPENSSL st p a
       else
         failwith !$"not implemented"
-    | AGILE -> failwith !$"impossible"
   in
   B.malloc HS.root s 1ul
 
@@ -311,20 +317,28 @@ let rec lemma_has_counter (#a:alg) (b:bytes {Seq.length b % blockLength a = 0}):
   admit() //TODO, similar, unnecessary once we get rid of the internal counter
 
 #set-options "--max_fuel 0"
-let init #a s =
-  assert_norm(acc0 #(Ghost.reveal a) == hash0 #(Ghost.reveal a) (Seq.empty #UInt8.t));
+let init s =
   match !*s with
-  | SHA256_Hacl p -> Hacl.SHA2_256.init (T.new_to_old_st p)
-  | SHA384_Hacl p -> Hacl.SHA2_384.init (T.new_to_old_st p)
-  | SHA256_Vale p -> assume false; ValeGlue.sha256_init p // hashing empty
-  | HASH_OPENSSL _ _ _ -> assume false; () // hashing empty
+  | SHA256_Hacl p ->
+    assert_norm(acc0 #SHA256 == hash0 #SHA256 (Seq.empty #UInt8.t));
+    Hacl.SHA2_256.init (T.new_to_old_st p)
+  | SHA384_Hacl p ->
+    assert_norm(acc0 #SHA384 == hash0 #SHA384 (Seq.empty #UInt8.t));
+    Hacl.SHA2_384.init (T.new_to_old_st p)
+  | SHA256_Vale p ->
+    assume false;
+    ValeGlue.sha256_init p // hashing empty
+  | HASH_OPENSSL _ _ _ ->
+    assume false;
+    () // hashing empty
 
 #set-options "--z3rlimit 20 --print_implicits"
-let update #ea prior s data =
+let update prior s data =
   let h0 = ST.get() in
-  ( let a = Ghost.reveal ea in 
+  (
     let prior = Ghost.reveal prior in 
-    let r0 = repr #a s h0 in
+    let a = alg_of (B.deref h0 s) in
+    let r0 = repr s h0 in
     let fresh = B.as_seq h0 data in
     lemma_hash0_has_k #a prior;
     lemma_has_counter #a prior;
@@ -366,11 +380,12 @@ let update #ea prior s data =
     else failwith !$"impossible"
 
 #set-options "--z3rlimit 300"
-let update_multi #ea prior s data len =
+let update_multi prior s data len =
   let h0 = ST.get() in
-  ( let a = Ghost.reveal ea in 
+  (
     let prior = Ghost.reveal prior in
-    let r0 = repr #a s h0 in
+    let a = alg_of (B.deref h0 s) in
+    let r0 = repr s h0 in
     let fresh = B.as_seq h0 data in
     lemma_hash0_has_k #a prior;
     lemma_has_counter #a prior;
@@ -388,7 +403,8 @@ let update_multi #ea prior s data len =
       Hacl.SHA2_256.update_multi p data n;
 
       let h1 = ST.get() in
-      ( let a = Ghost.reveal ea in 
+      (
+        let a = alg_of (B.deref h1 s) in
         let r0 = repr #a s h0 in
         let r1 = repr #a s h1 in
         let fresh = Buffer.as_seq h0 data in
@@ -407,7 +423,8 @@ let update_multi #ea prior s data len =
       Hacl.SHA2_384.update_multi p data n;
 
       let h1 = ST.get() in
-      ( let a = Ghost.reveal ea in 
+      (
+        let a = alg_of (B.deref h1 s) in
         let r0 = repr #a s h0 in
         let r1 = repr #a s h1 in
         let fresh = Buffer.as_seq h0 data in
@@ -438,11 +455,11 @@ let update_multi #ea prior s data len =
 //18-07-07 For SHA384 I was expecting a conversion from 32 to 64 bits
 
 //18-07-10 WIP verification; still missing proper spec for padding
-let update_last #ea prior s data totlen =
+let update_last prior s data totlen =
   let h0 = ST.get() in
   ( 
-    let a = Ghost.reveal ea in 
-    let r0 = repr #a s h0 in
+    let a = alg_of (B.deref h0 s) in
+    let r0 = repr s h0 in
     let pad = suffix a (v totlen) in
     let prior = Ghost.reveal prior in
     let fresh = Seq.append (B.as_seq h0 data) pad in
@@ -462,13 +479,13 @@ let update_last #ea prior s data totlen =
       Hacl.SHA2_256.update_last p data len;
       let h1 = ST.get() in
       ( 
-        let a = Ghost.reveal ea in 
+        let a = alg_of (B.deref h1 s) in
         let pad = suffix a (v totlen) in
         let prior = Ghost.reveal prior in
         let fresh = Seq.append (Buffer.as_seq h0 data) pad in
         assert(Seq.length fresh % blockLength a = 0);
         let b = Seq.append prior fresh in
-        assume(repr #a s h1 == hash0 b) // Hacl.Spec misses at least the updated counter
+        assume(repr s h1 == hash0 b) // Hacl.Spec misses at least the updated counter
       )
     else failwith !$"impossible"
       
@@ -500,7 +517,7 @@ let update_last #ea prior s data totlen =
      end
     else failwith !$"impossible"
 
-let finish #ea s dst =
+let finish s dst =
   match !*s with
   | SHA256_Hacl p ->
     if SC.hacl then
@@ -529,7 +546,7 @@ let finish #ea s dst =
      end
     else failwith !$"impossible"
 
-let free #ea s =
+let free s =
   (match !* s with
   | SHA256_Hacl p -> B.free p
   | SHA384_Hacl p -> B.free p
@@ -542,7 +559,7 @@ private let hash_openssl a dst input len
   (requires fun h0 -> True)
   (ensures fun h0 _ h1 -> False) =
   assume false; // Functional correctness
-  if SC.openssl && a <> AGILE then
+  if SC.openssl then
    let a' = match a with
    | MD5 -> OpenSSL.MD5
    | SHA1 -> OpenSSL.SHA1

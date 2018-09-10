@@ -31,7 +31,6 @@ type alg =
   | SHA256
   | SHA384
   | SHA512
-  | AGILE // FIXME workaround for erasure inference of agile state
 //| SHAKE128 of (n:nat{n >= 8})
 //| SHAKE256 of (n:nat{n >= 16})
 
@@ -46,10 +45,6 @@ val string_of_alg: alg -> C.String.t
 /// for constructions based on those.
 ///
 type alg13 = a:alg {a=SHA256 \/ a=SHA384 \/ a=SHA512}
-
-// do not use as argument of ghost functions
-type e_alg = Ghost.erased alg
-
 
 /// Lengths for input blocks and output tags, in bytes.
 
@@ -190,6 +185,7 @@ let spec (a:alg) (b:hashable a): GTot (tag a) =
 
 module HS = FStar.HyperStack
 module B = LowStar.Buffer
+module IB = LowStar.ImmutableBuffer
 module M = LowStar.Modifies
 module G = FStar.Ghost
 
@@ -197,13 +193,14 @@ open LowStar.BufferOps
 
 // abstract implementation state
 [@CAbstractStruct]
-val state_s: alg -> Type0
-let state alg = b:B.pointer (state_s alg) { B.freeable b }
+val state_s: Type0
+val alg_of: state_s -> GTot alg
+let state = b:IB.ipointer state_s { IB.freeable b }
 
 // NS: note that the state is the first argument to the invariant so that we can
 // do partial applications in pre- and post-conditions
-val footprint_s: #a:alg -> state_s a -> GTot M.loc
-let footprint (#a:alg) (s: state a) (m: HS.mem) =
+val footprint_s: state_s -> GTot M.loc
+let footprint (s:state) (m:HS.mem) =
   M.(loc_union (loc_addr_of_buffer s) (footprint_s (B.deref m s)))
 
 // TR: the following pattern is necessary because, if we generically
@@ -217,7 +214,7 @@ let footprint (#a:alg) (s: state a) (m: HS.mem) =
 // smallest location that is not exposed to be a `loc_union`.)
 
 let loc_includes_union_l_footprint_s
-  (l1 l2: M.loc) (#a: alg) (s: state_s a)
+  (l1 l2:M.loc) (s:state_s)
 : Lemma
   (requires (
     M.loc_includes l1 (footprint_s s) \/ M.loc_includes l2 (footprint_s s)
@@ -226,15 +223,14 @@ let loc_includes_union_l_footprint_s
   [SMTPat (M.loc_includes (M.loc_union l1 l2) (footprint_s s))]
 = M.loc_includes_union_l l1 l2 (footprint_s s)
 
-val invariant_s: (#a:alg) -> state_s a -> HS.mem -> Type0
-let invariant (#a:alg) (s: state a) (m: HS.mem) =
+val invariant_s: state_s -> HS.mem -> Type0
+let invariant (s:state) (m:HS.mem) =
   B.live m s /\
   M.(loc_disjoint (loc_addr_of_buffer s) (footprint_s (B.deref m s))) /\
   invariant_s (B.get m s 0) m
 
 //18-07-06 as_acc a better name? not really a representation
-val repr: #a:alg -> 
-  s:state a -> h:HS.mem { invariant s h } -> GTot (acc a)
+val repr: s:state -> h:HS.mem { invariant s h } -> GTot (acc (alg_of (B.deref h s)))
 
 // Waiting for these to land in LowStar.Modifies
 let loc_in (l: M.loc) (h: HS.mem) =
@@ -254,10 +250,8 @@ val fresh_is_disjoint: l1:M.loc -> l2:M.loc -> h0:HS.mem -> h1:HS.mem -> Lemma
 // from any fresh memory location.
 
 val invariant_loc_in_footprint
-  (#a: alg)
-  (s: state a)
-  (m: HS.mem)
-: Lemma
+  (s: state) (m: HS.mem)
+  : Lemma
   (requires (invariant s m))
   (ensures (loc_in (footprint s m) m))
   [SMTPat (invariant s m)]
@@ -269,19 +263,19 @@ val invariant_loc_in_footprint
 // pattern reasons (e.g. push_frame, pop_frame)
 
 // 18-07-12 why not bundling the next two lemmas?
-val frame_invariant: #a:alg -> l:M.loc -> s:state a -> h0:HS.mem -> h1:HS.mem -> Lemma
+val frame_invariant: l:M.loc -> s:state -> h0:HS.mem -> h1:HS.mem -> Lemma
   (requires (
     invariant s h0 /\
     M.loc_disjoint l (footprint s h0) /\
     M.modifies_inert l h0 h1))
   (ensures (
     invariant s h1 /\
+    alg_of (B.deref h0 s) == alg_of (B.deref h1 s) /\
     repr s h0 == repr s h1))
 
 let frame_invariant_implies_footprint_preservation
-  (#a: alg)
   (l: M.loc)
-  (s: state a)
+  (s: state)
   (h0 h1: HS.mem): Lemma
   (requires (
     invariant s h0 /\
@@ -292,43 +286,41 @@ let frame_invariant_implies_footprint_preservation
 =
   ()
 
-val create: a:alg -> ST (state a)
+val create: a:alg -> ST state
   (requires fun h0 -> True)
   (ensures fun h0 s h1 ->
     invariant s h1 /\
+    alg_of (B.deref h1 s) = a /\
     M.(modifies loc_none h0 h1) /\
     fresh_loc (footprint s h1) h0 h1)
 
 // we use exists b. hashing s h b as our stateful abstract
 // invariant; the existence of b is used only to reason about the
 // internal counter.
-let hashing (#a:alg) (s: state a) (h: HS.mem) (b: bytes) =
+let hashing (s: state) (h: HS.mem) (b: bytes) =
   invariant s h /\
-  Seq.length b % blockLength a = 0 /\
+  Seq.length b % blockLength (alg_of (B.deref h s)) = 0 /\
   repr s h == hash0 b
 
-val init: #a:e_alg -> (
-  let a = Ghost.reveal a in 
-  s: state a -> ST unit
+val init: s:state -> ST unit
   (requires invariant s)
   (ensures fun h0 _ h1 ->
     hashing s h1 (Seq.empty #UInt8.t) /\ // implies repr s h1 == acc0 #a
     M.(modifies (footprint s h0) h0 h1) /\
-    footprint s h0 == footprint s h1))
+    footprint s h0 == footprint s h1)
 
 // Note: this function relies implicitly on the fact that we are running with
 // code/lib/kremlin and that we know that machine integers and secret integers
 // are the same. In the long run, we should standardize on a secret integer type
 // in F*'s ulib and have evercrypt use it.
 val update:
-  #a:e_alg -> 
   b: Ghost.erased bytes -> (
-  let a = Ghost.reveal a in
   let b = Ghost.reveal b in 
-  s:state a ->
-  block:uint8_p {B.length block = blockLength a} ->
+  s:state ->
+  block:uint8_p ->
   Stack unit
   (requires fun h0 ->
+    B.length block = blockLength (alg_of (B.deref h0 s)) /\
     hashing s h0 b /\
     B.live h0 block /\
     M.(loc_disjoint (footprint s h0) (loc_buffer block)))
@@ -342,15 +334,14 @@ val update:
 // than blocks). I also removed the counter invariant, assuming we
 // will get rid of it.
 val update_multi:
-  #a:e_alg ->
   b: Ghost.erased bytes -> (
-  let a = Ghost.reveal a in
   let b = Ghost.reveal b in 
-  s:state a ->
-  blocks:uint8_p {B.length blocks % blockLength a = 0} ->
+  s:state ->
+  blocks:uint8_p ->
   len: UInt32.t {v len = B.length blocks} ->
   Stack unit
   (requires fun h0 ->
+    B.length blocks % blockLength (alg_of (B.deref h0 s)) = 0 /\
     hashing s h0 b /\
     B.live h0 blocks /\
     M.(loc_disjoint (footprint s h0) (loc_buffer blocks)))
@@ -363,22 +354,23 @@ val update_multi:
 // 18-03-03 it is best to let the caller keep track of lengths.
 // 18-03-03 the last block is *never* complete so there is room for the 1st byte of padding.
 val update_last:
-  #a:e_alg ->
   b:Ghost.erased bytes -> (
-  let a = Ghost.reveal a in
   let b = Ghost.reveal b in 
-  s:state a ->
-  last:uint8_p {B.length last < blockLength a } ->
-  total_len:UInt32.t {
-    let l = v total_len in
-    l = Seq.length b + B.length last /\
-    l <= maxLength a } ->
+  s:state ->
+  last:uint8_p ->
+  total_len:UInt32.t ->
   Stack unit
   (requires fun h0 ->
+    let a = alg_of (B.deref h0 s) in
+    let l = v total_len in
+    B.length last < blockLength a /\
+    l = Seq.length b + B.length last /\
+    l <= maxLength a /\
     hashing s h0 b /\
     B.live h0 last /\
     M.(loc_disjoint (footprint s h0) (loc_buffer last)))
   (ensures fun h0 _ h1 ->
+    let a = alg_of (B.deref h1 s) in
     let last0 = B.as_seq h0 last in
     let rawbytes = Seq.append last0 (suffix a (v total_len)) in
     Seq.length rawbytes % blockLength a = 0 /\
@@ -387,12 +379,11 @@ val update_last:
     hashing s h1 (Seq.append b rawbytes)))
 
 val finish:
-  #a:e_alg -> (
-  let a = Ghost.reveal a in 
-  s:state a ->
-  dst:uint8_p {B.length dst = tagLength a} ->
+  s:state ->
+  dst:uint8_p ->
   Stack unit
   (requires fun h0 ->
+    B.length dst = tagLength (alg_of (B.deref h0 s)) /\
     invariant s h0 /\
     B.live h0 dst /\
     M.(loc_disjoint (footprint s h0) (loc_buffer dst)))
@@ -400,16 +391,13 @@ val finish:
     invariant s h1 /\
     M.(modifies (loc_buffer dst) h0 h1) /\
     footprint s h0 == footprint s h1 /\
-    B.as_seq h1 dst == extract (repr s h0)))
+    B.as_seq h1 dst == extract (repr s h0))
 
 val free: 
-  #a:e_alg -> (
-  let a = Ghost.reveal a in 
-  s:state a -> ST unit
-  (requires fun h0 ->
-    invariant s h0)
+  s:state -> ST unit
+  (requires fun h0 -> invariant s h0)
   (ensures fun h0 _ h1 ->
-    M.(modifies (footprint s h0) h0 h1)))
+    M.(modifies (footprint s h0) h0 h1))
 
 val hash:
   a:alg -> 
