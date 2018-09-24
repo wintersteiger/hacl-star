@@ -228,9 +228,14 @@ let map #a #b #len f x =
 val for_all: #a:Type -> #len:size_nat -> (a -> Tot bool) -> lseq a len -> bool
 let for_all #a #len f x = Seq.for_all f x
 
-val map2: #a:Type -> #b:Type -> #c:Type -> #len:size_nat -> (a -> b -> Tot c) -> lseq a len -> lseq b len -> lseq c len
+val map2: #a:Type -> #b:Type -> #c:Type -> #len:size_nat{len > 0} -> (a -> b -> Tot c) -> lseq a len -> lseq b len -> lseq c len
 let map2 #a #b #c #len f x y =
-  admit()
+  let init = f x.[0] y.[0] in
+  let res = create len init in
+  repeat_range 1 len
+  (fun i res ->
+    res.[i] <- f x.[i] y.[i]
+  ) res
 
 val for_all2: #a:Type -> #b:Type -> #len:size_nat -> (a -> b -> Tot bool) -> lseq a len -> lseq b len -> bool
 let rec for_all2 #a #b #len f x y =

@@ -26,9 +26,9 @@ let ctest modBits nLen n eLen e dLen d msgLen msg sLen salt sgnt_expected num =
 
   IO.print_string ("\n Test "); IO.print_string (UInt8.to_string (num));
   IO.print_string "\n sgnt_computed \n";
-  List.iter (fun a -> IO.print_string (UInt8.to_string_hex (u8_to_UInt8 a))) (as_list sgnt_computed);
+  List.iter (fun a -> IO.print_string (UInt8.to_string (u8_to_UInt8 a))) (as_list sgnt_computed);
   IO.print_string "\n sgnt_expected \n";
-  List.iter (fun a -> IO.print_string (UInt8.to_string_hex (u8_to_UInt8 a))) (as_list sgnt_expected);
+  List.iter (fun a -> IO.print_string (UInt8.to_string (u8_to_UInt8 a))) (as_list sgnt_expected);
   IO.print_string "\n";
   check && verify
 
