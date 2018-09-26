@@ -75,7 +75,7 @@ val os2ip:
     #len:size_nat
   -> b:lbytes len
   -> res:nat{res < pow2 (8 * len)}
-let os2ip #len b = nat_from_intseq_be #U8 #len b
+let os2ip #len b = nat_from_bytes_be #len b
 
 val i2osp:
      #len:size_nat
