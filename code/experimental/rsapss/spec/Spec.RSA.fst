@@ -1,11 +1,8 @@
 module Spec.RSA
 
 open FStar.Mul
-open FStar.Math.Lemmas
 
 open Lib.IntTypes
-open Lib.RawIntTypes
-
 open Lib.Sequence
 open Lib.ByteSequence
 
@@ -140,6 +137,7 @@ val pss_verify:
   -> em:lbytes (blocks emBits 8)
   -> bool
 let pss_verify #msgLen sLen msg emBits em =
+  let open Lib.RawIntTypes in
   let mHash = hash_sha256 msg in
 
   let emLen = blocks emBits 8 in
@@ -147,7 +145,7 @@ let pss_verify #msgLen sLen msg emBits em =
 
   let em_0 = if msBits > 0 then em.[0] &. (u8 0xff <<. u32 msBits) else u8 0 in
   let em_last = em.[emLen - 1] in
-
+  
   if (emLen < sLen + hLen + 2) then false
   else begin
     if (not (uint_to_nat #U8 em_last = 0xbc && uint_to_nat #U8 em_0 = 0)) then false

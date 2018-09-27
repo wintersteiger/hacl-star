@@ -1,11 +1,9 @@
 module Spec.Bignum.Basic
 
 open FStar.Mul
-open FStar.Math.Lemmas
 
 open Lib.IntTypes
 open Lib.Sequence
-open Lib.RawIntTypes
 
 open Spec.Bignum.Base
 open Spec.Convert

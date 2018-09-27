@@ -1,11 +1,9 @@
 module Spec.Bignum.Basic
 
 open FStar.Mul
-open FStar.Math.Lemmas
 
 open Lib.IntTypes
 open Lib.Sequence
-open Lib.RawIntTypes
 
 let bignum bits = n:nat{n < pow2 bits}
 let bn_v #n b = b
@@ -29,12 +27,17 @@ let bn_add #n #m a b =
   let res = a + b in
   bn #n res
 
-val lemma_bn_add:#n:size_pos -> #m:size_pos{n >= m} -> a:bignum n -> b:bignum m -> Lemma
-  (bn_v a + bn_v b < pow2 (n + 1))
+val lemma_bn_add:
+     #n:size_pos
+  -> #m:size_pos{n >= m}
+  -> a:bignum n
+  -> b:bignum m
+  -> Lemma
+    (bn_v a + bn_v b < pow2 (n + 1))
 let lemma_bn_add #n #m a b =
-  pow2_le_compat n m;
+  FStar.Math.Lemmas.pow2_le_compat n m;
   assert (bn_v a + bn_v b < pow2 n + pow2 n);
-  pow2_double_sum n
+  FStar.Math.Lemmas.pow2_double_sum n
 
 let bn_add_carry #n #m a b =
   let res = a + b in
@@ -43,26 +46,30 @@ let bn_add_carry #n #m a b =
 
 let bn_sub #n #m a b = a - b
 
-val lemma_bn_mul:#n:size_pos -> #m:size_pos -> a:bignum n -> b:bignum m -> Lemma
-  (bn_v a * bn_v b < pow2 (n + m))
+val lemma_bn_mul:
+    #n:size_pos
+  -> #m:size_pos
+  -> a:bignum n
+  -> b:bignum m
+  -> Lemma
+    (bn_v a * bn_v b < pow2 (n + m))
 let lemma_bn_mul #n #m a b =
-  pow2_plus n m
+  FStar.Math.Lemmas.pow2_plus n m
 
 let bn_mul #n #m a b =
   lemma_bn_mul #n #m a b;
   bn #(n+m) (a * b)
 
-let bn_get_bit #n b i = (b / pow2 i) % 2
-let bn_get_bits #n b i j = (b / pow2 i) % pow2 (j - i)
+let bn_get_bit #n b i = b / pow2 i % 2
+let bn_get_bits #n b i j = b / pow2 i % pow2 (j - i)
 
-#reset-options "--z3rlimit 30 --max_fuel 2"
 let bn_rshift #n x i =
   assert (x < pow2 n);
-  lemma_div_lt x n i;
-  x / (pow2 i)
+  FStar.Math.Lemmas.lemma_div_lt x n i;
+  x / pow2 i
 
 let bn_to_u64 b = u64 b
-let bn_from_u64 c = bn #64 (uint_to_nat c)
+let bn_from_u64 c = bn #64 (Lib.RawIntTypes.uint_to_nat c)
 
 let bn_is_less #n #m x y = x < y
 
@@ -81,7 +88,12 @@ let bn_from_bytes_be #bBytes b =
   bn #(8*bBytes) res
 
 let bn_to_bytes_be #bBits n =
-  assume (n < pow2 (8 * (blocks bBits 8)));
-  nat_to_bytes_be (blocks bBits 8) n
+  assert (n < pow2 bBits);
+  assert (bBits <= 8 * blocks bBits 8);
+  FStar.Math.Lemmas.pow2_le_compat (8 * blocks bBits 8) bBits;
+  assert (n < pow2 (8 * blocks bBits 8));
+  let b = nat_to_bytes_be (blocks bBits 8) n in
+  assume (n == nat_from_bytes_be b);
+  b
 
-let bn_pow2_r_mod #nBits n r = (pow2 r) % n
+let bn_pow2_r_mod #nBits n r = pow2 r % n
