@@ -72,7 +72,7 @@ val bn_get_bits:
     #n:size_pos
   -> b:bignum n
   -> i:size_nat{i < n /\ i % 64 == 0}
-  -> j:size_pos{i < j /\ (j % 64 == 0 /\ j <= n) \/ j = n}
+  -> j:size_pos{i < j /\ ((j % 64 == 0 /\ j <= n) \/ j = n)}
   -> c:bignum (j - i){bn_v c == bn_v b / pow2 i % pow2 (j - i)}
 
 val bn_rshift:
@@ -93,7 +93,7 @@ val bn_is_less:
 
 val bn_lshift_mul_add:
      #n:size_pos
-  -> #m:size_pos{n <= m}
+  -> #m:size_pos
   -> x:bignum n
   -> i:size_nat{n + i + 64 <= m}
   -> y:bignum 64
@@ -104,7 +104,7 @@ val bn_lshift_mul_add:
 
 val bn_lshift_add:
     #n:size_pos
-  -> #m:size_pos{n <= m}
+  -> #m:size_pos
   -> x:bignum n
   -> i:size_nat{n + i <= m}
   -> z:bignum m
@@ -113,9 +113,9 @@ val bn_lshift_add:
     (ensures  fun res -> bn_v res == bn_v x * pow2 i + bn_v z)
 
 val bn_from_bytes_be:
-    #bBytes:size_pos{8 * bBytes < max_size_t}
-  -> b:lseq uint8 bBytes
-  -> n:bignum (8 * bBytes){bn_v n == nat_from_bytes_be b}
+    #len:size_pos{8 * len < max_size_t}
+  -> b:lseq uint8 len
+  -> n:bignum (8 * len){bn_v n == nat_from_bytes_be b}
 
 val bn_to_bytes_be:
     #bBits:size_pos

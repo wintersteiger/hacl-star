@@ -32,8 +32,7 @@ val lemma_bn_add:
   -> #m:size_pos{n >= m}
   -> a:bignum n
   -> b:bignum m
-  -> Lemma
-    (bn_v a + bn_v b < pow2 (n + 1))
+  -> Lemma (bn_v a + bn_v b < pow2 (n + 1))
 let lemma_bn_add #n #m a b =
   FStar.Math.Lemmas.pow2_le_compat n m;
   assert (bn_v a + bn_v b < pow2 n + pow2 n);
@@ -51,8 +50,7 @@ val lemma_bn_mul:
   -> #m:size_pos
   -> a:bignum n
   -> b:bignum m
-  -> Lemma
-    (bn_v a * bn_v b < pow2 (n + m))
+  -> Lemma (bn_v a * bn_v b < pow2 (n + m))
 let lemma_bn_mul #n #m a b =
   FStar.Math.Lemmas.pow2_plus n m
 
