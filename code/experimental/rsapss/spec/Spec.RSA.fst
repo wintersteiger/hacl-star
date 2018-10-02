@@ -7,7 +7,7 @@ open Lib.Sequence
 open Lib.ByteSequence
 
 open Spec.Bignum.Basic
-open Spec.RSA.Bignum
+open Spec.RSA.Exp
 
 module Hash = Spec.SHA2
 
