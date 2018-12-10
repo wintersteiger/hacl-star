@@ -198,6 +198,7 @@ function exec_build() {
           vale_test 
         else
           hacl_test 
+        fi
         &&
         echo -n true >$status_file
     elif [[ $target == "hacl-nightly" ]]; then
