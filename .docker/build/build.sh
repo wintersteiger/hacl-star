@@ -31,7 +31,7 @@ function vale_test() {
   fetch_kremlin &&
         fetch_and_make_vale &&
         env VALE_SCONS_PARALLEL_OPT="-j $threads" make -j $threads vale.build -k
-
+}
 
 function hacl_test() {
     fetch_and_make_kremlin &&
@@ -199,7 +199,6 @@ function exec_build() {
         else
           hacl_test 
         fi
-        &&
         echo -n true >$status_file
     elif [[ $target == "hacl-nightly" ]]; then
         echo target - >hacl-nightly
