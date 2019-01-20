@@ -45,11 +45,12 @@ open X64.CPU_Features_s
 ///////////////////////////
 
 // Given round key for round, generate round key for round + 1
-procedure{:quick} KeyExpansionRound(
+procedure KeyExpansionRound(
     inline round:nat64,
     inline rcon:imm8,
     ghost dst:buffer128,
     ghost key:seq(nat32))
+    {:quick}
     reads
         rdx; memTaint;
     modifies
@@ -83,10 +84,13 @@ procedure{:quick} KeyExpansionRound(
     reveal expand_key_128_def;
 }
 
-procedure{:quick exportOnly}{:recursive}{:decrease n} KeyExpansionRoundUnrolledRecursive(
+procedure KeyExpansionRoundUnrolledRecursive(
     ghost key:seq(nat32),
     ghost dst:buffer128,
     inline n:int)
+    {:quick exportOnly}
+    {:recursive}
+    {:decrease n}
     reads
         rdx; memTaint;
     modifies
@@ -103,7 +107,7 @@ procedure{:quick exportOnly}{:recursive}{:decrease n} KeyExpansionRoundUnrolledR
     ensures
         modifies_buffer128(dst, old(mem), mem);
         xmm1 == buffer128_read(dst, n, mem);
-        forall j {buffer128_read(dst, j, mem)} :: 0 <= j <= n ==>
+        forall (j) {buffer128_read(dst, j, mem)} 0 <= j <= n ==>
             buffer128_read(dst, j, mem) == expand_key_128(key, j);
 {
     reveal expand_key_128_def;
@@ -113,10 +117,12 @@ procedure{:quick exportOnly}{:recursive}{:decrease n} KeyExpansionRoundUnrolledR
     }
 }
 
-procedure{:quick}{:public} KeyExpansion128Stdcall(
+procedure KeyExpansion128Stdcall(
     inline win:bool,
     ghost input_key_b:buffer128,
     ghost output_key_expansion_b:buffer128)
+    {:quick}
+    {:public}
     reads
         rcx; rsi; rdi; memTaint;
     modifies
@@ -133,7 +139,7 @@ procedure{:quick}{:public} KeyExpansion128Stdcall(
         validDstAddrs128(mem, key_expansion_ptr, output_key_expansion_b, 11, memTaint, Secret);
     ensures
         modifies_buffer128(output_key_expansion_b, old(mem), mem);
-        forall j {buffer128_read(output_key_expansion_b, j, mem)} :: 0 <= j <= 10 ==>
+        forall (j) {buffer128_read(output_key_expansion_b, j, mem)} 0 <= j <= 10 ==>
             buffer128_read(output_key_expansion_b, j, mem) == index(key_to_round_keys_LE(AES_128, key), j);
 {
     inline if (win)
@@ -161,12 +167,13 @@ procedure{:quick}{:public} KeyExpansion128Stdcall(
 // ENCRYPTION
 ///////////////////////////
 
-procedure{:quick} AES128EncryptRound(
+procedure AES128EncryptRound(
     inline n:nat,
     ghost init:quad32,
     ghost round_keys:seq(quad32),
     ghost keys_buffer:buffer128
     )
+    {:quick}
     reads
         r8; mem; memTaint;
     modifies
@@ -186,12 +193,14 @@ procedure{:quick} AES128EncryptRound(
     AESNI_enc(xmm0, xmm2);
 }
 
-procedure{:quick}{:public} AES128EncryptBlock(
+procedure AES128EncryptBlock(
     ghost input:quad32,
     ghost key:seq(nat32),
     ghost round_keys:seq(quad32),
     ghost keys_buffer:buffer128
     )
+    {:quick}
+    {:public}
     reads
         r8; mem; memTaint;
     modifies
@@ -204,7 +213,7 @@ procedure{:quick}{:public} AES128EncryptBlock(
         xmm0 == input;
         r8 == buffer_addr(keys_buffer, mem);
         validSrcAddrs128(mem, r8, keys_buffer, 11, memTaint, Secret);
-        forall i:nat :: i < 11 ==> buffer128_read(keys_buffer, i, mem) == index(round_keys, i);
+        forall (i:nat) i < 11 ==> buffer128_read(keys_buffer, i, mem) == index(round_keys, i);
     ensures
         xmm0 == aes_encrypt_LE(AES_128, key, input);
 {
@@ -230,7 +239,7 @@ procedure{:quick}{:public} AES128EncryptBlock(
     Pxor(xmm2, xmm2);
 }
 
-procedure{:quick}{:public} AES128EncryptBlockStdcall(
+procedure AES128EncryptBlockStdcall(
     inline win:bool,
     ghost input:quad32,
     ghost key:seq(nat32),
@@ -238,6 +247,8 @@ procedure{:quick}{:public} AES128EncryptBlockStdcall(
     ghost output_buffer:buffer128,
     ghost keys_buffer:buffer128
     )
+    {:quick}
+    {:public}
     reads
         rcx; rdx; rsi; rdi; memTaint;
     modifies
@@ -255,7 +266,7 @@ procedure{:quick}{:public} AES128EncryptBlockStdcall(
         validSrcAddrs128(mem, input_ptr, input_buffer, 1, memTaint, Secret);
         validSrcAddrs128(mem, output_ptr, output_buffer, 1, memTaint, Secret);
         validSrcAddrs128(mem, expanded_key_ptr, keys_buffer, 11, memTaint, Secret);
-        forall i:nat :: i < 11 ==>
+        forall (i:nat) i < 11 ==>
             buffer128_read(keys_buffer, i, mem) == index(key_to_round_keys_LE(AES_128, key), i);
     ensures
         modifies_mem(loc_buffer(output_buffer), old(mem), mem);
@@ -347,7 +358,7 @@ procedure KeyInversionRound(
 //    }
 }
 
-procedure {:recursive} KeyInversionRoundUnrolledRecursive(
+procedure KeyInversionRoundUnrolledRecursive(
     inline rounds:int,
 //    inline taint:taint,
     ghost k_b:buffer128)
@@ -357,6 +368,7 @@ procedure {:recursive} KeyInversionRoundUnrolledRecursive(
 //    ) returns (
 //    ghost dw_out:seq(nat32)
 //    )
+    {:recursive}
     requires/ensures
         validSrcAddrs128(mem, rdx, k_b, 11);
     requires

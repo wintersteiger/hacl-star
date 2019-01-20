@@ -49,13 +49,16 @@ open X64.Stack
 
 #reset-options "--z3rlimit 20"
 
-procedure {:quick}{:exportSpecs}{:public} AESEncryptBlockStdcall(
+procedure AESEncryptBlockStdcall(
     inline win:bool,
     ghost stack_b:buffer64,
     ghost output_b:buffer128,
     ghost input_b:buffer128,
     ghost key:seq(nat32),
     ghost keys_b:buffer128)
+    {:quick}
+    {:exportSpecs}
+    {:public} 
     lets
         output_ptr := if win then rcx else rdi;
         input_ptr := if win then rdx else rsi;
@@ -89,7 +92,7 @@ procedure {:quick}{:exportSpecs}{:public} AESEncryptBlockStdcall(
         validSrcAddrs128(mem, input_ptr, input_b, 1, memTaint, Secret);
         validSrcAddrs128(mem, output_ptr, output_b, 1, memTaint, Secret);
         validSrcAddrs128(mem, expanded_key_ptr, keys_b, nr(AES_128) + 1, memTaint, Secret);
-        forall i:nat :: i < nr(AES_128) + 1 ==>
+        forall (i:nat) i < nr(AES_128) + 1 ==>
             buffer128_read(keys_b, i, mem) == index(key_to_round_keys_LE(AES_128, key), i);
     ensures
         modifies_mem(loc_union(loc_buffer(stack_b), loc_buffer(output_b)), old(mem), mem);
@@ -135,13 +138,16 @@ procedure {:quick}{:exportSpecs}{:public} AESEncryptBlockStdcall(
         old(xmm9), old(xmm10), old(xmm11), old(xmm12), old(xmm13), old(xmm14), old(xmm15));
 }
 
-procedure {:quick}{:exportSpecs}{:public} aes_EncryptBlockBEStdcall(
+procedure aes_EncryptBlockBEStdcall(
     inline win:bool,
     ghost stack_b:buffer64,
     ghost output_b:buffer128,
     ghost input_b:buffer128,
     ghost key:seq(nat32),
     ghost keys_b:buffer128)
+    {:quick}
+    {:exportSpecs}
+    {:public} 
     lets
         output_ptr := if win then rcx else rdi;
         input_ptr := if win then rdx else rsi;
@@ -178,7 +184,7 @@ procedure {:quick}{:exportSpecs}{:public} aes_EncryptBlockBEStdcall(
         validSrcAddrs128(mem, input_ptr, input_b, 1, memTaint, Secret);
         validSrcAddrs128(mem, output_ptr, output_b, 1, memTaint, Secret);
         validSrcAddrs128(mem, expanded_key_ptr, keys_b, nr(AES_128) + 1, memTaint, Secret);
-        forall i:nat :: i < nr(AES_128) + 1 ==>
+        forall (i:nat) i < nr(AES_128) + 1 ==>
             buffer128_read(keys_b, i, mem) == index(key_to_round_keys_LE(AES_128, key), i);
     ensures
         modifies_mem(loc_union(loc_buffer(stack_b), loc_buffer(output_b)), old(mem), mem);

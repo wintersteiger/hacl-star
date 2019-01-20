@@ -25,7 +25,9 @@ open X64.Vale.QuickCodes
 
 
 #reset-options "--z3rlimit 30"
-procedure {:quick}{:public} callee_save_registers(inline win:bool, ghost stack_b:buffer64)
+procedure callee_save_registers(inline win:bool, ghost stack_b:buffer64)
+    {:quick}
+    {:public} 
     requires
         valid_stack_slots(mem, rsp, stack_b, if win then 28 else 8, memTaint);
         valid_taint_buf64(stack_b, mem, memTaint, Public);
@@ -34,7 +36,7 @@ procedure {:quick}{:public} callee_save_registers(inline win:bool, ghost stack_b
     modifies mem; rsp; rax;
     ensures
         modifies_buffer(stack_b, old(mem), mem);
-        forall i :: (if win then 28 else 8) <= i < buffer_length(stack_b) ==> buffer64_read(stack_b, i, mem) == old(buffer64_read(stack_b, i, mem));
+        forall (i) (if win then 28 else 8) <= i < buffer_length(stack_b) ==> buffer64_read(stack_b, i, mem) == old(buffer64_read(stack_b, i, mem));
         valid_stack_slots(mem, rsp + (if win then 224 else 64), stack_b, if win then 28 else 8, memTaint);
         valid_taint_buf64(stack_b, mem, memTaint, Public);
 
@@ -90,7 +92,7 @@ procedure {:quick}{:public} callee_save_registers(inline win:bool, ghost stack_b
     Push(rbx, stack_b, 0);
 }
 
-procedure {:quick}{:public} callee_restore_registers(
+procedure callee_restore_registers(
         inline win:bool,
         ghost stack_b:buffer64,
         ghost old_xmm6:quad32,
@@ -104,6 +106,8 @@ procedure {:quick}{:public} callee_restore_registers(
         ghost old_xmm14:quad32,
         ghost old_xmm15:quad32
         )
+    {:quick}
+    {:public} 
     requires
         valid_stack_slots(mem, rsp + (if win then 224 else 64), stack_b, if win then 28 else 8, memTaint);
         valid_taint_buf64(stack_b, mem, memTaint, Public);

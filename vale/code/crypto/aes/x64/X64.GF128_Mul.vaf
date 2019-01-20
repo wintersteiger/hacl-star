@@ -41,7 +41,8 @@ open X64.Vale.QuickCodes
 open X64.CPU_Features_s
 #endverbatim
 
-procedure{:quick} ShiftLeft128_1(ghost a:poly)
+procedure ShiftLeft128_1(ghost a:poly)
+    {:quick}
     modifies
         efl;
         xmm1; xmm2;
@@ -60,7 +61,8 @@ procedure{:quick} ShiftLeft128_1(ghost a:poly)
     lemma_shift_left_1(a);
 }
 
-procedure{:quick} ShiftLeft2_128_1(ghost lo:poly, ghost hi:poly)
+procedure ShiftLeft2_128_1(ghost lo:poly, ghost hi:poly)
+    {:quick}
     modifies
         efl; r12;
         xmm1; xmm2; xmm3; xmm4; xmm5;
@@ -112,7 +114,8 @@ procedure{:quick} ShiftLeft2_128_1(ghost lo:poly, ghost hi:poly)
     lemma_shift_2_left_1(lo, hi);
 }
 
-procedure{:quick} ClmulRev64(ghost a:poly, ghost b:poly, inline dstHi:bool, inline srcHi:bool)
+procedure ClmulRev64(ghost a:poly, ghost b:poly, inline dstHi:bool, inline srcHi:bool)
+    {:quick}
     reads
     modifies
         efl;
@@ -132,7 +135,8 @@ procedure{:quick} ClmulRev64(ghost a:poly, ghost b:poly, inline dstHi:bool, inli
     lemma_mul_reverse_shift_1(a, b, 63);
 }
 
-procedure{:quick exportOnly} High64ToLow(out dst:xmm, ghost a:poly)
+procedure High64ToLow(out dst:xmm, ghost a:poly)
+    {:quick exportOnly}
     modifies
         efl; r12;
     requires
@@ -146,7 +150,8 @@ procedure{:quick exportOnly} High64ToLow(out dst:xmm, ghost a:poly)
     lemma_quad32_double_shift(a);
 }
 
-procedure{:quick exportOnly} Low64ToHigh(out dst:xmm, ghost a:poly)
+procedure Low64ToHigh(out dst:xmm, ghost a:poly)
+    {:quick exportOnly}
     modifies
         efl; r12;
     requires
@@ -160,7 +165,8 @@ procedure{:quick exportOnly} Low64ToHigh(out dst:xmm, ghost a:poly)
     lemma_quad32_double_shift(a);
 }
 
-procedure{:quick exportOnly} AddPoly(out dst:xmm, src:xmm, ghost a:poly, ghost b:poly)
+procedure AddPoly(out dst:xmm, in src:xmm, ghost a:poly, ghost b:poly)
+    {:quick exportOnly}
     modifies
         efl;
     requires
@@ -175,7 +181,8 @@ procedure{:quick exportOnly} AddPoly(out dst:xmm, src:xmm, ghost a:poly, ghost b
     lemma_add128(a, b);
 }
 
-procedure{:quick} Clmul128(ghost ab:poly, ghost cd:poly) returns(ghost lo:poly, ghost hi:poly)
+procedure Clmul128(ghost ab:poly, ghost cd:poly) returns(ghost lo:poly, ghost hi:poly)
+    {:quick}
     modifies
         efl; r12;
         xmm1; xmm2; xmm3; xmm4; xmm5;
@@ -245,7 +252,8 @@ procedure{:quick} Clmul128(ghost ab:poly, ghost cd:poly) returns(ghost lo:poly, 
     lemma_gf128_mul(a, b, c, d, 64);
 }
 
-procedure{:quick} ClmulRev128(ghost ab:poly, ghost cd:poly) returns(ghost lo:poly, ghost hi:poly)
+procedure ClmulRev128(ghost ab:poly, ghost cd:poly) returns(ghost lo:poly, ghost hi:poly)
+    {:quick}
     modifies
         efl; r12;
         xmm1; xmm2; xmm3; xmm4; xmm5;
@@ -273,7 +281,8 @@ procedure{:quick} ClmulRev128(ghost ab:poly, ghost cd:poly) returns(ghost lo:pol
     lemma_mul_reverse_shift_1(ab, cd, 127);
 }
 
-procedure{:quick exportOnly} Gf128ModulusRev(inout dst:xmm)
+procedure Gf128ModulusRev(inout dst:xmm)
+    {:quick exportOnly}
     modifies
         efl; r12;
     ensures
@@ -284,7 +293,9 @@ procedure{:quick exportOnly} Gf128ModulusRev(inout dst:xmm)
     PinsrdImm(dst, 0xe100_0000, 3, r12);
 }
 
-procedure{:quick}{:public} ReduceMulRev128(ghost a:poly, ghost b:poly)
+procedure ReduceMulRev128(ghost a:poly, ghost b:poly)
+    {:quick}
+    {:public}
     modifies
         efl; r12;
         xmm1; xmm2; xmm3; xmm4; xmm5; xmm6;

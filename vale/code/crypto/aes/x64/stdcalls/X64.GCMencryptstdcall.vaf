@@ -78,12 +78,15 @@ open X64.GCMencrypt
 #reset-options "--z3rlimit 30"
 
 
-procedure {:quick}{:exportSpecs}{:public} gcm_make_length_stdcall(
+procedure gcm_make_length_stdcall(
     inline win:bool,
     ghost stack_b:buffer64,
     ghost plain_num_bytes:nat64,
     ghost auth_num_bytes:nat64,
     ghost b:buffer128)
+    {:quick}
+    {:exportSpecs}
+    {:public}
     requires
         locs_disjoint(list(loc_buffer(stack_b), loc_buffer(b)));
         buffer_readable(mem, stack_b);

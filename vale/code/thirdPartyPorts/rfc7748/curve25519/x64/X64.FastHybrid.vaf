@@ -50,9 +50,10 @@ const int_canon:tactic extern;
 ghost procedure assert_by_tactic(ghost p:prop, ghost t:tactic) extern;
 
 #reset-options "--z3rlimit 300"
-procedure{:quick} fast_mul1(  
+procedure fast_mul1(  
     inline offset:nat,
     ghost inA_b:buffer64)
+    {:quick}
     lets
         inA_ptr @= rsi;
         b @= rdx;
@@ -179,8 +180,9 @@ procedure{:quick} fast_add_after_mul1(
 */
 
 #reset-options "--z3rlimit 300"
-procedure{:quick} fast_add_after_mul1_regs(
+procedure fast_add_after_mul1_regs(
     ghost inB_b:buffer64)
+    {:quick}
     lets
         inB_ptr @= rsi;
 
@@ -240,9 +242,10 @@ procedure{:quick} fast_add_after_mul1_regs(
 }
 
 #reset-options "--z3rlimit 300" 
-procedure{:quick} fast_mul1_add(  
+procedure fast_mul1_add(  
     inline offset:nat,
     ghost inA_b:buffer64)
+    {:quick}
     lets
         inA_ptr @= rsi;
         b @= rdx;
@@ -343,7 +346,8 @@ procedure{:quick} fast_mul1_add(
 
 
 #reset-options "--z3rlimit 30"
-procedure{:quick} store4(ghost dst_b:buffer64)
+procedure store4(ghost dst_b:buffer64)
+    {:quick}
     lets
         dst_ptr @= rdi;
         d0 @= r8;
@@ -369,7 +373,8 @@ procedure{:quick} store4(ghost dst_b:buffer64)
 }
 
 #reset-options "--z3rlimit 10"
-procedure {:quick exportOnly} carry_times_38(inout tmp:dst_opr64)
+procedure carry_times_38(inout tmp:dst_opr64)
+    {:quick exportOnly}
     lets
         carry @= rax;
     modifies carry;
@@ -386,7 +391,8 @@ procedure {:quick exportOnly} carry_times_38(inout tmp:dst_opr64)
 }
 
 #reset-options "--z3rlimit 50"
-procedure{:quick} carry_pass(inline use_cf:bool, inline offset:nat, ghost dst_b:buffer64)
+procedure carry_pass(inline use_cf:bool, inline offset:nat, ghost dst_b:buffer64)
+    {:quick}
     lets
         dst_ptr @= rdi;
         carry @= rax;
@@ -454,10 +460,12 @@ procedure{:quick} carry_pass(inline use_cf:bool, inline offset:nat, ghost dst_b:
 
 
 #reset-options "--z3rlimit 300"
-procedure{:quick} {:public} carry_wide(
+procedure carry_wide(
     inline offset:nat,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64)
+    {:quick} 
+    {:public}
     lets
         dst_ptr @= rdi;
         inA_ptr @= rsi;
@@ -602,7 +610,8 @@ procedure{:quick}{:public} carry_wide_stdcall(
 */
 
 #reset-options "--z3rlimit 300"
-procedure{:quick} carry_sub_pass()
+procedure carry_sub_pass()
+    {:quick}
     lets
         carry @= rax;
         tmp @= rcx;
@@ -644,9 +653,10 @@ procedure{:quick} carry_sub_pass()
 }
 
 #reset-options "--z3rlimit 300"
-procedure{:quick} fast_add(
+procedure fast_add(
     ghost inA_b:buffer64,
     ghost inB_b:buffer64)
+    {:quick}
     lets
         inA_ptr @= rsi;
         inB_ptr @= rdx;
@@ -700,9 +710,10 @@ procedure{:quick} fast_add(
 }
 
 #reset-options "--z3rlimit 300"
-procedure{:quick} fast_sub(
+procedure fast_sub(
     ghost inA_b:buffer64,
     ghost inB_b:buffer64)
+    {:quick}
     lets
         inA_ptr @= rsi;
         inB_ptr @= rdx;
@@ -760,10 +771,11 @@ procedure{:quick} fast_sub(
 
 
 #reset-options "--z3rlimit 30"
-procedure{:quick} fadd(
+procedure fadd(
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64)
+    {:quick}
     lets
         dst_ptr @= rdi;
         inA_ptr @= rsi;
@@ -821,12 +833,14 @@ procedure{:quick} fadd(
     carry_pass(true, 0, dst_b);
 }
 
-procedure{:quick}{:public} fadd_stdcall(
+procedure fadd_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64,
     ghost stack_b:buffer64)
+    {:quick}
+    {:public}
     lets
         dst_ptr @= rdi; inA_ptr @= rsi; inB_ptr @= rdx;
         dst_in := (if win then rcx else rdi);
@@ -904,10 +918,11 @@ procedure{:quick}{:public} fadd_stdcall(
 }
 
 #reset-options "--z3rlimit 30"
-procedure{:quick} fsub(
+procedure fsub(
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64)
+    {:quick}
     lets
         dst_ptr @= rdi;
         inA_ptr @= rsi;
@@ -963,12 +978,14 @@ procedure{:quick} fsub(
     store4(dst_b);
 }
 
-procedure{:quick}{:public} fsub_stdcall(
+procedure fsub_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64,
     ghost stack_b:buffer64)
+    {:quick}
+    {:public}
     lets
         dst_ptr @= rdi; inA_ptr @= rsi; inB_ptr @= rdx;
         dst_in := (if win then rcx else rdi);
@@ -1046,9 +1063,10 @@ procedure{:quick}{:public} fsub_stdcall(
 }
 
 #reset-options "--z3rlimit 300"
-procedure{:quick}fmul1(
+procedure fmul1(
     ghost dst_b:buffer64,
     ghost inA_b:buffer64)
+    {:quick}
     lets
         dst_ptr @= rdi;
         inA_ptr @= rsi;
@@ -1101,11 +1119,13 @@ procedure{:quick}fmul1(
     //store4(dst_b);
 }
 
-procedure{:quick}{:public} fmul1_stdcall(
+procedure fmul1_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost stack_b:buffer64)
+    {:quick}
+    {:public}
     lets
         dst_ptr @= rdi; inA_ptr @= rsi; b @= rdx;
         dst_in := (if win then rcx else rdi);

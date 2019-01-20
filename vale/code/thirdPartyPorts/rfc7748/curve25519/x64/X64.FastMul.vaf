@@ -49,11 +49,12 @@ ghost procedure assert_by_tactic(ghost p:prop, ghost t:tactic) extern;
 
 
 #reset-options "--z3rlimit 100"
-procedure{:quick} fast_multiply_a0b(
+procedure fast_multiply_a0b(
     inline offset:nat,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64)
+    {:quick}
     lets
         dst_ptr @= rdi;
         inA_ptr @= rsi;
@@ -158,11 +159,12 @@ procedure{:quick} fast_multiply_a0b(
 
 
 #reset-options "--z3rlimit 300"
-procedure{:quick} fast_multiply_a1b(
+procedure fast_multiply_a1b(
     inline offset:nat,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64)
+    {:quick}
     lets
         dst_ptr @= rdi;
         inA_ptr @= rsi;
@@ -280,11 +282,12 @@ procedure{:quick} fast_multiply_a1b(
 }
 
 #reset-options "--z3rlimit 400"
-procedure{:quick} fast_multiply_a2b(
+procedure fast_multiply_a2b(
     inline offset:nat,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64)
+    {:quick}
     lets
         dst_ptr @= rdi;
         inA_ptr @= rsi;
@@ -407,11 +410,12 @@ procedure{:quick} fast_multiply_a2b(
 
 
 #reset-options "--z3rlimit 400"
-procedure{:quick} fast_multiply_a3b(
+procedure fast_multiply_a3b(
     inline offset:nat,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64)
+    {:quick}
     lets
         dst_ptr @= rdi;
         inA_ptr @= rsi;
@@ -544,11 +548,13 @@ procedure{:quick} fast_multiply_a3b(
 
 #reset-options "--z3rlimit 20"
 
-procedure{:quick}{:public} fast_multiply(
+procedure fast_multiply(
     inline offset:nat,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64)
+    {:quick}
+    {:public}
     lets
         dst_ptr @= rdi;
         inA_ptr @= rsi;
@@ -604,12 +610,14 @@ procedure{:quick}{:public} fast_multiply(
     fast_multiply_a3b(offset, dst_b, inA_b, inB_b);
 }
 
-procedure{:quick}{:public} fast_mul_stdcall(
+procedure fast_mul_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64,
     ghost stack_b:buffer64)
+    {:quick}
+    {:public}
     lets
         dst_ptr @= rdi; inA_ptr @= rsi; inB_ptr @= rcx;
         dst_in := (if win then rcx else rdi);
@@ -696,12 +704,14 @@ procedure{:quick}{:public} fast_mul_stdcall(
     Pop(rsi, stack_b, 3);
 }
 
-procedure{:quick}{:public} fast_mul2_stdcall(
+procedure fast_mul2_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64,
     ghost stack_b:buffer64)
+    {:quick}
+    {:public}
     lets
         dst_ptr @= rdi; inA_ptr @= rsi; inB_ptr @= rcx;
         dst_in := (if win then rcx else rdi);

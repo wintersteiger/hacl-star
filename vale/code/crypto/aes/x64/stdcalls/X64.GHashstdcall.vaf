@@ -64,13 +64,16 @@ open X64.Stack
 
 #reset-options "--z3rlimit 20"
 
-procedure {:quick}{:exportSpecs}{:public} ghash_incremental_bytes_stdcall(
+procedure ghash_incremental_bytes_stdcall(
     inline win:bool,
     ghost stack_b:buffer64,
     ghost h_b:buffer128, 
     ghost hash_b:buffer128, 
     ghost input_b:buffer128, 
     ghost num_bytes:nat64)
+    {:quick}
+    {:exportSpecs}
+    {:public}
     requires
         locs_disjoint(list(loc_buffer(h_b), loc_buffer(hash_b)));
         locs_disjoint(list(loc_buffer(h_b), loc_buffer(input_b)));
@@ -178,7 +181,7 @@ procedure {:quick}{:exportSpecs}{:public} ghash_incremental_bytes_stdcall(
             old(xmm9), old(xmm10), old(xmm11), old(xmm12), old(xmm13), old(xmm14), old(xmm15)); 
 }
 
-procedure {:quick}{:exportSpecs}{:public} ghash_extra_stdcall(
+procedure ghash_extra_stdcall(
     inline win:bool,
     ghost stack_b:buffer64,
     ghost in_b:buffer128,
@@ -186,6 +189,9 @@ procedure {:quick}{:exportSpecs}{:public} ghash_extra_stdcall(
     ghost h_b:buffer128,
     ghost num_bytes:nat64,
     ghost orig_hash:quad32)
+    {:quick}
+    {:exportSpecs}
+    {:public} 
     lets orig_in_ptr := if win then rcx else rdi;
     requires
         locs_disjoint(list(loc_buffer(in_b), loc_buffer(hash_b)));
@@ -332,13 +338,16 @@ procedure {:quick}{:exportSpecs}{:public} ghash_extra_stdcall(
         old(xmm9), old(xmm10), old(xmm11), old(xmm12), old(xmm13), old(xmm14), old(xmm15)); 
 }
 
-procedure {:quick}{:exportSpecs}{:public} ghash_one_block(
+procedure ghash_one_block(
     inline win:bool,
     ghost stack_b:buffer64,
     ghost h_b:buffer128,
     ghost hash_b:buffer128,
     ghost input_b:buffer128,
     ghost offset:nat64)
+    {:quick}
+    {:exportSpecs}
+    {:public}
     requires
         locs_disjoint(list(loc_buffer(h_b), loc_buffer(hash_b)));
         locs_disjoint(list(loc_buffer(h_b), loc_buffer(input_b)));

@@ -64,22 +64,22 @@ let lemma_valid_taint_match o s = match o with
 
 #reset-options "--initial_fuel 2 --max_fuel 4 --max_ifuel 2 --z3rlimit 50"
 
-var{:state xmm(0)} xmm0:quad32;
-var{:state xmm(1)} xmm1:quad32;
-var{:state xmm(2)} xmm2:quad32;
-var{:state xmm(3)} xmm3:quad32;
-var{:state xmm(4)} xmm4:quad32;
-var{:state xmm(5)} xmm5:quad32;
-var{:state xmm(6)} xmm6:quad32;
-var{:state xmm(7)} xmm7:quad32;
-var{:state xmm(8)} xmm8:quad32;
-var{:state xmm(9)} xmm9:quad32;
-var{:state xmm(10)} xmm10:quad32;
-var{:state xmm(11)} xmm11:quad32;
-var{:state xmm(12)} xmm12:quad32;
-var{:state xmm(13)} xmm13:quad32;
-var{:state xmm(14)} xmm14:quad32;
-var{:state xmm(15)} xmm15:quad32;
+var xmm0:quad32 {:state xmm(0)};
+var xmm1:quad32 {:state xmm(1)};
+var xmm2:quad32 {:state xmm(2)};
+var xmm3:quad32 {:state xmm(3)};
+var xmm4:quad32 {:state xmm(4)};
+var xmm5:quad32 {:state xmm(5)};
+var xmm6:quad32 {:state xmm(6)};
+var xmm7:quad32 {:state xmm(7)};
+var xmm8:quad32 {:state xmm(8)};
+var xmm9:quad32 {:state xmm(9)};
+var xmm10:quad32 {:state xmm(10)};
+var xmm11:quad32 {:state xmm(11)};
+var xmm12:quad32 {:state xmm(12)};
+var xmm13:quad32 {:state xmm(13)};
+var xmm14:quad32 {:state xmm(14)};
+var xmm15:quad32 {:state xmm(15)};
 
 operand_type xmm:quad32 @ nat4 :=
 | inout xmm0 | inout xmm1 | inout xmm2 | inout xmm3
@@ -88,37 +88,50 @@ operand_type xmm:quad32 @ nat4 :=
 | inout xmm12 | inout xmm13 | inout xmm14 | inout xmm15
 ;
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Paddd(dst, src)), Public))}{:quick exportOnly}{:public}
-          Paddd(inout dst:xmm, src:xmm)
+procedure Paddd(inout dst:xmm, in src:xmm)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Paddd(dst, src)), Public))}
+    {:quick exportOnly}
+    {:public}
     modifies efl;
     ensures
         dst == old(add_wrap_quad32(dst, src));
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pxor(dst, src)), Public))}{:quick exportOnly}{:public} Pxor(inout dst:xmm, src:xmm)
+procedure Pxor(inout dst:xmm, in src:xmm)
+  {:instruction Ins(TS.TaintedIns(tuple(S.Pxor(dst, src)), Public))}
+  {:quick exportOnly}
+  {:public}
   ensures
     dst == old(quad32_xor(dst, src));
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pslld(dst, amt)), Public))}{:quick exportOnly}{:public} Pslld(inout dst:xmm, inline amt:int)
+procedure Pslld(inout dst:xmm, inline amt:int)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Pslld(dst, amt)), Public))}
+    {:quick exportOnly}
+    {:public}
     requires
         0 <= amt < 32;
     ensures
-        dst == four_map((lambda i:nat32 :: ishl32(i, amt)), old(dst));
+        dst == four_map((fun(i:nat32) ishl32(i, amt)), old(dst));
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Psrld(dst, amt)), Public))}{:quick exportOnly}{:public} Psrld(inout dst:xmm, inline amt:int)
+procedure Psrld(inout dst:xmm, inline amt:int)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Psrld(dst, amt)), Public))}
+    {:quick exportOnly}
+    {:public}
     requires
         0 <= amt < 32;
     ensures
-        dst == four_map((lambda i:nat32 :: ishr32(i, amt)), old(dst));
+        dst == four_map((fun(i:nat32) ishr32(i, amt)), old(dst));
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Psrldq(dst, amt)), Public))}{:quick exportOnly} Psrldq(inout dst:xmm, inline amt:int)
+procedure Psrldq(inout dst:xmm, inline amt:int)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Psrldq(dst, amt)), Public))}
+    {:quick exportOnly}
     requires
         0 <= amt < 16;
     ensures
@@ -130,24 +143,30 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.Psrldq(dst, amt)), Public))}{:q
 }
 
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Palignr(dst, src, 4)), Public))}{:quick exportOnly}{:public}
-          Palignr4(inout dst:xmm, src:xmm)
+procedure Palignr4(inout dst:xmm, in src:xmm)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Palignr(dst, src, 4)), Public))}
+    {:quick exportOnly}
+    {:public}
     modifies efl;
     ensures
         dst == old(Mkfour(src.lo1, src.hi2, src.hi3, dst.lo0));
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Palignr(dst, src, 8)), Public))}{:quick exportOnly}{:public}
-          Palignr8(inout dst:xmm, src:xmm)
+procedure Palignr8(inout dst:xmm, in src:xmm)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Palignr(dst, src, 8)), Public))}
+    {:quick exportOnly}
+    {:public}
     modifies efl;
     ensures
         dst == old(Mkfour(src.hi2, src.hi3, dst.lo0, dst.lo1));
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Shufpd(dst, src, permutation)), Public))}{:quick exportOnly}{:public}
-          Shufpd(inout dst:xmm, src:xmm, inline permutation:imm8)
+procedure Shufpd(inout dst:xmm, in src:xmm, inline permutation:imm8)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Shufpd(dst, src, permutation)), Public))}
+    {:quick exportOnly}
+    {:public}
     requires permutation < 4;
     modifies efl;
     ensures
@@ -159,8 +178,10 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.Shufpd(dst, src, permutation)),
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pshufb(dst, src)), Public))}{:quick exportOnly}{:public}
-          Pshufb(inout dst:xmm, src:xmm)
+procedure Pshufb(inout dst:xmm, in src:xmm)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Pshufb(dst, src)), Public))}
+    {:quick exportOnly}
+    {:public}
     requires
         src == Mkfour(0x0C0D0E0F, 0x08090A0B, 0x04050607, 0x00010203);
     modifies efl;
@@ -169,8 +190,10 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pshufb(dst, src)), Public))}{:q
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pshufb(dst, src)), Public))}{:quick exportOnly}{:public}
-          PshufbDup(inout dst:xmm, src:xmm)
+procedure PshufbDup(inout dst:xmm, in src:xmm)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Pshufb(dst, src)), Public))}
+    {:quick exportOnly}
+    {:public}
     requires
         src == Mkfour(0x0C0D0E0F, 0x08090A0B, 0x0C0D0E0F, 0x08090A0B);
     modifies efl;
@@ -182,8 +205,10 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pshufb(dst, src)), Public))}{:q
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pshufb(dst, src)), Public))}{:quick exportOnly}{:public}
-          Pshufb64(inout dst:xmm, src:xmm)
+procedure Pshufb64(inout dst:xmm, in src:xmm)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Pshufb(dst, src)), Public))}
+    {:quick exportOnly}
+    {:public}
     requires
         src == Mkfour(0x04050607, 0x00010203, 0x0C0D0E0F, 0x08090A0B);
     modifies efl;
@@ -196,8 +221,9 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pshufb(dst, src)), Public))}{:q
 }
 
 /*
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pshufb(dst, src)), Public))}{:quick exportOnly}
-          Pshufb(inout dst:xmm, src:xmm)
+procedure Pshufb(inout dst:xmm, in src:xmm)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Pshufb(dst, src)), Public))}
+    {:quick exportOnly}
     requires
         src == Mkfour(0x0C0D0E0F, 0x08090A0B, 0x04050607, 0x00010203) ||
         src == Mkfour(0x0C0D0E0F, 0x08090A0B, 0x0C0D0E0F, 0x08090A0B) ||
@@ -220,8 +246,10 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pshufb(dst, src)), Public))}{:q
 }
 */
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pshufd(dst, src, permutation)), Public))}{:quick exportOnly}{:public}
-          Pshufd(inout dst:xmm, src:xmm, inline permutation:imm8)
+procedure Pshufd(inout dst:xmm, in src:xmm, inline permutation:imm8)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Pshufd(dst, src, permutation)), Public))}
+    {:quick exportOnly}
+    {:public}
     ensures
         dst == old(Mkfour(
             select_word(src, byte_to_twobits(permutation).lo0),
@@ -231,8 +259,9 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pshufd(dst, src, permutation)),
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pcmpeqd(dst, src)), Public))}{:quick exportOnly}
-          Pcmpeqd(inout dst:xmm, src:xmm)
+procedure Pcmpeqd(inout dst:xmm, in src:xmm)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Pcmpeqd(dst, src)), Public))}
+    {:quick exportOnly}       
     ensures
         dst == old(Mkfour(
             if src.lo0 = dst.lo0 then 0xFFFFFFFF else 0,
@@ -242,8 +271,10 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pcmpeqd(dst, src)), Public))}{:
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pextrq(t_op_to_op(dst), src, index)), Public))}{:quick exportOnly}{:public}
-          Pextrq(out dst:dst_opr64, src:xmm, inline index:imm8)
+procedure Pextrq(out dst:dst_opr64, in src:xmm, inline index:imm8)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Pextrq(t_op_to_op(dst), src, index)), Public))}
+    {:quick exportOnly}
+    {:public}    
     requires
         index < 2;
     ensures
@@ -253,8 +284,10 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pextrq(t_op_to_op(dst), src, in
     reveal hi64_def;
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pinsrd(dst, t_op_to_op(src), index)), get_taint(src)))}{:quick exportOnly}{:public}
-          Pinsrd(inout dst:xmm, src:opr64, inline index:imm8)
+procedure Pinsrd(inout dst:xmm, in src:opr64, inline index:imm8)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Pinsrd(dst, t_op_to_op(src), index)), get_taint(src)))}
+    {:quick exportOnly}
+    {:public}
     requires
         src < pow2_32;
         index < 4;
@@ -263,8 +296,9 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pinsrd(dst, t_op_to_op(src), in
 {
 }
 
-procedure {:quick exportOnly}{:public}
-          PinsrdImm(inout dst:xmm, inline immediate:nat32, inline index:imm8, out tmp:reg_opr64)
+procedure PinsrdImm(inout dst:xmm, inline immediate:nat32, inline index:imm8, out tmp:reg_opr64)
+    {:quick exportOnly}
+    {:public}      
     requires
         index < 4;
     ensures
@@ -274,8 +308,10 @@ procedure {:quick exportOnly}{:public}
     Pinsrd(dst, tmp, index);
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pinsrq(dst, t_op_to_op(src), index)), get_taint(src)))}{:quick exportOnly}{:public}
-          Pinsrq(inout dst:xmm, src:opr64, inline index:imm8)
+procedure  Pinsrq(inout dst:xmm, in src:opr64, inline index:imm8)
+    {:instruction Ins(TS.TaintedIns(tuple(S.Pinsrq(dst, t_op_to_op(src), index)), get_taint(src)))}
+    {:quick exportOnly}
+    {:public}
     requires
         index < 2;
     ensures
@@ -285,8 +321,9 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.Pinsrq(dst, t_op_to_op(src), in
     assert dst == insert_nat64(old(dst), src, #nat1(index));
 }
 
-procedure {:quick exportOnly}{:public}
-          PinsrqImm(inout dst:xmm, inline immediate:nat64, inline index:imm8, out tmp:reg_opr64)
+procedure PinsrqImm(inout dst:xmm, inline immediate:nat64, inline index:imm8, out tmp:reg_opr64)
+    {:quick exportOnly}
+    {:public}
     requires
         index < 2;
     ensures
@@ -296,25 +333,34 @@ procedure {:quick exportOnly}{:public}
     Pinsrq(dst, tmp, index);
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.VPSLLDQ(dst, src, 4)), Public))}{:quick exportOnly}{:public} VPSLLDQ4(inout dst:xmm, src:xmm)
+procedure VPSLLDQ4(inout dst:xmm, in src:xmm)
+    {:instruction Ins(TS.TaintedIns(tuple(S.VPSLLDQ(dst, src, 4)), Public))}
+    {:quick exportOnly}
+    {:public}
     ensures
         dst == old(Mkfour(0, src.lo0, src.lo1, src.hi2));
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.MOVDQU(Mov128Xmm(dst),Mov128Xmm(src))), Public))}{:quick exportOnly}{:public} Mov128(inout dst:xmm, src:xmm)
+procedure Mov128(inout dst:xmm, in src:xmm)
+    {:instruction Ins(TS.TaintedIns(tuple(S.MOVDQU(Mov128Xmm(dst),Mov128Xmm(src))), Public))}
+    {:quick exportOnly}
+    {:public}
     ensures
         dst == old(src);
 {
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.MOVDQU(Mov128Xmm(dst), Mov128Mem(MReg(get_reg(src), offset)))), t))}{:quick exportOnly}{:public} Load128_buffer(
+procedure Load128_buffer(
     out dst:xmm,
-        src:reg_opr64,
+        in src:reg_opr64,
         inline offset:int,
         inline t:taint,
         ghost b:buffer128,
         ghost index:int)
+    {:instruction Ins(TS.TaintedIns(tuple(S.MOVDQU(Mov128Xmm(dst), Mov128Mem(MReg(get_reg(src), offset)))), t))}
+    {:quick exportOnly}
+    {:public}
     reads
         mem; memTaint;
     modifies
@@ -332,13 +378,16 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.MOVDQU(Mov128Xmm(dst), Mov128Me
     lemma_valid_taint128(b, #memTaint_t(memTaint), mem, #nat(index), t);
 }
 
-procedure{:instruction Ins(TS.TaintedIns(tuple(S.MOVDQU(Mov128Mem(MReg(get_reg(dst), offset)), Mov128Xmm(src))), t))}{:quick exportOnly}{:public} Store128_buffer(
-        dst:reg_opr64,
-        src:xmm,
+procedure Store128_buffer(
+        in dst:reg_opr64,
+        in src:xmm,
         inline offset:int,
         inline t:taint,
         ghost b:buffer128,
         ghost index:int)
+    {:instruction Ins(TS.TaintedIns(tuple(S.MOVDQU(Mov128Mem(MReg(get_reg(dst), offset)), Mov128Xmm(src))), t))}
+    {:quick exportOnly}
+    {:public}
     reads
         memTaint;
     modifies
@@ -358,11 +407,13 @@ procedure{:instruction Ins(TS.TaintedIns(tuple(S.MOVDQU(Mov128Mem(MReg(get_reg(d
     same_memTaint128(b, old(mem), mem, old(#memTaint_t(memTaint)), #memTaint_t(memTaint));
 }
 
-procedure {:quick exportOnly}{:public} PushXmm(
-        src:xmm,
-    out tmp:reg_opr64,
+procedure  PushXmm(
+        in src:xmm,
+        out tmp:reg_opr64,
         ghost b:buffer64,
         ghost index:int)
+    {:quick exportOnly}
+    {:public}
     reads memTaint;
     modifies
         rsp; mem;
@@ -387,12 +438,14 @@ procedure {:quick exportOnly}{:public} PushXmm(
     Push(tmp, b, index - 1);
 }
 
-procedure {:quick exportOnly}{:public} PopXmm(
+procedure PopXmm(
     out dst:xmm,
     out tmp:reg_opr64,
         ghost b:buffer64,
         ghost index:int,
-        ghost expected_xmm:quad32)
+        ghost expected_xmm:quad32)    
+    {:quick exportOnly}
+    {:public}
     reads mem; memTaint;
     modifies rsp;
     requires
@@ -414,7 +467,9 @@ procedure {:quick exportOnly}{:public} PopXmm(
     push_pop_xmm(expected_xmm, old(dst));
 }
 
-procedure {:quick exportOnly}{:public} ZeroXmm(inout dst:xmm)
+procedure ZeroXmm(inout dst:xmm)
+    {:quick exportOnly}
+    {:public}
     modifies efl;
     ensures
         dst == Mkfour(0, 0, 0, 0);
@@ -423,7 +478,9 @@ procedure {:quick exportOnly}{:public} ZeroXmm(inout dst:xmm)
     Arch.Types.lemma_quad32_xor();
 }
 
-procedure {:quick exportOnly}{:public} InitPshufbMask(inout dst:xmm, out tmp:reg_opr64)
+procedure InitPshufbMask(inout dst:xmm, out tmp:reg_opr64)
+    {:quick exportOnly}
+    {:public} 
     modifies efl;
     ensures
         dst == Mkfour(0x0C0D0E0F, 0x08090A0B, 0x04050607, 0x00010203);
@@ -435,7 +492,9 @@ procedure {:quick exportOnly}{:public} InitPshufbMask(inout dst:xmm, out tmp:reg
     reveal insert_nat64;
 }
 
-procedure {:quick exportOnly}{:public} InitPshufbDupMask(inout dst:xmm, out tmp:reg_opr64)
+procedure InitPshufbDupMask(inout dst:xmm, out tmp:reg_opr64)
+    {:quick exportOnly}
+    {:public} 
     modifies efl;
     ensures
         dst == Mkfour(0x0C0D0E0F, 0x08090A0B, 0x0C0D0E0F, 0x08090A0B);
@@ -446,7 +505,9 @@ procedure {:quick exportOnly}{:public} InitPshufbDupMask(inout dst:xmm, out tmp:
     reveal insert_nat64;
 }
 
-procedure {:quick exportOnly}{:public} InitPshufb64Mask(inout dst:xmm, out tmp:reg_opr64)
+procedure InitPshufb64Mask(inout dst:xmm, out tmp:reg_opr64)
+    {:quick exportOnly}
+    {:public}
     modifies efl;
     ensures
         dst == Mkfour(0x04050607, 0x00010203, 0x0C0D0E0F, 0x08090A0B);
@@ -459,7 +520,9 @@ procedure {:quick exportOnly}{:public} InitPshufb64Mask(inout dst:xmm, out tmp:r
 }
 
 // TODO: Lots of room to optimize this using bitwise operations
-procedure {:quick}{:public} XmmEqual()
+procedure XmmEqual()
+    {:quick}
+    {:public} 
     lets x1 @= xmm0; x2 @= xmm1; tmp @= rdx; result @= rax;
     reads x2;
     modifies x1; tmp; result; efl;
@@ -498,7 +561,8 @@ procedure {:quick}{:public} XmmEqual()
 
 /*  REVIEW: This version goes through with --ONE, but fails without it for reasons that are unclear
 #reset-options "--z3rlimit 150 --z3refresh"
-procedure {:quick exportOnly} XmmEqual(inout x1:xmm, x2:xmm, out tmp:reg_opr64, out result:reg_opr64)
+procedure XmmEqual(inout x1:xmm, x2:xmm, out tmp:reg_opr64, out result:reg_opr64)
+    {:quick exportOnly} 
     modifies efl;
     ensures
 //        if old(x1 = x2) then result = 0 else result > 0;

@@ -55,7 +55,8 @@ open X64.Poly1305.Math
 open X64.Poly1305.Util
 #endverbatim
 
-procedure{:quick} poly1305_multiply(ghost r1:nat64) returns(ghost hh:int)
+procedure poly1305_multiply(ghost r1:nat64) returns(ghost hh:int)
+    {:quick}
     lets
         d1 @= r8; d2 @= r9; d3 @= r10; r0 @= r11; s1 @= r13; h0 @= r14; h1 @= rbx; h2 @= rbp;
         n := pow2_64;
@@ -139,7 +140,8 @@ procedure{:quick} poly1305_multiply(ghost r1:nat64) returns(ghost hh:int)
     lemma_poly_multiply(n, p, r, h, r0, r1, old(h0), old(h1), old(h2), s1, gd0, gd1, gd2, hh);
 }
 
-procedure{:quick} poly1305_reduce() returns(ghost hh:int)
+procedure poly1305_reduce() returns(ghost hh:int)
+    {:quick}
     lets
         d3 @= r10; h0 @= r14; h1 @= rbx; h2 @= rbp;
         n := 0x1_0000_0000_0000_0000;
@@ -171,7 +173,8 @@ procedure{:quick} poly1305_reduce() returns(ghost hh:int)
     lemma_poly_reduce(n, p, hd, old(d3), h10, rax, hh);
 }
 
-procedure{:quick} poly1305_iteration(ghost r1:nat64) returns(ghost hh:int)
+procedure poly1305_iteration(ghost r1:nat64) returns(ghost hh:int)
+    {:quick}
     lets
         d1 @= r8; d2 @= r9; d3 @= r10; r0 @= r11; s1 @= r13; h0 @= r14; h1 @= rbx; h2 @= rbp;
         n := 0x1_0000_0000_0000_0000;
@@ -216,12 +219,13 @@ procedure{:quick} poly1305_iteration(ghost r1:nat64) returns(ghost hh:int)
     assert hh == (n * n) * h2 + n * h1 + h0 /\ (h * r) % p == hh % p;
 }
 
-procedure{:quick} poly1305_blocks(
+procedure poly1305_blocks(
     ghost r:int,
     ghost h_in:int,
     ghost ctx_b:buffer64,
     ghost inp_b:buffer64)
     returns(ghost h:int)
+    {:quick}
     lets
         ctx @= rdi; inp @= rsi; len @= rdx; padbit @= rcx; d1 @= r8; d2 @= r9; d3 @= r10;
         r0 @= r11; r1 @= r12; s1 @= r13; h0 @= r14; h1 @= rbx; h2 @= rbp;
@@ -373,7 +377,8 @@ procedure{:quick} poly1305_blocks(
 }
 
 // last 1..15 bytes, in case len is not a multiple of 16
-procedure{:quick} poly1305_last_block()
+procedure poly1305_last_block()
+    {:quick}
     lets
         h0 @= r14; h1 @= rbx; h2 @= rbp; r0 @= r11; s1 @= r13; nExtra @= r15;
         n := 0x1_0000_0000_0000_0000;
@@ -469,7 +474,8 @@ procedure{:quick} poly1305_last_block()
 }
 
 // h := (h % p) % 2^128;
-procedure{:quick} poly1305_reduce_last()
+procedure poly1305_reduce_last()
+    {:quick}
     lets
         h0 @= r14; h1 @= rbx; h2 @= rbp;
         h := lowerUpper192_opaque(lowerUpper128_opaque(h0, h1), h2);
@@ -513,7 +519,8 @@ procedure{:quick} poly1305_reduce_last()
 }
 
 // h := (h + key_s) % 2^128
-procedure{:quick} poly1305_add_key_s()
+procedure poly1305_add_key_s()
+    {:quick}
     lets
         h0 @= r14; h1 @= rbx; key_s0 @= rax; key_s1 @= rdx;
         h_in := lowerUpper128_opaque(h0, h1);
@@ -540,12 +547,13 @@ let reveal_logand128 (x y:nat128) : Lemma
 #endverbatim
 ghost procedure reveal_logand128(ghost x:nat128, ghost y:nat128) extern;
 
-procedure{:quick} poly1305_impl(
+procedure poly1305_impl(
     ghost key_r:nat128,
     ghost key_s:nat128,
     ghost ctx_b:buffer64,
     ghost inp_b:buffer64)
     returns(ghost h:int)
+    {:quick}
     lets
         ctx @= rdi; inp @= rsi; len @= rdx; r0 @= r11; r1 @= r12; h0 @= r14; h1 @= rbx; h2 @= rbp;
         n := pow2_64;
@@ -667,13 +675,14 @@ procedure{:quick} poly1305_impl(
 // Note that this reads 16-byte chunks directly from the input buffer,
 // so (len + 15) / 16 * 16 bytes must be readable, even though only len bytes
 // affect the result.
-procedure{:quick} poly1305(
+procedure poly1305(
     inline win:bool,
     ghost key_r:nat128,
     ghost key_s:nat128,
     ghost ctx_b:buffer64,
     ghost inp_b:buffer64)
     returns(ghost h:int)
+    {:quick}
     lets
         ctx @= rdi; inp @= rsi; len @= rdx; r0 @= r11; r1 @= r12; h0 @= r14; h1 @= rbx; h2 @= rbp;
         ctx_in := (if win then rcx else ctx);

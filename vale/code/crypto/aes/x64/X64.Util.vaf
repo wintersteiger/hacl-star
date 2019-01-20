@@ -65,10 +65,13 @@ open X64.GF128_Mul
 
 #reset-options "--z3rlimit 30"
 
-procedure {:quick}{:exportSpecs}{:public} zero_quad32_stdcall(
+procedure zero_quad32_stdcall(
     inline win:bool,
     ghost stack_b:buffer64,
     ghost b:buffer128)
+    {:quick}
+    {:exportSpecs}
+    {:public}
     requires
         locs_disjoint(list(loc_buffer(stack_b), loc_buffer(b)));
         buffer_readable(mem, stack_b);
@@ -123,10 +126,13 @@ procedure {:quick}{:exportSpecs}{:public} zero_quad32_stdcall(
         }
 }
 
-procedure {:quick}{:exportSpecs}{:public} mk_quad32_lo0_be_1_stdcall(
+procedure mk_quad32_lo0_be_1_stdcall(
     inline win:bool,
     ghost stack_b:buffer64,
     ghost b:buffer128)
+    {:quick}
+    {:exportSpecs}
+    {:public}
     requires
         locs_disjoint(list(loc_buffer(stack_b), loc_buffer(b)));
         buffer_readable(mem, stack_b);
@@ -186,12 +192,15 @@ procedure {:quick}{:exportSpecs}{:public} mk_quad32_lo0_be_1_stdcall(
     }
 }
 
-procedure {:quick}{:exportSpecs}{:public} quad32_xor_stdcall(
+procedure quad32_xor_stdcall(
     inline win:bool,
     ghost stack_b:buffer64,
     ghost src1:buffer128,
     ghost src2:buffer128,
     ghost dst:buffer128)
+    {:quick}
+    {:exportSpecs}
+    {:public}
     requires
         locs_disjoint(list(loc_buffer(src1), loc_buffer(src2))) \/ src1 == src2;
         locs_disjoint(list(loc_buffer(src1), loc_buffer(dst))) \/ src1 == dst;
@@ -266,7 +275,7 @@ procedure {:quick}{:exportSpecs}{:public} quad32_xor_stdcall(
     }
 }
 
-procedure {:quick}{:exportSpecs}{:public} gcm_load_xor_stdcall(
+procedure gcm_load_xor_stdcall(
     inline win:bool,
     ghost stack_b:buffer64,
     ghost plain_b:buffer128,
@@ -276,6 +285,9 @@ procedure {:quick}{:exportSpecs}{:public} gcm_load_xor_stdcall(
     ghost num_blocks:nat64,
     ghost key:seq(nat32),
     ghost iv:quad32)
+    {:quick}
+    {:exportSpecs}
+    {:public}
     requires
         locs_disjoint(list(loc_buffer(plain_b), loc_buffer(mask_b)));
         locs_disjoint(list(loc_buffer(plain_b), loc_buffer(cipher_b)));
@@ -374,10 +386,13 @@ procedure {:quick}{:exportSpecs}{:public} gcm_load_xor_stdcall(
 }
 
 
-procedure {:quick}{:exportSpecs}{:public} reverse_quad32_stdcall(
+procedure reverse_quad32_stdcall(
     inline win:bool,
     ghost stack_b:buffer64,
     ghost b:buffer128)
+    {:quick}
+    {:exportSpecs}
+    {:public}
     requires
         locs_disjoint(list(loc_buffer(stack_b), loc_buffer(b)));
         buffer_readable(mem, stack_b);

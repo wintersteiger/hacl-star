@@ -47,9 +47,10 @@ const int_canon:tactic extern;
 ghost procedure assert_by_tactic(ghost p:prop, ghost t:tactic) extern;
 
 #reset-options "--z3rlimit 300"
-procedure{:quick} fast_sqr_part1(
+procedure fast_sqr_part1(
     inline offset:nat,
     ghost inA_b:buffer64)
+    {:quick}
     lets
         inA_ptr @= rsi;
 
@@ -120,7 +121,8 @@ procedure{:quick} fast_sqr_part1(
 }
 
 #reset-options "--z3rlimit 10000"
-procedure{:quick} fast_sqr_part2()
+procedure fast_sqr_part2()
+    {:quick}
     modifies
         rax; rcx; rdx; r8; r9; r10; r11; r12; r13; r14; r15;
         efl;
@@ -148,10 +150,11 @@ procedure{:quick} fast_sqr_part2()
 }
 
 #reset-options "--z3rlimit 200"
-procedure{:quick} fast_sqr_part3(
+procedure fast_sqr_part3(
     inline offset:nat,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64)
+    {:quick}
     lets
         dst_ptr @= rdi;
         inA_ptr @= rsi;
@@ -237,10 +240,12 @@ procedure{:quick} fast_sqr_part3(
 }
 
 #reset-options "--z3rlimit 300" 
-procedure{:quick}{:public} fast_sqr(
+procedure fast_sqr(
     inline offset:nat,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64)
+    {:quick}
+    {:public}
     lets
         dst_ptr @= rdi;
         inA_ptr @= rsi;
@@ -322,11 +327,13 @@ procedure{:quick}{:public} fast_sqr(
 
 #reset-options "--z3rlimit 20"
 
-procedure{:quick}{:public} fast_sqr_stdcall(
+procedure fast_sqr_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost stack_b:buffer64)
+    {:quick}
+    {:public}
     lets
         dst_ptr @= rdi; inA_ptr @= rsi; 
         dst_in := (if win then rcx else rdi);
@@ -406,10 +413,11 @@ procedure{:quick}{:public} fast_sqr_stdcall(
 
 /*
 #reset-options "--z3rlimit 30" 
-procedure{:quick} fast_sqr_loop(
+procedure fast_sqr_loop(
     inline offset:nat,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64)
+    {:quick}
     lets
         dst_ptr @= rdi;
         inA_ptr @= rsi;
@@ -472,11 +480,13 @@ procedure{:quick} fast_sqr_loop(
 
 #reset-options "--z3rlimit 20"
 
-procedure{:quick}{:public} fast_sqr_loop_stdcall(
+procedure fast_sqr_loop_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost stack_b:buffer64)
+    {:quick}
+    {:public}
     lets
         dst_ptr @= rdi; inA_ptr @= rsi; count @= rbx;
         dst_in   := (if win then rcx else rdi);
@@ -561,11 +571,13 @@ procedure{:quick}{:public} fast_sqr_loop_stdcall(
 }
 */
 
-procedure{:quick}{:public} sqr2_stdcall(
+procedure sqr2_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost stack_b:buffer64)
+    {:quick}
+    {:public}
     lets
         dst_ptr @= rdi; inA_ptr @= rsi; 
         dst_in := (if win then rcx else rdi);

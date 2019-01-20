@@ -60,7 +60,8 @@ open X64.CPU_Features_s
 // GCTR encryption
 ///////////////////////////
 
-procedure {:quick} init_ctr()
+procedure init_ctr()
+    {:quick}
     modifies xmm4; efl; r12;
     ensures
         xmm4 == Mkfour(1, 0, 0, 0);
@@ -71,7 +72,9 @@ procedure {:quick} init_ctr()
     lemma_quad32_xor();
 }
 
-procedure {:quick exportOnly}{:public} Inc32(inout dst:xmm, one:xmm)
+procedure Inc32(inout dst:xmm, in one:xmm)
+    {:quick exportOnly}
+    {:public} 
     requires
         one == Mkfour(1, 0, 0, 0);
     modifies
@@ -83,12 +86,14 @@ procedure {:quick exportOnly}{:public} Inc32(inout dst:xmm, one:xmm)
 }
 
 // GCTR encrypt one block
-procedure {:quick}{:public} gctr_register(
+procedure gctr_register(
     inline alg:algorithm,
     ghost key:seq(nat32),
     ghost round_keys:seq(quad32),
     ghost keys_b:buffer128
     )
+    {:quick}
+    {:public} 
     lets io @= xmm1; icb_BE @= xmm7;
     reads r8; icb_BE; mem; memTaint;
     modifies
@@ -124,7 +129,7 @@ procedure {:quick}{:public} gctr_register(
     gctr_encrypt_one_block(icb_BE, old(io), alg, key);
 }
 
-procedure {:quick} gctr_core(
+procedure gctr_core(
     inline alg:algorithm,
     ghost in_b:buffer128,
     ghost out_b:buffer128,
@@ -134,6 +139,7 @@ procedure {:quick} gctr_core(
     ghost round_keys:seq(quad32),
     ghost keys_b:buffer128
     )
+    {:quick}
     lets in_ptr @= rax; out_ptr @= rbx; len @= rcx; icb @= xmm7; mask @= xmm8;
 
     reads
@@ -238,7 +244,7 @@ procedure {:quick} gctr_core(
 //    gctr_partial_completed(alg, buffer128_as_seq(mem, in_b), buffer128_as_seq(mem, out_b), key, icb_BE);
 }
 
-procedure {:quick} gctr_core_opt(
+procedure gctr_core_opt(
     inline alg:algorithm,
     ghost in_b:buffer128,
     ghost out_b:buffer128,
@@ -246,6 +252,7 @@ procedure {:quick} gctr_core_opt(
     ghost round_keys:seq(quad32),
     ghost keys_b:buffer128
     )
+    {:quick}
     lets in_ptr @= rax; out_ptr @= rbx; len @= rcx; icb @= xmm7;
 
     reads
@@ -310,7 +317,7 @@ procedure {:quick} gctr_core_opt(
 
 
 #reset-options "--z3rlimit 20"
-procedure {:quick}{:public} gctr_bytes_extra_work(
+procedure gctr_bytes_extra_work(
     inline alg:algorithm,
     ghost icb_BE:quad32,
     ghost in_b:buffer128,
@@ -322,6 +329,8 @@ procedure {:quick}{:public} gctr_bytes_extra_work(
     ghost orig_out_ptr:nat64,
     ghost num_bytes:nat
     )
+    {:quick}
+    {:public} 
     lets in_ptr @= r9; out_ptr @= r10; icb @= xmm7;
     reads
         r8; in_ptr; out_ptr; icb; memTaint;
@@ -388,7 +397,7 @@ procedure {:quick}{:public} gctr_bytes_extra_work(
 }
 
 #reset-options "--z3rlimit 20"
-procedure {:quick}{:public} gctr_bytes_extra(
+procedure gctr_bytes_extra(
     inline alg:algorithm,
     ghost icb_BE:quad32,
     ghost in_b:buffer128,
@@ -400,6 +409,8 @@ procedure {:quick}{:public} gctr_bytes_extra(
     ghost orig_out_ptr:nat64,
     ghost num_bytes:nat
     )
+    {:quick}
+    {:public}
     lets in_ptr @= r9; out_ptr @= r10; icb @= xmm7;
     reads
         r8; in_ptr; out_ptr; icb; memTaint;
@@ -466,7 +477,7 @@ procedure {:quick}{:public} gctr_bytes_extra(
 }
 
 #reset-options "--z3rlimit 20"
-procedure {:quick}{:public} gctr_bytes_no_extra(
+procedure gctr_bytes_no_extra(
     inline alg:algorithm,
     ghost icb_BE:quad32,
     ghost in_b:buffer128,
@@ -478,6 +489,8 @@ procedure {:quick}{:public} gctr_bytes_no_extra(
     ghost orig_out_ptr:nat64,
     ghost num_bytes:nat
     )
+    {:quick}
+    {:public} 
     reads mem; memTaint;
 
     requires
@@ -527,7 +540,7 @@ procedure {:quick}{:public} gctr_bytes_no_extra(
 
 
 #reset-options "--z3rlimit 20"
-procedure {:quick}{:public} gctr_bytes(
+procedure gctr_bytes(
     inline alg:algorithm,
     ghost in_b:buffer128,
     ghost out_b:buffer128,
@@ -535,6 +548,8 @@ procedure {:quick}{:public} gctr_bytes(
     ghost round_keys:seq(quad32),
     ghost keys_b:buffer128
     )
+    {:quick}
+    {:public} 
     lets in_ptr @= rax; out_ptr @= rbx; num_bytes @= rcx; icb @= xmm7;
 
     reads

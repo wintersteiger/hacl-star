@@ -53,13 +53,15 @@ open X64.FastHybrid
 
 #reset-options "--z3rlimit 30"
 
-procedure{:quick}{:public} fmul_stdcall(
+procedure fmul_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64,
     ghost tmp_b:buffer64,
     ghost stack_b:buffer64)
+    {:quick}
+    {:public}
     lets
         tmp_ptr @= rdi; inA_ptr @= rsi; dst_ptr @= rdx; inB_ptr @= rcx;
         tmp_in := (if win then rcx else rdi);
@@ -159,13 +161,15 @@ procedure{:quick}{:public} fmul_stdcall(
 
 
 #reset-options "--z3rlimit 30"
-procedure{:quick}{:public} fmul2_stdcall(
+procedure fmul2_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost inB_b:buffer64,
     ghost tmp_b:buffer64,
     ghost stack_b:buffer64)
+    {:quick}
+    {:public}
     lets
         tmp_ptr @= rdi; inA_ptr @= rsi; dst_ptr @= rdx; inB_ptr @= rcx;
         tmp_in := (if win then rcx else rdi);
@@ -290,12 +294,14 @@ procedure{:quick}{:public} fmul2_stdcall(
 }
 
 
-procedure{:quick}{:public} fsqr_stdcall(
+procedure fsqr_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost tmp_b:buffer64,
     ghost stack_b:buffer64)
+    {:quick}
+    {:public}
     lets
         tmp_ptr @= rdi; inA_ptr @= rsi; dst_ptr @= rdx; 
         tmp_in := (if win then rcx else rdi);
@@ -384,12 +390,14 @@ procedure{:quick}{:public} fsqr_stdcall(
     Pop(r15, stack_b, 4 + bool_bit(win));
 }
 
-procedure{:quick}{:public} fsqr2_stdcall(
+procedure fsqr2_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
     ghost inA_b:buffer64,
     ghost tmp_b:buffer64,
     ghost stack_b:buffer64)
+    {:quick}
+    {:public}
     lets
         tmp_ptr @= rdi; inA_ptr @= rsi; dst_ptr @= rdx; 
         tmp_in := (if win then rcx else rdi);

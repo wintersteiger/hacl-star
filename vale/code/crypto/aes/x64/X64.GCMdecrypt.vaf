@@ -80,7 +80,7 @@ open X64.CPU_Features_s
 ///////////////////////////
 
 #reset-options "--z3rlimit 30"
-procedure {:quick} gcm_one_pass_blocks(
+procedure gcm_one_pass_blocks(
     inline alg:algorithm,
     ghost in_b:buffer128,
     ghost out_b:buffer128,
@@ -88,6 +88,7 @@ procedure {:quick} gcm_one_pass_blocks(
     ghost round_keys:seq(quad32),
     ghost keys_b:buffer128
     )
+    {:quick} 
     lets in_ptr @= rax; out_ptr @= rbx; len @= rcx; icb @= xmm7; mask @= xmm8; hash @= xmm1; one @= xmm10; h @= xmm11;
 
     reads
@@ -215,7 +216,7 @@ procedure {:quick} gcm_one_pass_blocks(
 
 
 #reset-options "--z3rlimit 30"
-procedure {:quick} gcm_one_pass(
+procedure gcm_one_pass(
     inline alg:algorithm,
     ghost in_b:buffer128,
     ghost out_b:buffer128,
@@ -223,6 +224,7 @@ procedure {:quick} gcm_one_pass(
     ghost round_keys:seq(quad32),
     ghost keys_b:buffer128
     )
+    {:quick}
     lets in_ptr @= rax; out_ptr @= rbx; num_bytes @= rcx; icb @= xmm7; mask @= xmm8; hash @= xmm1; one @= xmm10; h @= xmm11;
 
     reads
@@ -324,7 +326,7 @@ procedure {:quick} gcm_one_pass(
 }
 
 #reset-options "--z3rlimit 30"
-procedure {:quick} gcm_core_part1(
+procedure gcm_core_part1(
     inline alg:algorithm,
     ghost iv_BE:quad32,
     ghost cipher_b:buffer128,
@@ -339,7 +341,7 @@ procedure {:quick} gcm_core_part1(
     ghost y_auth:quad32,
     ghost y_cipher:quad32
     )
-
+    {:quick} 
     lets cipher_ptr @= r14; out_ptr @= rbx; keys_ptr @= r8; auth_ptr @= rax;
     cipher_num_bytes @= r13; auth_num_bytes @= r11; mask @= xmm8;
     iv @= xmm7;
@@ -468,7 +470,8 @@ procedure {:quick} gcm_core_part1(
 
 
 #reset-options "--z3rlimit 10"
-procedure {:quick} gcm_make_length_quad()
+procedure gcm_make_length_quad()
+    {:quick}
     lets cipher_num_bytes @= r13; auth_num_bytes @= r11; mask @= xmm8;
     reads cipher_num_bytes; auth_num_bytes; mask;
     modifies xmm2; rax; efl;
@@ -496,7 +499,7 @@ procedure {:quick} gcm_make_length_quad()
 
 
 #reset-options "--z3rlimit 30"
-procedure {:quick} gcm_core(
+procedure gcm_core(
     inline alg:algorithm,
     ghost iv_BE:quad32,
     ghost cipher_b:buffer128,
@@ -506,7 +509,7 @@ procedure {:quick} gcm_core(
     ghost round_keys:seq(quad32),
     ghost keys_b:buffer128
     )
-
+    {:quick} 
     lets cipher_ptr @= r14; out_ptr @= rbx; keys_ptr @= r8; auth_ptr @= rax;
     cipher_num_bytes @= r13; auth_num_bytes @= r11; mask @= xmm8;
     iv @= xmm7;
@@ -599,7 +602,7 @@ procedure {:quick} gcm_core(
     //gcm_encrypt_LE_snd_helper(iv_BE, length_quad32, y_final, xmm1, cipher, auth_bytes, plain, alg, key);
 }
 
-procedure {:quick} gcm_decrypt_stdcall_inner_inner(
+procedure gcm_decrypt_stdcall_inner_inner(
     inline alg:algorithm,
     ghost args_b:buffer64,
     ghost iv_BE:quad32,
@@ -614,6 +617,7 @@ procedure {:quick} gcm_decrypt_stdcall_inner_inner(
     ghost round_keys:seq(quad32),
     ghost keys_b:buffer128
     )
+    {:quick}
     reads memTaint;
     modifies
         rax; rbx; rcx; rdx; rsi; r8; r9; r10; r11; r12; r13; r14; r15; xmm0; xmm1; xmm2; xmm3; xmm4; xmm5; xmm6; xmm7; xmm8; xmm10; xmm11;
@@ -712,7 +716,7 @@ procedure {:quick} gcm_decrypt_stdcall_inner_inner(
 
 
 #reset-options "--z3rlimit 20"
-procedure {:quick} gcm_decrypt_stdcall_inner(
+procedure gcm_decrypt_stdcall_inner(
     inline alg:algorithm,
     ghost args_b:buffer64,
     ghost iv_BE:quad32,
@@ -727,6 +731,7 @@ procedure {:quick} gcm_decrypt_stdcall_inner(
     ghost round_keys:seq(quad32),
     ghost keys_b:buffer128
     )
+    {:quick}
     reads memTaint;
     modifies
         rax; rbx; rcx; rdx; rsi; r8; r9; r10; r11; r12; r13; r14; r15; xmm0; xmm1; xmm2; xmm3; xmm4; xmm5; xmm6; xmm7; xmm8; xmm10; xmm11;
@@ -816,7 +821,7 @@ procedure {:quick} gcm_decrypt_stdcall_inner(
 }
 
 #reset-options "--z3rlimit 30"
-procedure {:quick} gcm_decrypt_stdcall(
+procedure gcm_decrypt_stdcall(
     inline win:bool,
     inline alg:algorithm,
     ghost args_b:buffer64,
@@ -833,6 +838,7 @@ procedure {:quick} gcm_decrypt_stdcall(
     ghost round_keys:seq(quad32),
     ghost keys_b:buffer128
     )
+    {:quick}
     reads memTaint;
     modifies
         rax; rbx; rcx; rdx; r8; r9; r10; r11; r12; r13; r14; r15; 
