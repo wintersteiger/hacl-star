@@ -1,101 +1,15 @@
 # This file requires Python version >= 3.6
-# This file requires SCons version >= 3.00
-# See ./INSTALL.md for more information
 
-##################################################################################################
-#
-# Here are some background notes on SCons for anyone interested in reading or editing this file.
-# See https://scons.org/documentation.html for more information.
-#
-# SCons is a build tool, like Make. Similar to Make, it builds a graph of dependencies and
-# commands that should be run when files change.  However, unlike Make, SCons does not have a
-# specialized language to describe the graph.  Instead, SCons runs a user-supplied Python script
-# named "SConstruct" to construct the graph.  After the script completes, the SCons engine
-# uses the constructed graph to analyze dependencies and run commands.  (Note that unlike Make,
-# SCons's default dependency analysis uses file hashes rather than timestamps.)
-#
-# For example, consider the following Makefile:
-#
-#   b.txt : a1.txt sub/a2.txt
-#       cmd1 a1.txt sub\\a2.txt > b.txt
-#   c.txt : b.txt
-#       cmd2 b.txt > c.txt
-#
-# The most direct SCons equivalent of this is the following Python code:
-#
-#   Command('b.txt', ['a1.txt', 'sub/a2.txt'], 'cmd1 a1.txt sub\\a2.txt > b.txt')
-#   Command('c.txt', 'b.txt', 'cmd2 b.txt > c.txt')
-#
-# However, SCons encourages a more platform-neutral style, based on two concepts: nodes and
-# environments.  For example, the code above contains a string that is hard-wired to use
-# Windows-style backslashes rather than Unix-style forward slashes.  Instead of writing strings,
-# SCons allows scripts to construct abstract "nodes" that can represent graph nodes such as files.
-# SCons can then convert those nodes into paths with forward or backward slashes depending on
-# the platform:
-#
-#   # First construct File nodes for each file name (using forward slashes, even on Windows):
-#   a1 = File('a1.txt')
-#   a2 = File('sub/a2.txt')
-#   b = File('b.txt')
-#   c = File('c.txt')
-#   # Then let SCons convert the File nodes into strings:
-#   Command(b, [a1, a2], f'cmd1 {a1} {a2} > {b}')
-#   Command(c, b, f'cmd2 {b} > {c}')
-#
-# Scripts can say str(a1), a1.path, a1.abspath, etc. to convert a node to a string.  The code
-# above uses Python's f-strings (formatted string literals) to convert nodes to strings and embed
-# them into larger strings ( https://docs.python.org/3/whatsnew/3.6.html#pep-498-formatted-string-literals ).
-#
-# SCons encourages scripts to write functions that accept and pass nodes rather than strings
-# For example, the built-in SCons object-file generator will generate an object file node, whose
-# actual string representation may be "foo.o" using Unix tools or "foo.obj" using Windows tools:
-#
-#   foo_c = File('foo.c')
-#   foo_obj = Object(foo_c)  # compile foo.c to foo.o or foo.obj
-#
-# (Note that "foo_obj = Object('foo.c')" is also ok, because most built-in SCons functions
-# convert string names to nodes automatically.)
-#
-# In addition to encouraging platform independence, SCons tries to encourage independence from
-# users' configurations.  In particular, by default, it executes commands in a minimal
-# environment with a minimal PATH, such as ['/usr/local/bin', '/bin', '/usr/bin'] on Unix.
-# The Environment function creates a new minimal environment:
-#
-#   env = Environment()
-#
-# Scripts can then customize various environments to change the PATH, change the default
-# C/C++/Assembly tools, change the flags passed to various tools, etc:
-#
-#   env.Append(CCFLAGS=['-O3', '-flto', '-g', '-DKRML_NOUINT128', '-std=c++11'])
-#   env.PrependENVPath('PATH', os.path.dirname(str(gmp_dll)))
-#
-# Built in top-level functions like "Command(...)" and "Object(...)" execute in a default
-# environment.  To run them in a custom environment, simply call them as methods of an
-# environment object:
-#
-#   env.Command(b, [a1, a2], f'cmd1 {a1} {a2} > {b}')
-#   env.Command(c, b, f'cmd2 {b} > {c}')
-#   foo_obj = env.Object(foo_c)
-#
-# SCons has many other features, but for simplicity, the code in this file uses SCons features
-# sparingly, preferring Python features (such as f-strings) to SCons features (such as
-# SCons's own string substitution for special variables like $SOURCES) when possible.
-# Our hope is that this Python-centric style will be more approachable to newcomers.
-#
-##################################################################################################
-
+import argparse
 import re
 import sys
 import os, os.path
 import subprocess
-import traceback
-import pdb
-import SCons.Util
-import atexit
 import platform
 import fnmatch
 import pathlib
 import shutil
+import glob
 
 if sys.version_info < (3, 6):
   print(f'Requires Python version >= 3.6, found version {sys.version_info}')  # If the syntax of this line is invalid, the version of Python is probably older than 3.6
@@ -122,18 +36,27 @@ if 'FSTAR_HOME' in os.environ:
 else:
   fstar_default_path = '../../FStar'
 
+arg_parser = argparse.ArgumentParser()
+
+def AddOption(name, dest, type, default, action, help):
+  arg_parser.add_argument(name, dest = dest, type = type, default = default, action = action, help = help)
+
 def AddOptYesNo(name, dest, default, help):
-  AddOption('--' + name, dest = dest, default = default, action = 'store_true', help = f'{help} (default {default})')
-  AddOption('--NO-' + name, dest = dest, default = default, action = 'store_false')
+  arg_parser.add_argument('--' + name, dest = dest, default = default, action = 'store_true', help = f'{help} (default {default})')
+  arg_parser.add_argument('--NO-' + name, dest = dest, default = default, action = 'store_false')
 
 # Retrieve tool-specific command overrides passed in by the user
-AddOption('--VALE-PATH', dest = 'vale_path', type = 'string', default = vale_default_path, action = 'store',
+AddOption('--OUT-MAKE', dest = "out_make", type = str, default = None, action = 'store',
+  help = 'Generate makefile using specified path')
+AddOption('--OUT-SCONS', dest = "out_scons", type = str, default = None, action = 'store',
+  help = 'Generate SConscript file using specified path')
+AddOption('--VALE-PATH', dest = 'vale_path', type = str, default = vale_default_path, action = 'store',
   help = 'Specify the path to Vale tool')
-AddOption('--KREMLIN-PATH', dest = 'kremlin_path', type = 'string', default = kremlin_default_path, action = 'store',
+AddOption('--KREMLIN-PATH', dest = 'kremlin_path', type = str, default = kremlin_default_path, action = 'store',
   help = 'Specify the path to kreMLin')
-AddOption('--FSTAR-PATH', dest = 'fstar_path', type = 'string', default = fstar_default_path, action = 'store',
+AddOption('--FSTAR-PATH', dest = 'fstar_path', type = str, default = fstar_default_path, action = 'store',
   help = 'Specify the path to F* tool')
-AddOption('--FSTAR-Z3', dest = 'fstar_z3', type = 'string', default = '', action = 'store',
+AddOption('--FSTAR-Z3', dest = 'fstar_z3', type = str, default = '', action = 'store',
   help = 'Specify the path to z3 or z3.exe for F*')
 AddOptYesNo('FSTAR-MY-VERSION', dest = 'fstar_my_version', default = False,
   help = 'Use version of F* that does not necessarily match .tested_fstar_version')
@@ -145,21 +68,21 @@ AddOptYesNo('RECORD-HINTS', dest = 'record_hints', default = False,
   help = 'Record new F* .hints files into the hints directory')
 AddOptYesNo('USE-HINTS', dest = 'use_hints', default = True,
   help = 'Use F* .hints files from the hints directory')
-AddOption('--FARGS', dest = 'fstar_user_args', type = 'string', default = [], action = 'append',
+AddOption('--FARGS', dest = 'fstar_user_args', type = str, default = [], action = 'append',
   help = 'Supply temporary additional arguments to the F* compiler')
-AddOption('--VARGS', dest = 'vale_user_args', type = 'string', default = [], action = 'append',
+AddOption('--VARGS', dest = 'vale_user_args', type = str, default = [], action = 'append',
   help = 'Supply temporary additional arguments to the Vale compiler')
-AddOption('--KARGS', dest = 'kremlin_user_args', type = 'string', default = [], action = 'append',
+AddOption('--KARGS', dest = 'kremlin_user_args', type = str, default = [], action = 'append',
   help = 'Supply temporary additional arguments to the Kremlin compiler')
-AddOption('--CARGS', dest = 'c_user_args', type = 'string', default = [], action = 'append',
+AddOption('--CARGS', dest = 'c_user_args', type = str, default = [], action = 'append',
   help = 'Supply temporary additional arguments to the C compiler')
-AddOption('--OPENSSL', dest = 'openssl_path', type = 'string', default = None, action = 'store',
+AddOption('--OPENSSL', dest = 'openssl_path', type = str, default = None, action = 'store',
   help = 'Specify the path to the root of an OpenSSL source tree')
-AddOption('--CACHE-DIR', dest = 'cache_dir', type = 'string', default = None, action = 'store',
+AddOption('--CACHE-DIR', dest = 'cache_dir', type = str, default = None, action = 'store',
   help = 'Specify the SCons Shared Cache Directory')
 AddOptYesNo('VERIFY', dest = 'verify', default = True,
   help = 'Verify and compile, or compile only')
-AddOption('--ONE', dest = 'single_vaf', type = 'string', default = None, action = 'store',
+AddOption('--ONE', dest = 'single_vaf', type = str, default = None, action = 'store',
   help = 'Only verify one specified .vaf file, and in that file, only verify procedures or verbatim blocks marked as {:verify}.')
 AddOptYesNo('COLOR', dest = 'do_color', default = True,
   help="Add color to build output")
@@ -172,27 +95,31 @@ AddOptYesNo('MIN-TEST', dest = 'min_test', default = False,
 AddOptYesNo('PROFILE', dest = 'profile', default = False,
   help = "Turn on profile options to measure verification performance (note: --NO-USE-HINTS is recommended when profiling)")
 
-is_help = GetOption('help')
-vale_path = Dir(GetOption('vale_path')).abspath
-kremlin_path = Dir(GetOption('kremlin_path')).abspath
-fstar_path = Dir(GetOption('fstar_path')).abspath
-fstar_user_args = GetOption('fstar_user_args')
-vale_user_args = GetOption('vale_user_args')
-kremlin_user_args = GetOption('kremlin_user_args')
-c_user_args = GetOption('c_user_args')
-openssl_path = GetOption('openssl_path')
-fstar_my_version = GetOption('fstar_my_version')
-z3_my_version = GetOption('z3_my_version')
-vale_my_version = GetOption('vale_my_version')
-fstar_extract = GetOption('fstar_extract')
-record_hints = GetOption('record_hints')
-use_hints = GetOption('use_hints')
-do_color = GetOption('do_color')
-dump_args = GetOption('dump_args')
-single_vaf = GetOption('single_vaf')
+args = arg_parser.parse_args()
+out_make = args.out_make
+out_scons = args.out_scons
+vale_path = os.path.abspath(args.vale_path)
+kremlin_path = os.path.abspath(args.kremlin_path)
+fstar_path = os.path.abspath(args.fstar_path)
+fstar_user_args = args.fstar_user_args
+vale_user_args = args.vale_user_args
+kremlin_user_args = args.kremlin_user_args
+c_user_args = args.c_user_args
+openssl_path = args.openssl_path
+fstar_my_version = args.fstar_my_version
+z3_my_version = args.z3_my_version
+vale_my_version = args.vale_my_version
+fstar_extract = args.fstar_extract
+record_hints = args.record_hints
+use_hints = args.use_hints
+do_color = args.do_color
+dump_args = args.dump_args
+single_vaf = args.single_vaf
 is_single_vaf = not (single_vaf is None)
-min_test = GetOption('min_test')
-profile = GetOption('profile')
+min_test = args.min_test
+profile = args.profile
+verify = args.verify
+fstar_z3 = args.fstar_z3
 
 ##################################################################################################
 #
@@ -200,53 +127,122 @@ profile = GetOption('profile')
 #
 ##################################################################################################
 
-common_env = Environment()
-
-common_env.Append(CCFLAGS = c_user_args)
-
 target_arch = 'x86'
 if (sys.platform == 'win32' and os.getenv('PLATFORM') == 'X64') or platform.machine() == 'x86_64':
   target_arch = 'amd64'
 
-common_env['TARGET_ARCH'] = target_arch
-
+CCPDBFLAGS = []
+CCFLAGS = c_user_args
+LINKFLAGS = []
+CXXFLAGS = []
+AS = ''
 mono = ''
-if not is_help:
-  if sys.platform == 'win32':
-    import importlib.util
-    common_env.Replace(CCPDBFLAGS = '/Zi /Fd${TARGET.base}.pdb')
-    # Use kremlib.h without primitive support for uint128_t.
-    common_env.Append(CCFLAGS = ['/Ox', '/Gz', '/DKRML_NOUINT128'])
-    common_env.Append(LINKFLAGS = ['/DEBUG'])
-    if os.getenv('PLATFORM') == 'X64':
-      common_env['AS'] = 'ml64'
-    if 'SHELL' in os.environ and importlib.util.find_spec('win32job') != None and importlib.util.find_spec('win32api'):
-      # Special job handling for cygwin so that child processes exit when the parent process exits
-      import win32job
-      import win32api
-      hdl = win32job.CreateJobObject(None, "")
-      win32job.AssignProcessToJobObject(hdl, win32api.GetCurrentProcess())
-      extended_info = win32job.QueryInformationJobObject(None, win32job.JobObjectExtendedLimitInformation)
-      extended_info['BasicLimitInformation']['LimitFlags'] = win32job.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-      win32job.SetInformationJobObject(hdl, win32job.JobObjectExtendedLimitInformation, extended_info)
-  else:
-    common_env.Append(CCFLAGS = ['-O3', '-flto', '-g', '-DKRML_NOUINT128'])
-    common_env.Append(CXXFLAGS = ['-std=c++11'])  # This option is C++ specific
-    mono = 'mono'
-
-  if sys.platform == 'win32':
-    # fstar.exe relies on libgmp-10.dll
-    gmp_dll = FindFile('libgmp-10.dll', os.environ['PATH'].split(';'))
-    if gmp_dll != None:
-      common_env.PrependENVPath('PATH', os.path.dirname(str(gmp_dll)))
+if sys.platform == 'win32':
+  import importlib.util
+  CCPDBFLAGS.append(['/Zi /Fd${TARGET.base}.pdb'])
+  # Use kremlib.h without primitive support for uint128_t.
+  CCFLAGS.append(['/Ox', '/Gz', '/DKRML_NOUINT128'])
+  LINKFLAGS.append(['/DEBUG'])
+  if os.getenv('PLATFORM') == 'X64':
+    AS = 'ml64'
+else:
+  CCFLAGS.append(['-O3', '-flto', '-g', '-DKRML_NOUINT128'])
+  CXXFLAGS.append(['-std=c++11'])  # This option is C++ specific
+  mono = 'mono'
 
 # Helper class to specify per-file command-line options for verification.
 class BuildOptions:
   # First argument is mandatory (verification options); all others are optional named arguments
   def __init__(self, args, vale_includes = None):
-    self.env = common_env.Clone()
     self.verifier_flags = args
     self.vale_includes = vale_includes
+
+##################################################################################################
+#
+#   Utilities
+#
+##################################################################################################
+
+all_targets = set()
+cmd_targets = {}
+
+def Flatten(x):
+  return [z for y in x for z in Flatten(y)] if isinstance(x, list) else [x]
+
+def File(path):
+  return os.path.normpath(os.path.relpath(path)).replace('\\', '/')
+
+def Dir(path):
+  return os.path.normpath(os.path.relpath(path)).replace('\\', '/')
+
+def CopyFile(target, source):
+  all_targets.add(target)
+  if target in cmd_targets:
+    if source != cmd_targets[target]:
+      raise Exception(f'incompatible commands for target {target}')
+    return target
+  cmd_targets[target] = source
+  if out_make != None:
+    make_file.write(f'{target} : {source}\n')
+    make_file.write(f'\tsleep 1\n')
+    make_file.write(f'\tcp {source} {target}\n')
+    make_file.write(f'\tsleep 1\n\n')
+  if out_scons != None:
+    scons_file.write(f'  env.Command({target}, {source}, Copy({target}, {source}))\n')
+  return target
+
+def Depends(targets, sources):
+  targets = Flatten(targets)
+  sources = Flatten(sources)
+  for t in targets:
+    all_targets.add(t)
+  if targets != []:
+    if out_make != None:
+      make_file.write(f'{" ".join(targets)} : {" ".join(sources)}\n\n')
+    if out_scons != None:
+      scons_file.write(f'  env.Depends({targets}, {sources})\n')
+
+def Command(targets, sources, cmd):
+  targets = Flatten(targets)
+  sources = Flatten(sources)
+  for t in targets:
+    all_targets.add(t)
+    if t in cmd_targets:
+      if cmd != cmd_targets[t]:
+        raise Exception(f'incompatible commands for target {t}')
+      return t
+    cmd_targets[t] = cmd
+  if out_make != None:
+    make_file.write(f'{" ".join(targets)} : {" ".join(sources)}\n')
+    make_file.write(f'\tsleep 1\n')
+    make_file.write(f'\t{cmd}\n')
+    make_file.write(f'\tsleep 1\n\n')
+  if out_scons != None:
+    scons_file.write(f'  env.Command({targets}, {sources},\n')
+    scons_file.write(f'    {repr(cmd)})\n')
+  return targets
+
+def Assemble(target, source):
+  all_targets.add(target)
+  if out_make != None:
+    make_file.write(f'{target} : {" ".join(source)}\n')
+    make_file.write(f'\tsleep 1\n')
+    make_file.write(f'\tgas -o {target} {" ".join(source)}\n')
+    make_file.write(f'\tsleep 1\n\n')
+  if out_scons != None:
+    scons_file.write(f'  env.Object({repr(target)}, {repr(source)})\n')
+  return target
+
+def Cpp(target, source):
+  all_targets.add(target)
+  if out_make != None:
+    make_file.write(f'{target} : {" ".join(source)}\n')
+    make_file.write(f'\tsleep 1\n')
+    make_file.write(f'\tgcc -o {target} {" ".join(source)}\n')
+    make_file.write(f'\tsleep 1\n\n')
+  if out_scons != None:
+    scons_file.write(f'  env.Program({repr(target)}, {repr(source)})\n')
+  return target
 
 ##################################################################################################
 #
@@ -259,16 +255,16 @@ def fstar_default_args_nosmtencoding(relative=True):
   cache_dir = cache_dir if relative else os.path.abspath(cache_dir)
 
   return ('--max_fuel 1 --max_ifuel 1'
-  + (' --initial_ifuel 1' if is_single_vaf else ' --initial_ifuel 0')
-  # The main purpose of --z3cliopt smt.QI.EAGER_THRESHOLD=100 is to make sure that matching loops get caught
-  # Don't remove unless you're sure you've used the axiom profiler to make sure you have no matching loops
-  + ' --z3cliopt smt.arith.nl=false --z3cliopt smt.QI.EAGER_THRESHOLD=100 --z3cliopt smt.CASE_SPLIT=3'
-  + ' --hint_info'
-  + (' --use_hints --use_hint_hashes' if use_hints else '')
-  + (' --cache_off' if record_hints else ' --cache_checked_modules')
-  + ' --cache_dir ' + cache_dir
-  + ' --use_extracted_interfaces true'
-  )
+    + (' --initial_ifuel 1' if is_single_vaf else ' --initial_ifuel 0')
+    # The main purpose of --z3cliopt smt.QI.EAGER_THRESHOLD=100 is to make sure that matching loops get caught
+    # Don't remove unless you're sure you've used the axiom profiler to make sure you have no matching loops
+    + ' --z3cliopt smt.arith.nl=false --z3cliopt smt.QI.EAGER_THRESHOLD=100 --z3cliopt smt.CASE_SPLIT=3'
+    + ' --hint_info'
+    + (' --use_hints --use_hint_hashes' if use_hints else '')
+    + (' --cache_off' if record_hints else ' --cache_checked_modules')
+    + ' --cache_dir ' + cache_dir
+    + ' --use_extracted_interfaces true'
+    )
 
 def fstar_default_args(relative=True):
   return (fstar_default_args_nosmtencoding(relative)
@@ -393,47 +389,31 @@ verify_options_dict = { k:v for (k,v) in verify_options}
 # --NOVERIFY is intended for CI scenarios, where the Win32/x86 build is verified, so
 # the other build flavors do not redundently re-verify the same results.
 fstar_no_verify = ''
-verify = GetOption('verify')
 if not verify:
   print('***\n*** WARNING:  NOT VERIFYING ANY CODE\n***')
   fstar_no_verify = '--admit_smt_queries true'
 
 # Find Z3 for F*
 found_z3 = False
-if not is_help:
-  fstar_z3 = GetOption('fstar_z3')
-  if fstar_z3 == '':
-    fstar_z3 = File('tools/Z3/z3.exe').path if sys.platform == 'win32' else 'tools/Z3/z3'
-    if os.path.isfile(fstar_z3):
-      found_z3 = True
-    else:
-      if sys.platform == 'win32':
-        find_z3 = FindFile('z3.exe', os.environ['PATH'].split(';'))
-      else:
-        find_z3 = FindFile('z3', os.environ['PATH'].split(':'))
-      if find_z3 != None:
-        found_z3 = True
-        fstar_z3 = str(find_z3)
-  else:
+if fstar_z3 == '':
+  fstar_z3 = File('tools/Z3/z3.exe') if sys.platform == 'win32' else 'tools/Z3/z3'
+  if os.path.isfile(fstar_z3):
     found_z3 = True
-  fstar_z3_path = '--smt ' + (os.path.abspath(fstar_z3) if dump_args else fstar_z3)
+  else:
+    if sys.platform == 'win32':
+      find_z3 = FindFile('z3.exe', os.environ['PATH'].split(';'))
+    else:
+      find_z3 = FindFile('z3', os.environ['PATH'].split(':'))
+    if find_z3 != None:
+      found_z3 = True
+      fstar_z3 = str(find_z3)
 else:
-  fstar_z3_path = ''
+  found_z3 = True
+fstar_z3_path = '--smt ' + (os.path.abspath(fstar_z3) if dump_args else fstar_z3)
 
 vale_exe = File(f'{vale_path}/bin/vale.exe')
 import_fstar_types_exe = File(f'{vale_path}/bin/importFStarTypes.exe')
 fstar_exe = File(f'{fstar_path}/bin/fstar.exe')
-
-def add_from_os_env(env, name):
-  if name in os.environ:
-    env['ENV'][name] = os.environ[name]
-
-ocaml_env = Environment()
-add_from_os_env(ocaml_env, 'PATH')
-add_from_os_env(ocaml_env, 'OCAMLPATH')
-add_from_os_env(ocaml_env, 'OCAMLLIB')
-add_from_os_env(ocaml_env, 'OCAML_TOPLEVEL_PATH')
-add_from_os_env(ocaml_env, 'CAML_LD_LIBRARY_PATH')
 
 ##################################################################################################
 #
@@ -484,17 +464,17 @@ def print_error_exit(s):
 
 # Given a File node for dir/dir/.../m.extension, return m
 def file_module_name(file):
-  name = file.name
+  name = os.path.basename(file)
   name = name[:1].upper() + name[1:] # capitalize first letter, as expected for F* module names
   return os.path.splitext(name)[0]
 
 # Return '.vaf', '.fst', etc.
 def file_extension(file):
-  return os.path.splitext(file.path)[1]
+  return os.path.splitext(file)[1]
 
 # Drop the '.vaf', '.fst', etc.
 def file_drop_extension(file):
-  return os.path.splitext(file.path)[0]
+  return os.path.splitext(file)[0]
 
 # Given source File node, return File node in object directory
 def to_obj_dir(file):
@@ -504,7 +484,7 @@ def to_obj_dir(file):
     return File(f'obj/{file}')
 
 def to_hint_file(file):
-  return File(f'hints/{file.name}.hints')
+  return File(f'hints/{os.path.basename(file)}.hints')
 
 def ml_out_file(sourcefile, suffix):
   module_name = file_module_name(sourcefile).replace('.', '_')
@@ -512,7 +492,7 @@ def ml_out_file(sourcefile, suffix):
 
 # Is the file from our own sources, rather than an external file (e.g., like an F* library file)?
 def is_our_file(file):
-  path = file.path
+  path = file
   return True in [path.startswith(str(Dir(p))) for p in ['obj'] + verify_paths]
 
 def compute_include_paths(src_include_paths, obj_include_paths, obj_prefix):
@@ -521,10 +501,6 @@ def compute_include_paths(src_include_paths, obj_include_paths, obj_prefix):
 def compute_includes(src_include_paths, obj_include_paths, obj_prefix, relative=True):
   fstar_include_paths = compute_include_paths(src_include_paths, obj_include_paths, obj_prefix)
   return " ".join(["--include " + (x if relative else os.path.abspath(x)) for x in fstar_include_paths])
-
-def CopyFile(target, source):
-  Command(target, source, Copy(target, source))
-  return target
 
 ##################################################################################################
 #
@@ -535,7 +511,7 @@ def CopyFile(target, source):
 # Helper to look up a BuildOptions matching a srcpath File node, from the
 # verify_options[] list, falling back on a default if no specific override is present.
 def get_build_options(srcnode):
-  srcpath = srcnode.path
+  srcpath = srcnode
   srcpath = srcpath.replace('\\', '/')  # switch to posix path separators
   if srcpath in verify_options_dict:    # Exact match
     return verify_options_dict[srcpath]
@@ -663,7 +639,7 @@ def report_verification_failures():
           print()
           print(f'##### {red}Verification error{uncolor}')
           print('Printing contents of ' + report_filename + ' #####')
-          with open (report_filename, 'r') as myfile:
+          with open(report_filename, 'r') as myfile:
             lines = myfile.read().splitlines()
             valeErrors = [line for line in lines if ("*****" in line)]
             for line in lines:
@@ -679,7 +655,7 @@ def report_verification_failures():
           print()
           print(f'##### {red}Verification error{uncolor}')
           print('Printing contents of ' + report_filename + ' #####')
-          with open (report_filename, 'r') as myfile:
+          with open(report_filename, 'r') as myfile:
             lines = myfile.read().splitlines()
             valeErrors = [line for line in lines if ("*****" in line)]
             for line in lines:
@@ -705,12 +681,12 @@ def add_module_for_file(file):
   all_modules.append(m)
 
 def add_include_dir_for_file(include_paths, file):
-  d = str(file.dir)
+  d = os.path.dirname(file)
   if not (d in include_paths):
     include_paths.append(d)
-    pathlib.Path(str(to_obj_dir(file).dir)).mkdir(parents = True, exist_ok = True)
+    pathlib.Path(os.path.dirname(to_obj_dir(file))).mkdir(parents = True, exist_ok = True)
 
-def include_fstar_file(env, file):
+def include_fstar_file(file):
   options = get_build_options(file)
   add_include_dir_for_file(src_include_paths, file)
   if options != None:
@@ -718,10 +694,10 @@ def include_fstar_file(env, file):
       add_module_for_file(file)
     fsti_map[file_module_name(file)] = file
 
-def include_vale_file(env, file):
+def include_vale_file(file):
   options = get_build_options(file)
   add_include_dir_for_file(obj_include_paths, file)
-  dummy_dir = File(f'obj/dummies/{file_drop_extension(file)}').dir
+  dummy_dir = os.path.dirname(f'obj/dummies/{file_drop_extension(file)}')
   pathlib.Path(str(dummy_dir)).mkdir(parents = True, exist_ok = True)
   if options != None:
     add_module_for_file(file)
@@ -731,7 +707,7 @@ def include_vale_file(env, file):
       # The F* dependency analysis runs before .vaf files are converted to .fst/.fsti files,
       # so generate a dummy .fst/.fsti file pair for each .vaf file for the F* dependency analysis.
       dummy_file = File(f'obj/dummies/{file_drop_extension(file)}{extension}')
-      pathlib.Path(str(dummy_file.dir)).mkdir(parents = True, exist_ok = True)
+      pathlib.Path(os.path.dirname(dummy_file)).mkdir(parents = True, exist_ok = True)
       with open(str(dummy_file), 'w') as myfile:
         myfile.write(f'module {module_name}' + '\n')
 
@@ -751,7 +727,6 @@ def add_ml_dependencies(targets, sources):
 
 # Verify a .fst or .fsti file
 def verify_fstar_file(options, targetfile, sourcefile, fstar_includes):
-  env = options.env
   stderrfile = File(f'{targetfile}.stderr')
   temptargetfile = File(f'{targetfile}.tmp')
   temptargetfiles = [temptargetfile]
@@ -763,7 +738,7 @@ def verify_fstar_file(options, targetfile, sourcefile, fstar_includes):
     temptargetfiles.append(hintfile)
   elif use_hints and os.path.isfile(str(hintfile)):
     Depends(temptargetfiles, hintfile)
-  env.Command(temptargetfiles, sourcefile,
+  Command(temptargetfiles, sourcefile,
     f'{fstar_exe} {sourcefile} {options.verifier_flags} {fstar_z3_path} {fstar_no_verify}' +
     f' {fstar_includes} {" ".join(fstar_user_args)} --hint_file {hintfile} {fstar_record_hints}' +
     (f' --debug {file_module_name(File(sourcefile))} --debug_level print_normalized_terms' if profile else '') +
@@ -772,27 +747,26 @@ def verify_fstar_file(options, targetfile, sourcefile, fstar_includes):
   dump_module_flag = '--dump_module ' + file_module_name(sourcefile)
   dump_flags = ('--print_implicits --print_universes --print_effect_args --print_full_names' +
     ' --print_bound_var_types --ugly ' + dump_module_flag)
-  env.Command(dumptargetfile, sourcefile,
+  Command(dumptargetfile, sourcefile,
     f'{fstar_exe} {sourcefile} {options.verifier_flags} {fstar_z3_path} {fstar_no_verify} --admit_smt_queries true' +
     f' {fstar_includes} {" ".join(fstar_user_args)}' +
-    f' {dump_flags} 1>{dumptargetfile} 2>{dumptargetfile}.stderr')
+    f' {dump_flags} 1> {dumptargetfile} 2> {dumptargetfile}.stderr')
   Depends(dumptargetfile, targetfile)
 
 def extract_fstar_file(options, sourcefile, fstar_includes):
-  env = options.env
   base_name = file_drop_extension(sourcefile)
   module_name = file_module_name(sourcefile)
   hintfile = to_hint_file(sourcefile)
   mlfile = ml_out_file(sourcefile, '.ml')
   Depends(mlfile, to_obj_dir(base_name + '.fst.verified'))
   verifier_flags = options.verifier_flags.replace('--use_extracted_interfaces true', '')
-  return env.Command(mlfile, sourcefile,
+  return Command(mlfile, sourcefile,
     f'{fstar_exe} {sourcefile} {verifier_flags} {fstar_z3_path} {fstar_no_verify} --admit_smt_queries true' +
     f' {fstar_includes} {" ".join(fstar_user_args)}' +
     f' --odir obj/ml_out --codegen OCaml --extract_module {module_name}')
 
 # Process a .fst or .fsti file
-def process_fstar_file(env, file, fstar_includes):
+def process_fstar_file(file, fstar_includes):
   options = get_build_options(file)
   if options != None:
     target = File(f'{to_obj_dir(file)}.verified')
@@ -802,8 +776,9 @@ def process_fstar_file(env, file, fstar_includes):
         if not (ml_out_file(file, '.ml') in no_extraction_files):
           extract_fstar_file(options, file, fstar_includes)
 
-def vale_dependency_scan(env, file):
-  contents = file.get_text_contents()
+def vale_dependency_scan(file):
+  with open(file) as f:
+    contents = f.read()
   dirname = os.path.dirname(str(file))
   vaf_includes = vale_include_re.findall(contents)
   fst_includes = vale_open_re.findall(contents) + vale_import_re.findall(contents)
@@ -847,7 +822,6 @@ def vale_dependency_scan(env, file):
 # Takes a source .vaf File node
 # Returns list of File nodes representing the resulting .fst and .fsti files
 def translate_vale_file(options, source_vaf):
-  env = options.env
   target = file_drop_extension(to_obj_dir(source_vaf))
   target_fst = File(target + '.fst')
   target_fsti = File(target + '.fsti')
@@ -855,17 +829,17 @@ def translate_vale_file(options, source_vaf):
   opt_vale_includes = vale_includes if options.vale_includes == None else options.vale_includes
   types_include = ''
   types_include = f'-include {target}.types.vaf'
-  env.Command(targets, source_vaf,
+  Command(targets, source_vaf,
     f'{mono} {vale_exe} -fstarText -quickMods -typecheck {types_include} {opt_vale_includes}' +
     f' -in {source_vaf} -out {target_fst} -outi {target_fsti}' +
     f' {vale_scons_args} {" ".join(vale_user_args)}')
   return targets
 
 # Process a .vaf file
-def process_vale_file(env, file, fstar_includes):
+def process_vale_file(file, fstar_includes):
   options = get_build_options(file)
   if options != None:
-    vale_dependency_scan(env, file)
+    vale_dependency_scan(file)
     fsts = translate_vale_file(options, file)
     fst = fsts[0]
     fsti = fsts[1]
@@ -880,7 +854,7 @@ def process_vale_file(env, file, fstar_includes):
     if fstar_extract:
       extract_fstar_file(fst_options, fst, fstar_includes)
 
-def compute_module_types(env, source_vaf):
+def compute_module_types(source_vaf):
   source_base = file_drop_extension(to_obj_dir(File(source_vaf)))
   types_vaf = f'{source_base}.types.vaf'
   done = set()
@@ -901,59 +875,58 @@ def compute_module_types(env, source_vaf):
   Depends(types_vaf, import_fstar_types_exe)
   Command(types_vaf, dumps, f'{mono} {import_fstar_types_exe} {dumps_string} -out {types_vaf} > {types_vaf}.errors')
 
-def recursive_glob(env, pattern, strings = False):
+def recursive_glob(pattern):
   matches = []
   split = os.path.split(pattern) # [0] is the directory, [1] is the actual pattern
   platform_directory = split[0] #os.path.normpath(split[0])
   for d in os.listdir(platform_directory):
     if os.path.isdir(os.path.join(platform_directory, d)):
       newpattern = os.path.join(split[0], d, split[1])
-      matches.append(recursive_glob(env, newpattern, strings))
-  files = env.Glob(pattern, strings=strings)
+      matches.append(recursive_glob(newpattern))
+  files = glob.glob(pattern)
   matches.append(files)
-  return Flatten([File(x) for x in matches])
+  return [File(x) for x in Flatten(matches)]
 
 # Verify *.fst, *.fsti, *.vaf files in a list of directories.  This enumerates
 # all files in those trees, and creates verification targets for each,
 # which in turn causes a dependency scan to verify all of their dependencies.
-def process_files_in(env, directories):
+def process_files_in(directories):
   fsts = []
   fstis = []
   vafs = []
   for d in directories:
-    fsts.extend(recursive_glob(env, d + '/*.fst', strings = True))
-    fstis.extend(recursive_glob(env, d + '/*.fsti', strings = True))
-    vafs.extend(recursive_glob(env, d + '/*.vaf', strings = True))
+    fsts.extend(recursive_glob(d + '/*.fst'))
+    fstis.extend(recursive_glob(d + '/*.fsti'))
+    vafs.extend(recursive_glob(d + '/*.vaf'))
   # Compute include directories:
   for file in fsts:
-    include_fstar_file(env, file)
+    include_fstar_file(file)
   for file in fstis:
-    include_fstar_file(env, file)
+    include_fstar_file(file)
   for file in external_files:
     file_node = File(file.obj_name())
     fsti_map[file_module_name(file_node)] = file_node
   for file in vafs:
-    include_vale_file(env, file)
+    include_vale_file(file)
   # Process and verify files:
   fstar_include_paths = compute_include_paths(src_include_paths, obj_include_paths, 'obj')
   fstar_includes = compute_includes(src_include_paths, obj_include_paths, 'obj')
   if is_single_vaf:
-    process_vale_file(env, File(single_vaf), fstar_includes)
+    process_vale_file(File(single_vaf), fstar_includes)
   else:
     for file in fsts:
-      process_fstar_file(env, file, fstar_includes)
+      process_fstar_file(file, fstar_includes)
     for file in fstis:
-      process_fstar_file(env, file, fstar_includes)
+      process_fstar_file(file, fstar_includes)
     for file in external_files:
-      process_fstar_file(env, File(file.obj_name()), fstar_includes)
+      process_fstar_file(File(file.obj_name()), fstar_includes)
     for file in vafs:
-      process_vale_file(env, file, fstar_includes)
+      process_vale_file(file, fstar_includes)
     for target in manual_dependencies:
       Depends(target, manual_dependencies[target])
 
-def extract_assembly_code(env, output_base_name, main_file, alg_files, cmdline_file):
+def extract_assembly_code(output_base_name, main_file, alg_files, cmdline_file):
   # OCaml depends on many libraries and executables; we have to assume they are in the user's PATH:
-  ocaml_env.PrependENVPath('OCAMLPATH', fstar_path + '/bin')
   main_ml = ml_out_file(main_file, '.ml')
   main_cmx = ml_out_file(main_file, '.cmx')
   main_exe = ml_out_file(main_file, '.exe')
@@ -973,6 +946,8 @@ def extract_assembly_code(env, output_base_name, main_file, alg_files, cmdline_f
   Depends(cmdline_cmx, cmdline_ml)
   Depends(main_cmx, cmdline_cmx)
   Depends(main_cmx, main_ml)
+  Depends(cmdline_cmx, ml_out_file('X64_Machine_s.fst', '.cmx'))
+  Depends(cmdline_cmx, ml_out_file('X64_Vale_Decls.fst', '.cmx'))
   done = set()
   cmxs = []
   objs = []
@@ -983,11 +958,12 @@ def extract_assembly_code(env, output_base_name, main_file, alg_files, cmdline_f
   def add_cmx(x_ml):
     x_cmx = ml_out_file(x_ml, '.cmx')
     x_obj = ml_out_file(x_ml, '.o')
-    cmx = ocaml_env.Command([x_cmx, x_obj], x_ml,
-      f'ocamlfind ocamlopt -c -package fstarlib -o {x_cmx} {x_ml} -I obj/ml_out {ignore_warnings_str}')
-    cmxs.append(cmx[0])
+    Depends(x_obj, x_cmx)
+    cmx = Command(x_cmx, x_ml,
+      f'OCAMLPATH={File(fstar_path + "/bin")} ocamlfind ocamlopt -c -package fstarlib -o {x_cmx} {x_ml} -I obj/ml_out {ignore_warnings_str}')
+    cmxs.append(x_cmx)
     objs.append(x_obj)
-    Depends(main_exe, cmx[0])
+    Depends(main_exe, x_cmx)
     Depends(main_exe, x_obj)
   def collect_cmxs_in_order(x_ml):
     if not (x_ml in done):
@@ -1002,15 +978,15 @@ def extract_assembly_code(env, output_base_name, main_file, alg_files, cmdline_f
   add_cmx(cmdline_ml)
   add_cmx(main_ml)
   cmxs_string = " ".join([str(cmx) for cmx in cmxs])
-  ocaml_env.Command(main_exe, cmxs + objs,
-    f'ocamlfind ocamlopt -linkpkg -package fstarlib {cmxs_string} -o {main_exe}')
+  Command(main_exe, cmxs + objs,
+    f'OCAMLPATH={File(fstar_path + "/bin")} ocamlfind ocamlopt -linkpkg -package fstarlib {cmxs_string} -o {main_exe}')
   # Run executable to generate assembly files:
   output_target_base = 'obj/' + output_base_name
   def generate_asm(suffix, assembler, os):
     # TODO: cross-compilation support; note that platform.machine() does not
     # produce a consistent string across OSes
     target = output_target_base + "-x86_64" + suffix
-    return ocaml_env.Command(target, main_exe, f'{main_exe} {assembler} {os} > {target}')
+    return Command(target, main_exe, f'{main_exe} {assembler} {os} > {target}')
   masm_win = generate_asm('-msvc.asm', 'MASM', 'Win')
   gcc_win = generate_asm('-mingw.S', 'GCC', 'Win')
   gcc_linux = generate_asm('-linux.S', 'GCC', 'Linux')
@@ -1032,13 +1008,13 @@ def extract_assembly_code(env, output_base_name, main_file, alg_files, cmdline_f
 #
 ##################################################################################################
 
-def compute_fstar_deps(env, src_directories, fstar_includes):
+def compute_fstar_deps(src_directories, fstar_includes):
   import subprocess
   # find all .fst, .fsti files in src_directories
   fst_files = []
   for d in src_directories:
-    fst_files.extend(recursive_glob(env, d+'/*.fst', strings = True))
-    fst_files.extend(recursive_glob(env, d+'/*.fsti', strings = True))
+    fst_files.extend(recursive_glob(d+'/*.fst'))
+    fst_files.extend(recursive_glob(d+'/*.fsti'))
   # use fst_files to choose .fst and .fsti files that need dependency analysis
   files = []
   for f in fst_files:
@@ -1108,9 +1084,9 @@ def compute_fstar_deps(env, src_directories, fstar_includes):
           dump_module_flag = '--dump_module ' + file_module_name(File(t))
           dump_flags = ('--print_implicits --print_universes --print_effect_args --print_full_names' +
             ' --print_bound_var_types --ugly ' + dump_module_flag)
-          env.Command(dumptargetfile, t,
+          Command(dumptargetfile, t,
             f'{fstar_exe} {t} {fstar_z3_path} {fstar_no_verify} --admit_smt_queries true' +
-            f' {dump_flags} 1>{dumptargetfile} 2> {dumptargetfile}.stderr')
+            f' {dump_flags} 1> {dumptargetfile} 2> {dumptargetfile}.stderr')
         if not (dumptargetfile in dump_deps):
           dump_deps[dumptargetfile] = set()
         for s in sources:
@@ -1133,76 +1109,90 @@ def compute_fstar_deps(env, src_directories, fstar_includes):
 #
 ##################################################################################################
 
-if not is_help:
-  atexit.register(report_verification_failures)
-  env = common_env
+# Create obj directory and any subdirectories needed during dependency analysis
+# (SCons will create other subdirectories during build)
+pathlib.Path('obj').mkdir(parents = True, exist_ok = True)
+pathlib.Path('obj/external').mkdir(parents = True, exist_ok = True)
+pathlib.Path('obj/cache_checked').mkdir(parents = True, exist_ok = True)
+pathlib.Path('obj/ml_out').mkdir(parents = True, exist_ok = True)
 
-  # Create obj directory and any subdirectories needed during dependency analysis
-  # (SCons will create other subdirectories during build)
-  pathlib.Path('obj').mkdir(parents = True, exist_ok = True)
-  pathlib.Path('obj/external').mkdir(parents = True, exist_ok = True)
-  pathlib.Path('obj/cache_checked').mkdir(parents = True, exist_ok = True)
+# Check F*, Z3, and Vale versions
+if not fstar_my_version:
+  check_fstar_version()
+if not z3_my_version:
+  if not found_z3:
+    print_error_exit('Could not find z3 executable.  Either put z3 in your path, or put it in the directory tools/Z3/, or use the --FSTARZ3=<z3-executable> option.')
+  check_z3_version(fstar_z3)
+if not vale_my_version:
+  check_vale_version()
 
-  # Check F*, Z3, and Vale versions
-  if not fstar_my_version:
-    check_fstar_version()
-  if not z3_my_version:
-    if not found_z3:
-      print_error_exit('Could not find z3 executable.  Either put z3 in your path, or put it in the directory tools/Z3/, or use the --FSTARZ3=<z3-executable> option.')
-    check_z3_version(fstar_z3)
-  if not vale_my_version:
-    check_vale_version()
+if out_make != None:
+  make_file = open(out_make, 'w')
 
-  # HACK: copy external files
-  for f in external_files:
-    source = f.filename
-    target = f.obj_name()
-    shutil.copy(source, target)
-    checked_source = f'{source}.checked'
-    if os.path.isfile(checked_source):
-      shutil.copy(str(checked_source), f'{target}.checked')
-    else:
-      print(f'External file {source}.checked does not exist -- please make F*, KreMLin, and hacl-star/specs first')
+if out_scons != None:
+  scons_file = open(out_scons, 'w')
+  scons_file.write('def declare_all(env):\n')
 
-  if not dump_args:
-    print('Processing source files')
-  process_files_in(env, verify_paths)
-  if not is_single_vaf:
-    compute_fstar_deps(env, verify_paths, compute_include_paths(src_include_paths, obj_include_paths, 'obj/dummies'))
-    for x in vaf_dump_deps:
-      compute_module_types(env, x)
+# HACK: copy external files
+for f in external_files:
+  source = f.filename
+  target = f.obj_name()
+  shutil.copy(source, target)
+  checked_source = f'{source}.checked'
+  if os.path.isfile(checked_source):
+    shutil.copy(str(checked_source), f'{target}.checked')
+  else:
+    print(f'External file {source}.checked does not exist -- please make F*, KreMLin, and hacl-star/specs first')
 
-  if fstar_extract:
-    # Build AES-GCM
-    aesgcm_asm = extract_assembly_code(env, 'aesgcm', File('code/crypto/aes/x64/Main.ml'),
-      [File('code/crypto/aes/x64/X64.GCMdecrypt.vaf')], File('code/lib/util/CmdLineParser.ml'))
-    cpuid_asm = extract_assembly_code(env, 'cpuid', File('code/lib/util/x64/CpuidMain.ml'),
-      [File('code/lib/util/x64/stdcalls/X64.Cpuidstdcall.vaf')], File('code/lib/util/CmdLineParser.ml'))
-    sha256_asm = extract_assembly_code(env, 'sha256', File('code/crypto/sha/ShaMain.ml'),
-      [File('code/thirdPartyPorts/OpenSSL/sha/X64.SHA.vaf')], File('code/lib/util/CmdLineParser.ml'))
-    curve25519_asm = extract_assembly_code(env, 'curve25519', File('code/crypto/ecc/curve25519/Main25519.ml'), [
-        File('code/thirdPartyPorts/rfc7748/curve25519/X64.FastUtil.vaf'),
-        File('code/thirdPartyPorts/rfc7748/curve25519/X64.FastHybrid.vaf'),
-        File('code/thirdPartyPorts/rfc7748/curve25519/X64.FastWide.vaf'),
-        File('code/thirdPartyPorts/rfc7748/curve25519/X64.FastSqr.vaf'),
-        File('code/thirdPartyPorts/rfc7748/curve25519/X64.FastMul.vaf')],
-      File('code/lib/util/CmdLineParser.ml'))
-    if env['TARGET_ARCH'] == 'amd64':
-      aesgcmasm_obj = env.Object('obj/aesgcmasm_openssl', aesgcm_asm[0])
-      aesgcmtest_src = File('code/crypto/aes/x64/TestAesGcm.cpp')
-      aesgcmtest_cpp = to_obj_dir(aesgcmtest_src)
-      CopyFile(aesgcmtest_cpp, aesgcmtest_src)
-      aesgcmtest_exe = env.Program(source = [aesgcmasm_obj, aesgcmtest_cpp], target = 'obj/TestAesGcm.exe')
-      sha256asm_obj = env.Object('obj/sha256asm_openssl', sha256_asm[0])
-      sha256test_src = File('code/crypto/sha/TestSha.cpp')
-      sha256test_cpp = to_obj_dir(sha256test_src)
-      CopyFile(sha256test_cpp, sha256test_src)
-      sha256test_exe = env.Program(source = [sha256asm_obj, sha256test_cpp], target = 'obj/TestSha.exe')
-      curve25519asm_obj = env.Object('obj/curve25519asm_openssl', curve25519_asm[0])
-      curve25519test_src = File('code/crypto/ecc/curve25519/test_ecc.c')
-      curve25519test_cpp = to_obj_dir(curve25519test_src)
-      CopyFile(curve25519test_cpp, curve25519test_src)
-      curve25519test_exe = env.Program(source = [curve25519asm_obj, curve25519test_cpp], target = 'obj/TestEcc.exe')
+if not dump_args:
+  print('Processing source files')
+process_files_in(verify_paths)
+if not is_single_vaf:
+  compute_fstar_deps(verify_paths, compute_include_paths(src_include_paths, obj_include_paths, 'obj/dummies'))
+  for x in vaf_dump_deps:
+    compute_module_types(x)
 
-  if dump_args:
-    print_dump_args()
+if fstar_extract:
+  # Build AES-GCM
+  aesgcm_asm = extract_assembly_code('aesgcm', File('code/crypto/aes/x64/Main.ml'),
+    [File('code/crypto/aes/x64/X64.GCMdecrypt.vaf')], File('code/lib/util/CmdLineParser.ml'))
+  cpuid_asm = extract_assembly_code('cpuid', File('code/lib/util/x64/CpuidMain.ml'),
+    [File('code/lib/util/x64/stdcalls/X64.Cpuidstdcall.vaf')], File('code/lib/util/CmdLineParser.ml'))
+  sha256_asm = extract_assembly_code('sha256', File('code/crypto/sha/ShaMain.ml'),
+    [File('code/thirdPartyPorts/OpenSSL/sha/X64.SHA.vaf')], File('code/lib/util/CmdLineParser.ml'))
+  curve25519_asm = extract_assembly_code('curve25519', File('code/crypto/ecc/curve25519/Main25519.ml'), [
+      File('code/thirdPartyPorts/rfc7748/curve25519/X64.FastUtil.vaf'),
+      File('code/thirdPartyPorts/rfc7748/curve25519/X64.FastHybrid.vaf'),
+      File('code/thirdPartyPorts/rfc7748/curve25519/X64.FastWide.vaf'),
+      File('code/thirdPartyPorts/rfc7748/curve25519/X64.FastSqr.vaf'),
+      File('code/thirdPartyPorts/rfc7748/curve25519/X64.FastMul.vaf')],
+    File('code/lib/util/CmdLineParser.ml'))
+  if target_arch == 'amd64':
+    aesgcmasm_obj = Assemble('obj/aesgcmasm_openssl', aesgcm_asm[0])
+    aesgcmtest_src = File('code/crypto/aes/x64/TestAesGcm.cpp')
+    aesgcmtest_cpp = to_obj_dir(aesgcmtest_src)
+    CopyFile(aesgcmtest_cpp, aesgcmtest_src)
+    aesgcmtest_exe = Cpp(source = [aesgcmasm_obj, aesgcmtest_cpp], target = 'obj/TestAesGcm.exe')
+    sha256asm_obj = Assemble('obj/sha256asm_openssl', sha256_asm[0])
+    sha256test_src = File('code/crypto/sha/TestSha.cpp')
+    sha256test_cpp = to_obj_dir(sha256test_src)
+    CopyFile(sha256test_cpp, sha256test_src)
+    sha256test_exe = Cpp(source = [sha256asm_obj, sha256test_cpp], target = 'obj/TestSha.exe')
+    curve25519asm_obj = Assemble('obj/curve25519asm_openssl', curve25519_asm[0])
+    curve25519test_src = File('code/crypto/ecc/curve25519/test_ecc.c')
+    curve25519test_cpp = to_obj_dir(curve25519test_src)
+    CopyFile(curve25519test_cpp, curve25519test_src)
+    curve25519test_exe = Cpp(source = [curve25519asm_obj, curve25519test_cpp], target = 'obj/TestEcc.exe')
+
+if out_make != None:
+  make_file.write(f'vale-all : \\\n')
+  for s in all_targets:
+    make_file.write(f'\t{s} \\\n')
+  make_file.write('')
+  make_file.close()
+
+if out_scons != None:
+  scons_file.close()
+
+if dump_args:
+  print_dump_args()
