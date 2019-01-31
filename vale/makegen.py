@@ -176,6 +176,13 @@ def File(path):
 def Dir(path):
   return os.path.normpath(os.path.relpath(path)).replace('\\', '/')
 
+def FindFile(name, paths):
+  for p in paths:
+    f = os.path.join(p, name)
+    if os.path.exists(f):
+      return f
+  return None
+
 def CopyFile(target, source):
   all_targets.add(target)
   if target in cmd_targets:
