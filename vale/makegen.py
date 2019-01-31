@@ -180,7 +180,7 @@ def FindFile(name, paths):
   for p in paths:
     f = os.path.join(p, name)
     if os.path.exists(f):
-      return f
+      return File(f)
   return None
 
 def CopyFile(target, source):
