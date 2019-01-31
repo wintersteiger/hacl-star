@@ -1,0 +1,208 @@
+# This file requires Python version >= 3.6
+# This file requires SCons version >= 3.00
+
+import re
+import sys
+import os, os.path
+import subprocess
+import traceback
+import pdb
+import SCons.Util
+import atexit
+import platform
+import fnmatch
+import pathlib
+import shutil
+
+if sys.version_info < (3, 6):
+  print(f'Requires Python version >= 3.6, found version {sys.version_info}')  # If the syntax of this line is invalid, the version of Python is probably older than 3.6
+  exit(1)
+
+##################################################################################################
+#
+#   Command-line options
+#
+##################################################################################################
+
+if 'FSTAR_HOME' in os.environ:
+  fstar_default_path = os.environ['FSTAR_HOME']
+else:
+  fstar_default_path = '../../FStar'
+
+def AddOptYesNo(name, dest, default, help):
+  AddOption('--' + name, dest = dest, default = default, action = 'store_true', help = f'{help} (default {default})')
+  AddOption('--NO-' + name, dest = dest, default = default, action = 'store_false')
+
+# Retrieve tool-specific command overrides passed in by the user
+AddOption('--FSTAR-PATH', dest = 'fstar_path', type = 'string', default = fstar_default_path, action = 'store',
+  help = 'Specify the path to F* tool')
+AddOption('--CARGS', dest = 'c_user_args', type = 'string', default = [], action = 'append',
+  help = 'Supply temporary additional arguments to the C compiler')
+AddOption('--CACHE-DIR', dest = 'cache_dir', type = 'string', default = None, action = 'store',
+  help = 'Specify the SCons Shared Cache Directory')
+AddOptYesNo('VERIFY', dest = 'verify', default = True,
+  help = 'Verify and compile, or compile only')
+AddOptYesNo('COLOR', dest = 'do_color', default = True,
+  help="Add color to build output")
+
+is_help = GetOption('help')
+fstar_path = Dir(GetOption('fstar_path')).abspath
+c_user_args = GetOption('c_user_args')
+do_color = GetOption('do_color')
+
+##################################################################################################
+#
+#   Environment settings
+#
+##################################################################################################
+
+common_env = Environment()
+
+common_env.Append(CCFLAGS = c_user_args)
+
+target_arch = 'x86'
+if (sys.platform == 'win32' and os.getenv('PLATFORM') == 'X64') or platform.machine() == 'x86_64':
+  target_arch = 'amd64'
+
+common_env['TARGET_ARCH'] = target_arch
+
+mono = ''
+if not is_help:
+  if sys.platform == 'win32':
+    import importlib.util
+    common_env.Replace(CCPDBFLAGS = '/Zi /Fd${TARGET.base}.pdb')
+    # Use kremlib.h without primitive support for uint128_t.
+    common_env.Append(CCFLAGS = ['/Ox', '/Gz', '/DKRML_NOUINT128'])
+    common_env.Append(LINKFLAGS = ['/DEBUG'])
+    if os.getenv('PLATFORM') == 'X64':
+      common_env['AS'] = 'ml64'
+    if 'SHELL' in os.environ and importlib.util.find_spec('win32job') != None and importlib.util.find_spec('win32api'):
+      # Special job handling for cygwin so that child processes exit when the parent process exits
+      import win32job
+      import win32api
+      hdl = win32job.CreateJobObject(None, "")
+      win32job.AssignProcessToJobObject(hdl, win32api.GetCurrentProcess())
+      extended_info = win32job.QueryInformationJobObject(None, win32job.JobObjectExtendedLimitInformation)
+      extended_info['BasicLimitInformation']['LimitFlags'] = win32job.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+      win32job.SetInformationJobObject(hdl, win32job.JobObjectExtendedLimitInformation, extended_info)
+  else:
+    common_env.Append(CCFLAGS = ['-O3', '-flto', '-g', '-DKRML_NOUINT128'])
+    common_env.Append(CXXFLAGS = ['-std=c++11'])  # This option is C++ specific
+    mono = 'mono'
+
+  if sys.platform == 'win32':
+    # fstar.exe relies on libgmp-10.dll
+    gmp_dll = FindFile('libgmp-10.dll', os.environ['PATH'].split(';'))
+    if gmp_dll != None:
+      common_env.PrependENVPath('PATH', os.path.dirname(str(gmp_dll)))
+
+##################################################################################################
+#
+#   Configuration settings
+#
+##################################################################################################
+
+def add_from_os_env(env, name):
+  if name in os.environ:
+    env['ENV'][name] = os.environ[name]
+
+ocaml_env = common_env
+add_from_os_env(ocaml_env, 'PATH')
+add_from_os_env(ocaml_env, 'OCAMLPATH')
+add_from_os_env(ocaml_env, 'OCAMLLIB')
+add_from_os_env(ocaml_env, 'OCAML_TOPLEVEL_PATH')
+add_from_os_env(ocaml_env, 'CAML_LD_LIBRARY_PATH')
+ocaml_env.PrependENVPath('OCAMLPATH', fstar_path + '/bin')
+
+##################################################################################################
+#
+#   Global variables
+#
+##################################################################################################
+
+if (not sys.stdout.isatty()) or not do_color:
+  # No color if the output is not a terminal or user opts out
+  yellow = ''
+  red = ''
+  uncolor = ''
+else:
+  yellow = '\033[93m'
+  red = '\033[91;40;38;5;217m'
+  uncolor = '\033[0m'
+
+##################################################################################################
+#
+#   Configuration and environment functions
+#
+##################################################################################################
+
+# extract a string filename out of a build failure
+def bf_to_filename(bf):
+  import SCons.Errors
+  if bf is None: # unknown targets product None in list
+    return '(unknown tgt)'
+  elif isinstance(bf, SCons.Errors.StopError):
+    return str(bf)
+  elif bf.node:
+    return str(bf.node)
+  elif bf.filename:
+    return bf.filename
+  return '(unknown failure)'
+
+def report_verification_failures():
+  import time
+  from SCons.Script import GetBuildFailures
+  bf = GetBuildFailures()
+  if bf:
+    # bf is normally a list of build failures; if an element is None,
+    # it's because of a target that scons doesn't know anything about.
+    for x in bf:
+      if x is not None:
+        filename = bf_to_filename(x)
+        if filename.endswith('.tmp') and os.path.isfile(filename):
+          error_filename = filename[:-len('.tmp')] + '.error'
+          stderr_filename = filename[:-len('.tmp')] + '.stderr'
+          if os.path.isfile(error_filename):
+            os.remove(error_filename)
+          report_filename = stderr_filename if os.path.isfile(stderr_filename) else filename
+          print()
+          print(f'##### {red}Verification error{uncolor}')
+          print('Printing contents of ' + report_filename + ' #####')
+          with open (report_filename, 'r') as myfile:
+            lines = myfile.read().splitlines()
+            valeErrors = [line for line in lines if ("*****" in line)]
+            for line in lines:
+              if 'error was reported' in line or '(Error)' in line or ' failed' in line:
+                line = f'{red}{line}{uncolor}'
+              print(line)
+          print()
+          time.sleep(1)
+          os.rename(filename, error_filename)
+        if filename.endswith('.dump') and os.path.isfile(filename):
+          stderr_filename = filename[:-len('.dump')] + '.stderr'
+          report_filename = stderr_filename if os.path.isfile(stderr_filename) else filename
+          print()
+          print(f'##### {red}Verification error{uncolor}')
+          print('Printing contents of ' + report_filename + ' #####')
+          with open (report_filename, 'r') as myfile:
+            lines = myfile.read().splitlines()
+            valeErrors = [line for line in lines if ("*****" in line)]
+            for line in lines:
+              if 'error was reported' in line or '(Error)' in line or ' failed' in line:
+                line = f'{red}{line}{uncolor}'
+              print(line)
+          print()
+          time.sleep(1)
+         
+
+##################################################################################################
+#
+#   Top-level commands
+#
+##################################################################################################
+
+SConscript('SConscript')
+Import('declare_all')
+declare_all(ocaml_env)
+
+atexit.register(report_verification_failures)

@@ -121,6 +121,10 @@ profile = args.profile
 verify = args.verify
 fstar_z3 = args.fstar_z3
 
+if out_make != None and out_scons != None:
+  print('error: --OUT_MAKE and --OUT_SCONS cannot be used simultaneously')
+  exit(1)
+
 ##################################################################################################
 #
 #   Environment settings
@@ -158,6 +162,8 @@ class BuildOptions:
     self.verifier_flags = args
     self.vale_includes = vale_includes
 
+file_sep = '/' if out_make != None else os.sep
+
 ##################################################################################################
 #
 #   Utilities
@@ -171,10 +177,10 @@ def Flatten(x):
   return [z for y in x for z in Flatten(y)] if isinstance(x, list) else [x]
 
 def File(path):
-  return os.path.normpath(os.path.relpath(path)).replace('\\', '/')
+  return os.path.normpath(os.path.relpath(path)).replace('\\', file_sep)
 
 def Dir(path):
-  return os.path.normpath(os.path.relpath(path)).replace('\\', '/')
+  return os.path.normpath(os.path.relpath(path)).replace('\\', file_sep)
 
 def FindFile(name, paths):
   for p in paths:
@@ -194,7 +200,7 @@ def CopyFile(target, source):
     make_file.write(f'{target} : {source}\n')
     make_file.write(f'\tcp {source} {target}\n\n')
   if out_scons != None:
-    scons_file.write(f'  env.Command({target}, {source}, Copy({target}, {source}))\n')
+    scons_file.write(f'  env.Command({repr(target)}, {repr(source)}, Copy({repr(target)}, {repr(source)}))\n')
   return target
 
 def Depends(targets, sources):
@@ -966,11 +972,12 @@ def extract_assembly_code(output_base_name, main_file, alg_files, cmdline_file):
                      "20", # Warning 20: this argument will not be used by the function.
                      "26"] # Warning 26: unused variable
   ignore_warnings_str = "-w " + "".join(["-" + s for s in ignore_warnings])
+  ocamlpath = f'OCAMLPATH={File(fstar_path + "/bin")} ' if out_make != None else ''
   def add_cmx(x_ml):
     x_cmx = ml_out_file(x_ml, '.cmx')
     x_obj = ml_out_file(x_ml, '.o')
     cmx = Command([x_cmx, x_obj], x_ml,
-      f'OCAMLPATH={File(fstar_path + "/bin")} ocamlfind ocamlopt -c -package fstarlib -o {x_cmx} {x_ml} -I obj/ml_out {ignore_warnings_str}')
+      f'{ocamlpath}ocamlfind ocamlopt -c -package fstarlib -o {x_cmx} {x_ml} -I obj/ml_out {ignore_warnings_str}')
     cmxs.append(x_cmx)
     objs.append(x_obj)
     Depends(main_exe, x_cmx)
@@ -989,7 +996,7 @@ def extract_assembly_code(output_base_name, main_file, alg_files, cmdline_file):
   add_cmx(main_ml)
   cmxs_string = " ".join([str(cmx) for cmx in cmxs])
   Command(main_exe, cmxs + objs,
-    f'OCAMLPATH={File(fstar_path + "/bin")} ocamlfind ocamlopt -linkpkg -package fstarlib {cmxs_string} -o {main_exe}')
+    f'{ocamlpath}ocamlfind ocamlopt -linkpkg -package fstarlib {cmxs_string} -o {main_exe}')
   # Run executable to generate assembly files:
   output_target_base = 'obj/' + output_base_name
   def generate_asm(suffix, assembler, os):
@@ -1202,6 +1209,7 @@ if out_make != None:
   make_file.close()
 
 if out_scons != None:
+  scons_file.write('Export("declare_all")\n')
   scons_file.close()
 
 if dump_args:
