@@ -74,7 +74,7 @@ AddOption('--VARGS', dest = 'vale_user_args', type = str, default = [], action =
   help = 'Supply temporary additional arguments to the Vale compiler')
 AddOption('--KARGS', dest = 'kremlin_user_args', type = str, default = [], action = 'append',
   help = 'Supply temporary additional arguments to the Kremlin compiler')
-AddOption('--CARGS', dest = 'c_user_args', type = str, default = [], action = 'append',
+AddOption('--CARGS', dest = 'c_user_args', type = str, default = "", action = 'append',
   help = 'Supply temporary additional arguments to the C compiler')
 AddOption('--OPENSSL', dest = 'openssl_path', type = str, default = None, action = 'store',
   help = 'Specify the path to the root of an OpenSSL source tree')
@@ -128,27 +128,28 @@ fstar_z3 = args.fstar_z3
 ##################################################################################################
 
 target_arch = 'x86'
-if (sys.platform == 'win32' and os.getenv('PLATFORM') == 'X64') or platform.machine() == 'x86_64':
+if (sys.platform == 'win32' and (os.getenv('PLATFORM') == 'X64' or platform.machine() == 'AMD64')) or platform.machine() == 'x86_64':
   target_arch = 'amd64'
 
 CCPDBFLAGS = []
-CCFLAGS = c_user_args
+CCFLAGS = [c_user_args]
 LINKFLAGS = []
 CXXFLAGS = []
 AS = ''
 mono = ''
-if sys.platform == 'win32':
+if sys.platform == 'win32' and not ('SHELL' in os.environ):
   import importlib.util
-  CCPDBFLAGS.append(['/Zi /Fd${TARGET.base}.pdb'])
+  CCPDBFLAGS.extend(['/Zi /Fd${TARGET.base}.pdb'])
   # Use kremlib.h without primitive support for uint128_t.
-  CCFLAGS.append(['/Ox', '/Gz', '/DKRML_NOUINT128'])
-  LINKFLAGS.append(['/DEBUG'])
+  CCFLAGS.extend(['/Ox', '/Gz', '/DKRML_NOUINT128'])
+  LINKFLAGS.extend(['/DEBUG'])
   if os.getenv('PLATFORM') == 'X64':
     AS = 'ml64'
 else:
-  CCFLAGS.append(['-O3', '-flto', '-g', '-DKRML_NOUINT128'])
-  CXXFLAGS.append(['-std=c++11'])  # This option is C++ specific
-  mono = 'mono'
+  CCFLAGS.extend(['-O3', '-flto', '-g', '-DKRML_NOUINT128'])
+  CXXFLAGS.extend(['-std=c++11'])  # This option is C++ specific
+  if sys.platform != 'win32':
+    mono = 'mono'
 
 # Helper class to specify per-file command-line options for verification.
 class BuildOptions:
@@ -184,9 +185,7 @@ def CopyFile(target, source):
   cmd_targets[target] = source
   if out_make != None:
     make_file.write(f'{target} : {source}\n')
-    make_file.write(f'\tsleep 1\n')
-    make_file.write(f'\tcp {source} {target}\n')
-    make_file.write(f'\tsleep 1\n\n')
+    make_file.write(f'\tcp {source} {target}\n\n')
   if out_scons != None:
     scons_file.write(f'  env.Command({target}, {source}, Copy({target}, {source}))\n')
   return target
@@ -213,10 +212,12 @@ def Command(targets, sources, cmd):
       return t
     cmd_targets[t] = cmd
   if out_make != None:
-    make_file.write(f'{" ".join(targets)} : {" ".join(sources)}\n')
-    make_file.write(f'\tsleep 1\n')
+    make_file.write(f'{targets[0]} : {" ".join(sources)}\n')
     make_file.write(f'\t{cmd}\n')
-    make_file.write(f'\tsleep 1\n\n')
+    # ugh, this is how we declare multiple outputs:
+    for t in targets[1:]:
+      make_file.write(f'{t} : {targets[0]}\n')
+    make_file.write(f'\n')
   if out_scons != None:
     scons_file.write(f'  env.Command({targets}, {sources},\n')
     scons_file.write(f'    {repr(cmd)})\n')
@@ -226,23 +227,26 @@ def Assemble(target, source):
   all_targets.add(target)
   if out_make != None:
     make_file.write(f'{target} : {" ".join(source)}\n')
-    make_file.write(f'\tsleep 1\n')
-    make_file.write(f'\tgas -o {target} {" ".join(source)}\n')
-    make_file.write(f'\tsleep 1\n\n')
+    make_file.write(f'\t$(CC) -c -o {target} {" ".join(source)}\n\n')
   if out_scons != None:
     scons_file.write(f'  env.Object({repr(target)}, {repr(source)})\n')
   return target
 
-def Cpp(target, source):
+def CcCpp(cc, target, source):
   all_targets.add(target)
   if out_make != None:
     make_file.write(f'{target} : {" ".join(source)}\n')
-    make_file.write(f'\tsleep 1\n')
-    make_file.write(f'\tgcc -o {target} {" ".join(source)}\n')
-    make_file.write(f'\tsleep 1\n\n')
+    make_file.write(f'\t{cc} {" ".join(CCFLAGS)} -o {target} {" ".join(source)}\n\n')
   if out_scons != None:
     scons_file.write(f'  env.Program({repr(target)}, {repr(source)})\n')
   return target
+
+def Cc(target, source):
+  CcCpp(f'$(CC)', target, source)
+
+def Cpp(target, source):
+  #CcCpp('$(CXX)', target, source)
+  CcCpp(f'$(subst gcc,g++,$(CC)) {" ".join(CXXFLAGS)}', target, source)
 
 ##################################################################################################
 #
@@ -958,8 +962,7 @@ def extract_assembly_code(output_base_name, main_file, alg_files, cmdline_file):
   def add_cmx(x_ml):
     x_cmx = ml_out_file(x_ml, '.cmx')
     x_obj = ml_out_file(x_ml, '.o')
-    Depends(x_obj, x_cmx)
-    cmx = Command(x_cmx, x_ml,
+    cmx = Command([x_cmx, x_obj], x_ml,
       f'OCAMLPATH={File(fstar_path + "/bin")} ocamlfind ocamlopt -c -package fstarlib -o {x_cmx} {x_ml} -I obj/ml_out {ignore_warnings_str}')
     cmxs.append(x_cmx)
     objs.append(x_obj)
@@ -993,10 +996,10 @@ def extract_assembly_code(output_base_name, main_file, alg_files, cmdline_file):
   gcc_macos = generate_asm('-darwin.S', 'GCC', 'MacOS')
   if sys.platform.startswith('linux'):
     return [gcc_linux, masm_win, gcc_win, gcc_macos]
+  elif sys.platform == 'cygwin' or 'SHELL' in os.environ:
+    return [gcc_win, masm_win, gcc_linux, gcc_macos]
   elif sys.platform == 'win32':
     return [masm_win, gcc_win, gcc_linux, gcc_macos]
-  elif sys.platform == 'cygwin':
-    return [gcc_win, masm_win, gcc_linux, gcc_macos]
   elif sys.platform == 'darwin':
     return [gcc_macos, gcc_win, masm_win, gcc_linux]
   else:
@@ -1137,10 +1140,10 @@ if out_scons != None:
 for f in external_files:
   source = f.filename
   target = f.obj_name()
-  shutil.copy(source, target)
+  shutil.copy2(source, target)
   checked_source = f'{source}.checked'
   if os.path.isfile(checked_source):
-    shutil.copy(str(checked_source), f'{target}.checked')
+    shutil.copy2(str(checked_source), f'{target}.checked')
   else:
     print(f'External file {source}.checked does not exist -- please make F*, KreMLin, and hacl-star/specs first')
 
@@ -1182,7 +1185,7 @@ if fstar_extract:
     curve25519test_src = File('code/crypto/ecc/curve25519/test_ecc.c')
     curve25519test_cpp = to_obj_dir(curve25519test_src)
     CopyFile(curve25519test_cpp, curve25519test_src)
-    curve25519test_exe = Cpp(source = [curve25519asm_obj, curve25519test_cpp], target = 'obj/TestEcc.exe')
+    curve25519test_exe = Cc(source = [curve25519asm_obj, curve25519test_cpp], target = 'obj/TestEcc.exe')
 
 if out_make != None:
   make_file.write(f'vale-all : \\\n')
