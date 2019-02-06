@@ -141,6 +141,7 @@ LINKFLAGS = []
 CXXFLAGS = []
 AS = ''
 mono = ''
+CXX = '$(CXX)'
 if sys.platform == 'win32' and not ('SHELL' in os.environ):
   import importlib.util
   CCPDBFLAGS.extend(['/Zi /Fd${TARGET.base}.pdb'])
@@ -152,7 +153,9 @@ if sys.platform == 'win32' and not ('SHELL' in os.environ):
 else:
   CCFLAGS.extend(['-O3', '-flto', '-g', '-DKRML_NOUINT128'])
   CXXFLAGS.extend(['-std=c++11'])  # This option is C++ specific
-  if sys.platform != 'win32':
+  if sys.platform == 'win32':
+    CXX = '$(subst gcc,g++,$(CC))'
+  else:
     mono = 'mono'
 
 # Helper class to specify per-file command-line options for verification.
@@ -258,8 +261,7 @@ def Cc(target, source):
   CcCpp(f'$(CC)', target, source)
 
 def Cpp(target, source):
-  #CcCpp('$(CXX)', target, source)
-  CcCpp(f'$(subst gcc,g++,$(CC)) {" ".join(CXXFLAGS)}', target, source)
+  CcCpp(f'{CXX} {" ".join(CXXFLAGS)}', target, source)
 
 ##################################################################################################
 #
