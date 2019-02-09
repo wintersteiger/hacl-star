@@ -25,7 +25,7 @@ all_: dist/compact/libmerkletree.a
 # - generate the F* dependency graph via `fstar --dep full`
 # - verify every F* file in parallel to generate .checked files
 # - extract each .checked file into a .krml file in parallel
-
+CONFIG ?= default
 FSTAR_INCLUDE_DIRS = \
   $(KREMLIN_HOME)/kremlib/compat \
   $(KREMLIN_HOME)/kremlib \
