@@ -11,7 +11,7 @@
         "projection_inverse_BoxInt_proj_0"
       ],
       0,
-      "a7a4c5a0d5e21f41b0dc80c9879c6567"
+      "bc01f13b0f8e916cca8ca6f8478bea97"
     ],
     [
       "Spec.Chacha20.block",
@@ -23,7 +23,7 @@
         "projection_inverse_BoxInt_proj_0"
       ],
       0,
-      "97e8fda3306b56d337330f9a832d1deb"
+      "b6b769d19c6f805f39af3e0a71d8501f"
     ],
     [
       "Spec.Chacha20.nonce",
@@ -35,7 +35,7 @@
         "projection_inverse_BoxInt_proj_0"
       ],
       0,
-      "722b14c80210a404569ed4244b2f4a80"
+      "81f58552ddc1f1ed1011568fc6812e70"
     ],
     [
       "Spec.Chacha20.line",
@@ -45,21 +45,21 @@
       [
         "@MaxIFuel_assumption", "@query",
         "Prims_pretyping_ae567c2fb75be05905677af440075565",
-        "equation_FStar.UInt32.n", "equation_Prims.nat",
-        "equation_Spec.Chacha20.idx", "equation_Spec.Chacha20.state",
+        "equation_Prims.nat", "equation_Spec.Chacha20.idx",
+        "equation_Spec.Chacha20.state",
         "equation_Spec.Lib.op_String_Assignment",
-        "function_token_typing_FStar.UInt32.n",
-        "function_token_typing_FStar.UInt32.t", "int_inversion",
-        "lemma_FStar.Seq.Base.lemma_len_upd",
-        "refinement_interpretation_FStar.Seq.Base_Tm_refine_2ca062977a42c36634b89c1c4f193f79",
-        "refinement_interpretation_Prims_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
-        "refinement_interpretation_Spec.Chacha20_Tm_refine_07355958e2bf14bd0701adebc5e1bebd",
-        "refinement_interpretation_Spec.Chacha20_Tm_refine_aca10fb50cc7162d8b55c168416f714b",
+        "function_token_typing_FStar.UInt32.t",
+        "function_token_typing_Prims.__cache_version_number__",
+        "int_inversion", "lemma_FStar.Seq.Base.lemma_len_upd",
+        "refinement_interpretation_Tm_refine_07355958e2bf14bd0701adebc5e1bebd",
+        "refinement_interpretation_Tm_refine_2ca062977a42c36634b89c1c4f193f79",
+        "refinement_interpretation_Tm_refine_aca10fb50cc7162d8b55c168416f714b",
+        "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
         "token_correspondence_FStar.Seq.Base.upd",
         "token_correspondence_Spec.Lib.op_String_Assignment"
       ],
       0,
-      "9c370bb1352dc16a0f2baf556feea1a3"
+      "7acd9576e50efb47840a114afc24af9a"
     ],
     [
       "Spec.Chacha20.chacha20_core",
@@ -72,10 +72,10 @@
         "equation_Spec.Chacha20.rounds", "equation_Spec.Chacha20.shuffle",
         "equation_Spec.Chacha20.state",
         "function_token_typing_Spec.Chacha20.rounds",
-        "refinement_interpretation_Spec.Chacha20_Tm_refine_aca10fb50cc7162d8b55c168416f714b"
+        "refinement_interpretation_Tm_refine_aca10fb50cc7162d8b55c168416f714b"
       ],
       0,
-      "32affc3287e3f66afb13f99f9681bd2f"
+      "1bd3f8b74344a79be0c45ade01c785f1"
     ],
     [
       "Spec.Chacha20.setup",
@@ -86,15 +86,15 @@
         "@MaxIFuel_assumption",
         "@fuel_correspondence_Spec.Lib.uint32s_from_le.fuel_instrumented",
         "@query", "Prims_pretyping_ae567c2fb75be05905677af440075565",
-        "equation_FStar.Seq.Base.op_At_Bar", "equation_FStar.UInt32.n",
-        "equation_FStar.UInt8.n", "equation_Prims.nat",
-        "equation_Spec.Chacha20.c0", "equation_Spec.Chacha20.c1",
-        "equation_Spec.Chacha20.c2", "equation_Spec.Chacha20.c3",
-        "equation_Spec.Chacha20.key", "equation_Spec.Chacha20.keylen",
-        "equation_Spec.Chacha20.nonce", "equation_Spec.Chacha20.noncelen",
-        "function_token_typing_FStar.UInt32.n",
+        "equation_FStar.Seq.Base.op_At_Bar", "equation_FStar.UInt8.n",
+        "equation_Prims.nat", "equation_Spec.Chacha20.c0",
+        "equation_Spec.Chacha20.c1", "equation_Spec.Chacha20.c2",
+        "equation_Spec.Chacha20.c3", "equation_Spec.Chacha20.key",
+        "equation_Spec.Chacha20.keylen", "equation_Spec.Chacha20.nonce",
+        "equation_Spec.Chacha20.noncelen",
         "function_token_typing_FStar.UInt32.t",
         "function_token_typing_FStar.UInt8.n",
+        "function_token_typing_Prims.__cache_version_number__",
         "function_token_typing_Spec.Chacha20.c0",
         "function_token_typing_Spec.Chacha20.c1",
         "function_token_typing_Spec.Chacha20.c2",
@@ -102,15 +102,15 @@
         "int_typing", "lemma_FStar.Seq.Base.lemma_len_append",
         "primitive_Prims.op_Addition", "primitive_Prims.op_Multiply",
         "projection_inverse_BoxInt_proj_0",
-        "refinement_interpretation_FStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
-        "refinement_interpretation_Prims_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
-        "refinement_interpretation_Seq.Create_Tm_refine_37e9e2c96c7fceb94a3908c53e2ae85b",
-        "refinement_interpretation_Spec.Chacha20_Tm_refine_38c0b85dbd33bb10feed50a00d9185a6",
+        "refinement_interpretation_Tm_refine_37e9e2c96c7fceb94a3908c53e2ae85b",
+        "refinement_interpretation_Tm_refine_38c0b85dbd33bb10feed50a00d9185a6",
+        "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
+        "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
         "typing_FStar.Seq.Base.length", "typing_Seq.Create.create_4",
         "typing_Spec.Lib.uint32s_from_le"
       ],
       0,
-      "bc88df63697c2a573f10d5b0b64a613a"
+      "309fd909f0733333d9b69239686d7b7a"
     ],
     [
       "Spec.Chacha20.chacha20_block",
@@ -119,7 +119,7 @@
       1,
       [ "@query" ],
       0,
-      "a37e83a328cf2809a84e172578d2d2ae"
+      "2c0876c02dda972a61f955e5ec3d20c4"
     ],
     [
       "Spec.Chacha20.chacha20_ctx",
@@ -132,7 +132,7 @@
         "projection_inverse_BoxInt_proj_0"
       ],
       0,
-      "3aa8caa82c77b2964562576712fc783b"
+      "e3ed85649e7160b5b2d219f93d9e9aca"
     ],
     [
       "Spec.Chacha20.chacha20_encrypt_bytes",
@@ -141,7 +141,7 @@
       1,
       [ "@query" ],
       0,
-      "404ff2b80bd3d05af8e49dd293573861"
+      "c6c14b1b044a358c02b4393e5b92b137"
     ],
     [
       "Spec.Chacha20.test",
@@ -180,7 +180,7 @@
         "typing_FStar.List.Tot.Base.length"
       ],
       0,
-      "ebccf27cc87cf844549931d0704d9ffc"
+      "e966d00cc4c86830d622f26b9b458f51"
     ]
   ]
 ]

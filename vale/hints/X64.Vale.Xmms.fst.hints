@@ -9,12 +9,13 @@
       [
         "@MaxIFuel_assumption", "@query",
         "Prims_pretyping_ae567c2fb75be05905677af440075565",
-        "equation_Words_s.pow2_1", "equation_X64.Machine_s.xmm",
-        "function_token_typing_Words_s.pow2_1", "int_inversion",
-        "refinement_interpretation_X64.Machine_s_Tm_refine_f0a4eeefab9c63f31c350a802a4d45dd"
+        "equation_X64.Machine_s.xmm",
+        "function_token_typing_Prims.__cache_version_number__",
+        "int_inversion",
+        "refinement_interpretation_Tm_refine_f0a4eeefab9c63f31c350a802a4d45dd"
       ],
       0,
-      "35b80cec73dfdb7e35c1cbf5e1270424"
+      "57aa171d9f31e9f7d3e861e5d260a426"
     ],
     [
       "X64.Vale.Xmms.lemma_upd_eq",
@@ -34,7 +35,7 @@
         "refinement_interpretation_X64.Machine_s_Tm_refine_f0a4eeefab9c63f31c350a802a4d45dd"
       ],
       0,
-      "934a03a36a63ef9e4687f7d427d30ded"
+      "3b8cf8ce5e68da3ffc56508c2508b285"
     ],
     [
       "X64.Vale.Xmms.lemma_upd_ne",
@@ -42,20 +43,22 @@
       1,
       0,
       [
-        "@MaxIFuel_assumption", "@query", "equation_Map16.map2",
-        "equation_Map16.map4", "equation_Map16.sel2", "equation_Map16.sel4",
-        "equation_Map16.sel8", "equation_Map16.upd2", "equation_Map16.upd4",
-        "equation_Map16.upd8", "equation_Types_s.quad32",
-        "equation_Words_s.nat32", "equation_X64.Machine_s.xmm",
-        "fuel_guarded_inversion_Words_s.four", "int_inversion", "int_typing",
-        "primitive_Prims.op_LessThan", "projection_inverse_BoxBool_proj_0",
+        "@MaxIFuel_assumption", "@query", "equation_FStar.UInt.min_int",
+        "equation_Map16.map2", "equation_Map16.map4", "equation_Map16.sel2",
+        "equation_Map16.sel4", "equation_Map16.sel8", "equation_Map16.upd2",
+        "equation_Map16.upd4", "equation_Map16.upd8",
+        "equation_Types_s.quad32", "equation_Words_s.nat32",
+        "equation_X64.Machine_s.xmm", "fuel_guarded_inversion_Words_s.four",
+        "int_inversion", "int_typing", "primitive_Prims.op_LessThan",
+        "primitive_Prims.op_LessThanOrEqual",
+        "projection_inverse_BoxBool_proj_0",
         "projection_inverse_BoxInt_proj_0",
         "projection_inverse_FStar.Pervasives.Native.Mktuple2__1",
         "projection_inverse_FStar.Pervasives.Native.Mktuple2__2",
-        "refinement_interpretation_X64.Machine_s_Tm_refine_f0a4eeefab9c63f31c350a802a4d45dd"
+        "refinement_interpretation_Tm_refine_f0a4eeefab9c63f31c350a802a4d45dd"
       ],
       0,
-      "d22e1607ccc040048396d6084a9e2c32"
+      "41e54e6a0d648bea137208039457085b"
     ],
     [
       "X64.Vale.Xmms.lemma_equal_intro",
@@ -65,13 +68,13 @@
       [
         "@MaxIFuel_assumption", "@query",
         "Prims_pretyping_ae567c2fb75be05905677af440075565", "eq2-interp",
-        "equation_Words_s.pow2_1", "equation_X64.Machine_s.xmm",
-        "equation_X64.Vale.Xmms.equal",
-        "function_token_typing_Words_s.pow2_1", "int_inversion",
-        "refinement_interpretation_X64.Machine_s_Tm_refine_f0a4eeefab9c63f31c350a802a4d45dd"
+        "equation_X64.Machine_s.xmm", "equation_X64.Vale.Xmms.equal",
+        "function_token_typing_Prims.__cache_version_number__",
+        "int_inversion",
+        "refinement_interpretation_Tm_refine_f0a4eeefab9c63f31c350a802a4d45dd"
       ],
       0,
-      "70d40d897da18f9f6f6768e05a0637e5"
+      "e4279da7a3065691205aeda9a0d86b79"
     ],
     [
       "X64.Vale.Xmms.lemma_equal_elim",
@@ -80,7 +83,7 @@
       0,
       [ "@query", "eq2-interp", "equation_X64.Vale.Xmms.equal" ],
       0,
-      "eefabdbcabab7224e3a2ead739445865"
+      "f4d6b8aba522e224062b3a97f65cf216"
     ],
     [
       "X64.Vale.Xmms.lemma_eta",
@@ -90,14 +93,14 @@
       [
         "@MaxIFuel_assumption", "@query",
         "Prims_pretyping_ae567c2fb75be05905677af440075565",
-        "equation_Words_s.pow2_1", "equation_X64.Machine_s.xmm",
-        "function_token_typing_Words_s.pow2_1", "int_inversion",
-        "lemma_X64.Vale.Xmms.lemma_equal_elim",
-        "refinement_interpretation_X64.Machine_s_Tm_refine_f0a4eeefab9c63f31c350a802a4d45dd",
+        "equation_X64.Machine_s.xmm",
+        "function_token_typing_Prims.__cache_version_number__",
+        "int_inversion", "lemma_X64.Vale.Xmms.lemma_equal_elim",
+        "refinement_interpretation_Tm_refine_f0a4eeefab9c63f31c350a802a4d45dd",
         "typing_X64.Vale.Xmms.eta"
       ],
       0,
-      "264f133b57cb15c4aff13a1b855f5a7a"
+      "f0b5a30a29f59246680631daf6872730"
     ]
   ]
 ]

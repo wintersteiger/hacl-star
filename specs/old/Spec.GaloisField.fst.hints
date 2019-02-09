@@ -9,10 +9,10 @@
       [
         "@MaxIFuel_assumption", "@query", "equation_Prims.nat",
         "primitive_Prims.op_Addition", "projection_inverse_BoxInt_proj_0",
-        "refinement_interpretation_Prims_Tm_refine_ba523126f67e00e7cd55f0b92f16681d"
+        "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d"
       ],
       0,
-      "61315510067869745a02b6aeb7314120"
+      "beee1cca26ef4e6bc6cd28df5f0c5617"
     ],
     [
       "Spec.GaloisField.field",
@@ -22,10 +22,10 @@
       [
         "@MaxIFuel_assumption", "@query", "equation_Prims.pos",
         "primitive_Prims.op_Subtraction", "projection_inverse_BoxInt_proj_0",
-        "refinement_interpretation_Prims_Tm_refine_f048236b5f8051f83b495ea5eaa6127b"
+        "refinement_interpretation_Tm_refine_f048236b5f8051f83b495ea5eaa6127b"
       ],
       0,
-      "1065072439f1787057b0b3a5cc5c7cd2"
+      "bb24441ab7f2adbec28a5f011094610f"
     ],
     [
       "Spec.GaloisField.field",
@@ -35,10 +35,10 @@
       [
         "@MaxIFuel_assumption", "@query", "equation_Prims.pos",
         "primitive_Prims.op_Subtraction", "projection_inverse_BoxInt_proj_0",
-        "refinement_interpretation_Prims_Tm_refine_f048236b5f8051f83b495ea5eaa6127b"
+        "refinement_interpretation_Tm_refine_f048236b5f8051f83b495ea5eaa6127b"
       ],
       0,
-      "229636fe90584ca2204b2a567777fa39"
+      "98709f26b38b0c512f64b4e27f197bae"
     ],
     [
       "Spec.GaloisField.field",
@@ -49,10 +49,10 @@
         "@MaxIFuel_assumption", "@query", "equation_Prims.pos",
         "int_inversion", "primitive_Prims.op_Subtraction",
         "projection_inverse_BoxInt_proj_0",
-        "refinement_interpretation_Prims_Tm_refine_f048236b5f8051f83b495ea5eaa6127b"
+        "refinement_interpretation_Tm_refine_f048236b5f8051f83b495ea5eaa6127b"
       ],
       0,
-      "8d911b7cba0aee5cc19f08a85f271aaa"
+      "0e6a84aa54d7720fd1259e592c24921b"
     ],
     [
       "Spec.GaloisField.field",
@@ -63,19 +63,18 @@
         "@MaxIFuel_assumption", "@query",
         "Prims_pretyping_ae567c2fb75be05905677af440075565",
         "assumption_FStar.Seq.Base.seq__uu___haseq",
-        "equation_FStar.BitVector.bv_t", "equation_FStar.UInt32.n",
-        "equation_Prims.eqtype", "equation_Prims.pos",
-        "equation_Spec.GaloisField.polynomial",
-        "function_token_typing_FStar.UInt32.n",
+        "equation_FStar.BitVector.bv_t", "equation_Prims.eqtype",
+        "equation_Prims.pos", "equation_Spec.GaloisField.polynomial",
+        "function_token_typing_Prims.__cache_version_number__",
         "function_token_typing_Prims.bool",
         "function_token_typing_Prims.int",
-        "haseqFStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
-        "haseqPrims_Tm_refine_f048236b5f8051f83b495ea5eaa6127b",
+        "haseqTm_refine_a0cd7d06c5da6444b6b51b319febde8e",
+        "haseqTm_refine_f048236b5f8051f83b495ea5eaa6127b",
         "primitive_Prims.op_Addition", "primitive_Prims.op_Subtraction",
-        "refinement_interpretation_Prims_Tm_refine_414d0a9f578ab0048252f8c8f552b99f"
+        "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f"
       ],
       0,
-      "f14dcf00d7a5c34bb2fee94b5dbd3e55"
+      "f2978dd8704fe49ca14fe7c8998a9801"
     ],
     [
       "Spec.GaloisField.__proj__GF__item__irred",
@@ -87,11 +86,11 @@
         "primitive_Prims.op_Subtraction",
         "proj_equation_Spec.GaloisField.GF_bits",
         "projection_inverse_BoxInt_proj_0",
-        "refinement_interpretation_Prims_Tm_refine_f048236b5f8051f83b495ea5eaa6127b",
+        "refinement_interpretation_Tm_refine_f048236b5f8051f83b495ea5eaa6127b",
         "typing_Spec.GaloisField.__proj__GF__item__bits"
       ],
       0,
-      "e0e9f38641575b93b3835333d07921c1"
+      "2f61a05e3fd359f3c7b5d3bb9d37ebf9"
     ],
     [
       "Spec.GaloisField.__proj__GF__item__irred",
@@ -102,19 +101,18 @@
         "@MaxIFuel_assumption", "@query",
         "Prims_pretyping_ae567c2fb75be05905677af440075565",
         "data_elim_Spec.GaloisField.GF", "equation_FStar.BitVector.bv_t",
-        "equation_FStar.UInt32.n", "equation_Prims.pos",
-        "equation_Spec.GaloisField.polynomial",
+        "equation_Prims.pos", "equation_Spec.GaloisField.polynomial",
         "fuel_guarded_inversion_Spec.GaloisField.field",
-        "function_token_typing_FStar.UInt32.n",
+        "function_token_typing_Prims.__cache_version_number__",
         "primitive_Prims.op_Addition", "primitive_Prims.op_Subtraction",
         "proj_equation_Spec.GaloisField.GF_bits",
         "projection_inverse_BoxInt_proj_0",
         "projection_inverse_Spec.GaloisField.GF_irred",
-        "refinement_interpretation_FStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
-        "refinement_interpretation_Prims_Tm_refine_f048236b5f8051f83b495ea5eaa6127b"
+        "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
+        "refinement_interpretation_Tm_refine_f048236b5f8051f83b495ea5eaa6127b"
       ],
       0,
-      "665178146fbb967c204c67dd675adf33"
+      "61b775fd75ac65bb503ec03d4ae7e723"
     ],
     [
       "Spec.GaloisField.mk_field",
@@ -124,10 +122,10 @@
       [
         "@MaxIFuel_assumption", "@query", "equation_Prims.pos",
         "primitive_Prims.op_Subtraction", "projection_inverse_BoxInt_proj_0",
-        "refinement_interpretation_Prims_Tm_refine_f048236b5f8051f83b495ea5eaa6127b"
+        "refinement_interpretation_Tm_refine_f048236b5f8051f83b495ea5eaa6127b"
       ],
       0,
-      "2a79d60707adcc2a0d00262522b2cfab"
+      "ac7ff956be69c6f12ea8a52ab40800dd"
     ],
     [
       "Spec.GaloisField.felem",
@@ -136,7 +134,7 @@
       1,
       [ "@query" ],
       0,
-      "a2b77aa77232f6f6ce4e9970530ae40e"
+      "203762b8348da4870a475f9c2adde240"
     ],
     [
       "Spec.GaloisField.to_felem",
@@ -145,7 +143,7 @@
       1,
       [ "@query" ],
       0,
-      "0fbf4ab3eb2c942ce47d49b501f902c7"
+      "576f773d1eeebf235cdc3087c4c85b10"
     ],
     [
       "Spec.GaloisField.to_felem",
@@ -154,7 +152,7 @@
       1,
       [ "@query" ],
       0,
-      "c976fc346d63b13b990c4e94848115cc"
+      "26ba70cdd6aae82daef2699449dce144"
     ],
     [
       "Spec.GaloisField.from_felem",
@@ -163,7 +161,7 @@
       1,
       [ "@query" ],
       0,
-      "f2454db6b30d9d2db9807fa450766998"
+      "9529cb411c2fe53a9c55a52813d9f4b9"
     ],
     [
       "Spec.GaloisField.one",
@@ -173,11 +171,11 @@
       [
         "@MaxIFuel_assumption", "@query", "equation_Prims.pos",
         "proj_equation_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_Prims_Tm_refine_f048236b5f8051f83b495ea5eaa6127b",
+        "refinement_interpretation_Tm_refine_f048236b5f8051f83b495ea5eaa6127b",
         "typing_Spec.GaloisField.__proj__GF__item__bits"
       ],
       0,
-      "f85aafbb6be1ab6b05d6215e43ec0842"
+      "44c78128828e7e06f78d60ce52b5a9da"
     ],
     [
       "Spec.GaloisField.add_comm",
@@ -192,29 +190,28 @@
         "Prims_pretyping_f537159ed795b314b4e58c260361ae86",
         "Spec.GaloisField_interpretation_Tm_arrow_a3662d68abfe43fc72a68aef5d4b0cc9",
         "bool_typing", "equation_FStar.BitVector.bv_t",
-        "equation_FStar.UInt32.n", "equation_Prims.eqtype",
-        "equation_Prims.nat", "equation_Spec.GaloisField.fadd",
-        "equation_Spec.GaloisField.felem",
+        "equation_Prims.eqtype", "equation_Prims.nat",
+        "equation_Spec.GaloisField.fadd", "equation_Spec.GaloisField.felem",
         "equation_Spec.GaloisField.op_Plus_At",
         "fuel_guarded_inversion_Spec.GaloisField.field",
-        "function_token_typing_FStar.UInt32.n",
+        "function_token_typing_Prims.__cache_version_number__",
         "function_token_typing_Prims.bool",
         "function_token_typing_Spec.GaloisField.fadd", "int_inversion",
         "lemma_FStar.BitVector.logxor_vec_definition",
         "lemma_FStar.Seq.Base.lemma_eq_elim",
         "primitive_Prims.op_disEquality",
         "proj_equation_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_FStar.Seq.Base_Tm_refine_5514fbe9e08dfda40f950a7b9f1b2b98",
-        "refinement_interpretation_FStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
-        "refinement_interpretation_Prims_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
-        "refinement_interpretation_Prims_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
-        "refinement_interpretation_Spec.GaloisField_Tm_refine_be1b6e65bd5b5136aae62a8ab5650d41",
+        "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
+        "refinement_interpretation_Tm_refine_5514fbe9e08dfda40f950a7b9f1b2b98",
+        "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
+        "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
+        "refinement_interpretation_Tm_refine_be1b6e65bd5b5136aae62a8ab5650d41",
         "token_correspondence_Spec.GaloisField.fadd",
         "token_correspondence_Spec.GaloisField.op_Plus_At",
         "typing_Spec.GaloisField.__proj__GF__item__bits"
       ],
       0,
-      "8cab555671b9f59f63609e4abb23b6cd"
+      "8bc39727241e28c278d84629e4a07412"
     ],
     [
       "Spec.GaloisField.add_asso",
@@ -229,12 +226,11 @@
         "Prims_pretyping_f537159ed795b314b4e58c260361ae86",
         "Spec.GaloisField_interpretation_Tm_arrow_a3662d68abfe43fc72a68aef5d4b0cc9",
         "bool_inversion", "bool_typing", "equation_FStar.BitVector.bv_t",
-        "equation_FStar.UInt32.n", "equation_Prims.eqtype",
-        "equation_Prims.nat", "equation_Spec.GaloisField.fadd",
-        "equation_Spec.GaloisField.felem",
+        "equation_Prims.eqtype", "equation_Prims.nat",
+        "equation_Spec.GaloisField.fadd", "equation_Spec.GaloisField.felem",
         "equation_Spec.GaloisField.op_Plus_At",
         "fuel_guarded_inversion_Spec.GaloisField.field",
-        "function_token_typing_FStar.UInt32.n",
+        "function_token_typing_Prims.__cache_version_number__",
         "function_token_typing_Prims.bool",
         "function_token_typing_Spec.GaloisField.fadd", "int_inversion",
         "lemma_FStar.BitVector.logxor_vec_definition",
@@ -242,12 +238,12 @@
         "primitive_Prims.op_disEquality",
         "proj_equation_Spec.GaloisField.GF_bits",
         "projection_inverse_BoxBool_proj_0",
-        "refinement_interpretation_FStar.Seq.Base_Tm_refine_36f208f2b1019ab7b5d9be73f4c89349",
-        "refinement_interpretation_FStar.Seq.Base_Tm_refine_5514fbe9e08dfda40f950a7b9f1b2b98",
-        "refinement_interpretation_FStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
-        "refinement_interpretation_Prims_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
-        "refinement_interpretation_Prims_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
-        "refinement_interpretation_Spec.GaloisField_Tm_refine_8858d1c9315058d350d8816294207d01",
+        "refinement_interpretation_Tm_refine_36f208f2b1019ab7b5d9be73f4c89349",
+        "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
+        "refinement_interpretation_Tm_refine_5514fbe9e08dfda40f950a7b9f1b2b98",
+        "refinement_interpretation_Tm_refine_8858d1c9315058d350d8816294207d01",
+        "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
+        "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
         "token_correspondence_Spec.GaloisField.fadd",
         "token_correspondence_Spec.GaloisField.op_Plus_At",
         "typing_FStar.Seq.Base.index",
@@ -255,7 +251,7 @@
         "typing_Spec.GaloisField.fadd"
       ],
       0,
-      "90cd1b06c766b0c52fc370acaae2f725"
+      "e92af1ad2d01e17c5df333589e6123cb"
     ],
     [
       "Spec.GaloisField.add_zero",
@@ -268,12 +264,12 @@
         "equation_FStar.BitVector.bv_t", "equation_Prims.eqtype",
         "equation_Spec.GaloisField.felem",
         "function_token_typing_Prims.bool",
-        "haseqFStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
+        "haseqTm_refine_a0cd7d06c5da6444b6b51b319febde8e",
         "proj_equation_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_Prims_Tm_refine_414d0a9f578ab0048252f8c8f552b99f"
+        "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f"
       ],
       0,
-      "a644dc37cb6306ed9248810869c9c637"
+      "46b65d0a34305f6667e9ea4e5f1b2d88"
     ],
     [
       "Spec.GaloisField.add_zero",
@@ -286,12 +282,12 @@
         "equation_FStar.BitVector.bv_t", "equation_Prims.eqtype",
         "equation_Spec.GaloisField.felem",
         "function_token_typing_Prims.bool",
-        "haseqFStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
+        "haseqTm_refine_a0cd7d06c5da6444b6b51b319febde8e",
         "proj_equation_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_Prims_Tm_refine_414d0a9f578ab0048252f8c8f552b99f"
+        "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f"
       ],
       0,
-      "16b8709deee35aab96a2c458ee8b5e19"
+      "8e2eae7ee97021ba3219a3d83e2082ad"
     ],
     [
       "Spec.GaloisField.add_zero",
@@ -306,13 +302,13 @@
         "Prims_pretyping_f537159ed795b314b4e58c260361ae86",
         "Spec.GaloisField_interpretation_Tm_arrow_a3662d68abfe43fc72a68aef5d4b0cc9",
         "bool_inversion", "bool_typing", "equation_FStar.BitVector.bv_t",
-        "equation_FStar.BitVector.zero_vec", "equation_FStar.UInt32.n",
-        "equation_Prims.eqtype", "equation_Prims.nat",
-        "equation_Spec.GaloisField.fadd", "equation_Spec.GaloisField.felem",
+        "equation_FStar.BitVector.zero_vec", "equation_Prims.eqtype",
+        "equation_Prims.nat", "equation_Spec.GaloisField.fadd",
+        "equation_Spec.GaloisField.felem",
         "equation_Spec.GaloisField.op_Plus_At",
         "equation_Spec.GaloisField.zero",
         "fuel_guarded_inversion_Spec.GaloisField.field",
-        "function_token_typing_FStar.UInt32.n",
+        "function_token_typing_Prims.__cache_version_number__",
         "function_token_typing_Prims.bool",
         "function_token_typing_Spec.GaloisField.fadd", "int_inversion",
         "lemma_FStar.BitVector.logxor_vec_definition",
@@ -320,20 +316,20 @@
         "lemma_FStar.Seq.Base.lemma_index_create",
         "primitive_Prims.op_disEquality",
         "proj_equation_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_FStar.Seq.Base_Tm_refine_36f208f2b1019ab7b5d9be73f4c89349",
-        "refinement_interpretation_FStar.Seq.Base_Tm_refine_5514fbe9e08dfda40f950a7b9f1b2b98",
-        "refinement_interpretation_FStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
-        "refinement_interpretation_Prims_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
-        "refinement_interpretation_Prims_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
-        "refinement_interpretation_Spec.GaloisField_Tm_refine_3da648c6210d05df459edc3e0e276b34",
-        "refinement_interpretation_Spec.GaloisField_Tm_refine_be1b6e65bd5b5136aae62a8ab5650d41",
+        "refinement_interpretation_Tm_refine_36f208f2b1019ab7b5d9be73f4c89349",
+        "refinement_interpretation_Tm_refine_3da648c6210d05df459edc3e0e276b34",
+        "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
+        "refinement_interpretation_Tm_refine_5514fbe9e08dfda40f950a7b9f1b2b98",
+        "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
+        "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
+        "refinement_interpretation_Tm_refine_be1b6e65bd5b5136aae62a8ab5650d41",
         "token_correspondence_Spec.GaloisField.fadd",
         "token_correspondence_Spec.GaloisField.op_Plus_At",
         "typing_FStar.Seq.Base.index", "typing_FStar.Seq.Base.length",
         "typing_Spec.GaloisField.__proj__GF__item__bits"
       ],
       0,
-      "fa79b89a93b40363b97a575acfff5fca"
+      "99829bce40700ad11484532a7c3fc46b"
     ],
     [
       "Spec.GaloisField.shift_reduce",
@@ -343,19 +339,19 @@
       [
         "@MaxIFuel_assumption", "@query",
         "Prims_pretyping_ae567c2fb75be05905677af440075565",
-        "assumption_Prims.HasEq_bool", "equation_FStar.BitVector.bv_t",
-        "equation_FStar.UInt32.n", "equation_Prims.pos",
+        "equation_FStar.BitVector.bv_t", "equation_Prims.pos",
         "equation_Spec.GaloisField.felem",
-        "function_token_typing_FStar.UInt32.n", "int_inversion",
-        "primitive_Prims.op_Addition", "primitive_Prims.op_Subtraction",
+        "function_token_typing_Prims.__cache_version_number__",
+        "int_inversion", "primitive_Prims.op_Addition",
+        "primitive_Prims.op_Subtraction",
         "proj_equation_Spec.GaloisField.GF_bits",
         "projection_inverse_BoxInt_proj_0",
-        "refinement_interpretation_FStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
-        "refinement_interpretation_Prims_Tm_refine_f048236b5f8051f83b495ea5eaa6127b",
+        "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
+        "refinement_interpretation_Tm_refine_f048236b5f8051f83b495ea5eaa6127b",
         "typing_Spec.GaloisField.__proj__GF__item__bits"
       ],
       0,
-      "c843d822e7c8218cf45dcbc406bf53cd"
+      "d5fe3f2ee15ea8142f09ca5e6009142d"
     ],
     [
       "Spec.GaloisField.cond_fadd",
@@ -363,13 +359,13 @@
       2,
       1,
       [
-        "@MaxIFuel_assumption", "@query", "assumption_Prims.HasEq_bool",
-        "equation_FStar.BitVector.bv_t", "equation_Spec.GaloisField.felem",
+        "@MaxIFuel_assumption", "@query", "equation_FStar.BitVector.bv_t",
+        "equation_Spec.GaloisField.felem",
         "proj_equation_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_FStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e"
+        "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e"
       ],
       0,
-      "4fadae86d136e9ea17dad722a075018d"
+      "d5df04d99b269bbcc6619394096b610a"
     ],
     [
       "Spec.GaloisField.cond_fadd_lemma",
@@ -382,12 +378,12 @@
         "equation_FStar.BitVector.bv_t", "equation_Prims.eqtype",
         "equation_Spec.GaloisField.felem",
         "function_token_typing_Prims.bool",
-        "haseqFStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
+        "haseqTm_refine_a0cd7d06c5da6444b6b51b319febde8e",
         "proj_equation_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_Prims_Tm_refine_414d0a9f578ab0048252f8c8f552b99f"
+        "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f"
       ],
       0,
-      "e09ac521885be0c2cc28bdf7ef3f31c0"
+      "70ddc703d18efabac8f0efb8a63549f8"
     ],
     [
       "Spec.GaloisField.cond_fadd_lemma",
@@ -397,22 +393,21 @@
       [
         "@MaxIFuel_assumption", "@query",
         "Prims_pretyping_ae567c2fb75be05905677af440075565",
-        "assumption_Prims.HasEq_bool", "equation_FStar.BitVector.bv_t",
-        "equation_FStar.UInt32.n", "equation_Prims.nat",
+        "equation_FStar.BitVector.bv_t", "equation_Prims.nat",
         "equation_Spec.GaloisField.cond_fadd",
         "equation_Spec.GaloisField.felem",
         "equation_Spec.GaloisField.op_Plus_At",
         "fuel_guarded_inversion_Spec.GaloisField.field",
-        "function_token_typing_FStar.UInt32.n", "int_inversion",
-        "proj_equation_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_FStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
-        "refinement_interpretation_Prims_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
-        "refinement_interpretation_Spec.GaloisField_Tm_refine_b52afd4bab446478d0797675bb77c9e1",
+        "function_token_typing_Prims.__cache_version_number__",
+        "int_inversion", "proj_equation_Spec.GaloisField.GF_bits",
+        "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
+        "refinement_interpretation_Tm_refine_b52afd4bab446478d0797675bb77c9e1",
+        "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
         "token_correspondence_Spec.GaloisField.fadd",
         "token_correspondence_Spec.GaloisField.op_Plus_At"
       ],
       0,
-      "be3b5ed89d02a98286184ae297e05716"
+      "43212a99c7d89d55dc543f5fb8569f56"
     ],
     [
       "Spec.GaloisField.fmul_loop",
@@ -422,25 +417,19 @@
       [
         "@MaxIFuel_assumption", "@query",
         "Prims_pretyping_ae567c2fb75be05905677af440075565",
-        "assumption_Prims.HasEq_int",
-        "binder_x_3f320cb640400a7ad5296c5980d7f904_3",
-        "binder_x_7f463b7e9970c4906c62a2d09b5645c0_0",
-        "equality_tok_Prims.LexTop@tok", "equation_FStar.UInt32.n",
-        "equation_Prims.nat", "equation_Prims.pos",
-        "function_token_typing_FStar.UInt32.n",
-        "haseqSpec.GaloisField_Tm_refine_ebeffa4c75131b93eef3e4dc7a3b29a0",
+        "binder_x_6a0b9084ba72fceece298e4ca3ddea66_3",
+        "equality_tok_Prims.LexTop@tok", "equation_Prims.nat",
+        "function_token_typing_Prims.__cache_version_number__",
         "int_inversion", "int_typing", "primitive_Prims.op_Addition",
         "primitive_Prims.op_Equality", "primitive_Prims.op_Subtraction",
-        "proj_equation_Spec.GaloisField.GF_bits",
         "projection_inverse_BoxInt_proj_0",
-        "refinement_interpretation_Prims_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
-        "refinement_interpretation_Prims_Tm_refine_f048236b5f8051f83b495ea5eaa6127b",
-        "refinement_interpretation_Spec.GaloisField_Tm_refine_c5982a6af31648b3f424c33b277bf009",
-        "typing_Spec.GaloisField.__proj__GF__item__bits",
+        "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
+        "refinement_interpretation_Tm_refine_c5982a6af31648b3f424c33b277bf009",
+        "refinement_interpretation_Tm_refine_ebeffa4c75131b93eef3e4dc7a3b29a0",
         "well-founded-ordering-on-nat"
       ],
       0,
-      "8ed1aacae14d1c098b76969ca0cc2030"
+      "7f49384ba0bb064f2677e56e47274836"
     ],
     [
       "Spec.GaloisField.fmul",
@@ -450,11 +439,11 @@
       [
         "@MaxIFuel_assumption", "@query", "equation_Prims.pos",
         "proj_equation_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_Prims_Tm_refine_f048236b5f8051f83b495ea5eaa6127b",
+        "refinement_interpretation_Tm_refine_f048236b5f8051f83b495ea5eaa6127b",
         "typing_Spec.GaloisField.__proj__GF__item__bits"
       ],
       0,
-      "cab5b9a349ee55c3bb1f4ca8b8c28ca0"
+      "4798b53f1df86e4d8fc12c529f8b77ac"
     ],
     [
       "Spec.GaloisField.irr",
@@ -468,18 +457,18 @@
         "Prims_pretyping_ae567c2fb75be05905677af440075565", "b2t_def",
         "equation_FStar.UInt.fits", "equation_FStar.UInt.max_int",
         "equation_FStar.UInt.min_int", "equation_FStar.UInt.size",
-        "equation_FStar.UInt32.n", "equation_FStar.UInt8.n",
-        "equation_Prims.nat", "function_token_typing_FStar.UInt32.n",
+        "equation_FStar.UInt8.n", "equation_Prims.nat",
         "function_token_typing_FStar.UInt8.n",
+        "function_token_typing_Prims.__cache_version_number__",
         "lemma_FStar.UInt.pow2_values", "primitive_Prims.op_AmpAmp",
         "primitive_Prims.op_LessThanOrEqual",
         "primitive_Prims.op_Subtraction",
         "projection_inverse_BoxBool_proj_0",
         "projection_inverse_BoxInt_proj_0",
-        "refinement_interpretation_Prims_Tm_refine_ba523126f67e00e7cd55f0b92f16681d"
+        "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d"
       ],
       0,
-      "b766b1741b3dc48767d252cd63c38766"
+      "cac032d0c17e442904f07dc3c31ad928"
     ],
     [
       "Spec.GaloisField.a",
@@ -506,12 +495,12 @@
         "projection_inverse_BoxBool_proj_0",
         "projection_inverse_BoxInt_proj_0",
         "projection_inverse_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_FStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
-        "refinement_interpretation_Prims_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
+        "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
+        "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
         "typing_FStar.Seq.Base.length"
       ],
       0,
-      "6fdcd4ffee8c279bd6bde38efa716eee"
+      "d4afcef25d22e9ddc7945fce022b0545"
     ],
     [
       "Spec.GaloisField.b",
@@ -537,12 +526,12 @@
         "projection_inverse_BoxBool_proj_0",
         "projection_inverse_BoxInt_proj_0",
         "projection_inverse_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_FStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
-        "refinement_interpretation_Prims_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
+        "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
+        "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
         "typing_FStar.Seq.Base.length"
       ],
       0,
-      "32509709d241b6389da7e9cdbed139d9"
+      "b2cf5a12569eb5c4c7946df08e3ff613"
     ],
     [
       "Spec.GaloisField.a_plus_b",
@@ -568,12 +557,12 @@
         "projection_inverse_BoxBool_proj_0",
         "projection_inverse_BoxInt_proj_0",
         "projection_inverse_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_FStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
-        "refinement_interpretation_Prims_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
+        "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
+        "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
         "typing_FStar.Seq.Base.length"
       ],
       0,
-      "d1265db0efbc8fae0cb6aa0346bbcca2"
+      "d4d3d7cde823d1dab1fc61f1d4ef19cf"
     ],
     [
       "Spec.GaloisField.test",
@@ -589,14 +578,14 @@
         "equation_Spec.GaloisField.irr",
         "equation_Spec.GaloisField.mk_field",
         "function_token_typing_Prims.bool",
-        "haseqFStar.Seq.Properties_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
+        "haseqTm_refine_a0cd7d06c5da6444b6b51b319febde8e",
         "proj_equation_Spec.GaloisField.GF_bits",
         "projection_inverse_BoxInt_proj_0",
         "projection_inverse_Spec.GaloisField.GF_bits",
-        "refinement_interpretation_Prims_Tm_refine_414d0a9f578ab0048252f8c8f552b99f"
+        "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f"
       ],
       0,
-      "e76ed8d3e1a64ed10357f88e9f8b4697"
+      "474985c049e01cc0981c0f3a9f1e8882"
     ]
   ]
 ]
