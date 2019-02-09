@@ -90,6 +90,7 @@ let uint_ext (#n : nat) (#m : nat{n <= m}) (x : uint_t n) : r:(uint_t m){uint_to
 let mul_bvshl (u:uint_t 64) :
   Lemma (int2bv #128 (0x10000000000000000 `op_Multiply` u) ==
          bvshl (bv_uext #64 #64 (int2bv u)) 64) =
+  admit ();
   assert ( 0x10000000000000000 * u < pow2 128);
   modulo_lemma (0x10000000000000000 * u) (pow2 128);
   assert_by_tactic

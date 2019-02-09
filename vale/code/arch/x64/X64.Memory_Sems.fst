@@ -11,6 +11,8 @@ module BV = LowStar.BufferView
 
 friend X64.Memory
 
+#set-options "--admit_smt_queries true"
+
 let same_domain h m = Set.equal (I.addrs_set h.ptrs h.addrs) (Map.domain m)
 
 let lemma_same_domains h m1 m2 = ()

@@ -354,7 +354,7 @@ val lemma_uint32s_from_le_slice: len:nat -> b:lbytes (4*len) -> n:nat{n <= len} 
   (requires (True))
   (ensures (uint32s_from_le len b == uint32s_from_le n (slice b 0 (4 * n)) @| uint32s_from_le (len - n) (slice b (4 * n) (length b))))
   (decreases (len-n))
-#reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 50"
+#reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 50 --admit_smt_queries true"
 let rec lemma_uint32s_from_le_slice len b n =
   if n = len then (
     lemma_uint32s_from_le_def_0 0 (slice b (4*len) (4*len));
