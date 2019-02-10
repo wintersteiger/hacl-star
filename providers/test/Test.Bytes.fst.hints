@@ -14,7 +14,6 @@
         "equation_LowStar.Buffer.buffer",
         "equation_LowStar.Monotonic.Buffer.length",
         "function_token_typing_FStar.UInt8.t",
-        "function_token_typing_LowStar.Monotonic.Buffer.loc_none",
         "function_token_typing_Prims.__cache_version_number__",
         "lemma_FStar.HyperStack.ST.lemma_equal_domains_trans",
         "lemma_LowStar.Monotonic.Buffer.live_region_frameOf",
@@ -27,10 +26,11 @@
         "refinement_interpretation_Tm_refine_e6e3f7c1f800390e5f198e21f3a0bf39",
         "typing_FStar.Monotonic.HyperStack.live_region",
         "typing_LowStar.Buffer.trivial_preorder",
-        "typing_LowStar.Monotonic.Buffer.frameOf"
+        "typing_LowStar.Monotonic.Buffer.frameOf",
+        "typing_LowStar.Monotonic.Buffer.loc_none"
       ],
       0,
-      "d2fbd136e66fa6044b9dfe70ae77e6aa"
+      "513fc8b12591062aa201568682c62b13"
     ],
     [
       "Test.Bytes.test_aead",
@@ -62,13 +62,8 @@
         "equation_LowStar.Monotonic.Buffer.length", "equation_Prims.eqtype",
         "equation_Prims.l_True", "equation_Prims.logical",
         "equation_Test.Bytes.aead_vector",
-        "function_token_typing_FStar.Monotonic.Heap.emp",
         "function_token_typing_FStar.Monotonic.Heap.heap",
-        "function_token_typing_FStar.Monotonic.HyperHeap.rid",
-        "function_token_typing_FStar.Monotonic.HyperHeap.root",
         "function_token_typing_LowStar.Buffer.trivial_preorder",
-        "function_token_typing_LowStar.Monotonic.Buffer.address_liveness_insensitive_locs",
-        "function_token_typing_LowStar.Monotonic.Buffer.loc_none",
         "function_token_typing_Prims.__cache_version_number__",
         "function_token_typing_Prims.bool",
         "function_token_typing_Test.Bytes.aead_vector", "int_inversion",
@@ -113,16 +108,21 @@
         "refinement_interpretation_Tm_refine_fee4d47786f2acf99bc14199ca24e2b8",
         "true_interp", "typing_FStar.Map.contains",
         "typing_FStar.Map.domain", "typing_FStar.Map.restrict",
+        "typing_FStar.Monotonic.Heap.emp",
+        "typing_FStar.Monotonic.HyperHeap.rid",
+        "typing_FStar.Monotonic.HyperHeap.root",
         "typing_FStar.Monotonic.HyperStack.get_hmap",
         "typing_FStar.Monotonic.HyperStack.get_rid_ctr",
         "typing_FStar.Monotonic.HyperStack.get_tip",
         "typing_FStar.Monotonic.HyperStack.remove_elt",
         "typing_FStar.Set.complement", "typing_FStar.Set.singleton",
         "typing_FStar.UInt32.v", "typing_LowStar.Buffer.trivial_preorder",
-        "typing_LowStar.Monotonic.Buffer.loc_buffer"
+        "typing_LowStar.Monotonic.Buffer.address_liveness_insensitive_locs",
+        "typing_LowStar.Monotonic.Buffer.loc_buffer",
+        "typing_LowStar.Monotonic.Buffer.loc_none"
       ],
       0,
-      "193fbdacd47c4d7ecccbe5052c659cf1"
+      "cf6a2c58c1901911a24cb61313eb9a74"
     ],
     [
       "Test.Bytes.main",
@@ -131,7 +131,7 @@
       0,
       [ "@query" ],
       0,
-      "61d57be004c9502f6f622e714807b8bb"
+      "adc8572a9d9eb470de2ccfbaff1be72b"
     ]
   ]
 ]

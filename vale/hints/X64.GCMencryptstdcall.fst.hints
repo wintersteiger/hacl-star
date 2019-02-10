@@ -16,7 +16,7 @@
         "unit_typing"
       ],
       0,
-      "31d34e00afa84b467f4dda2552931643"
+      "94a3957c6fe57cfd154a4414498e76f4"
     ],
     [
       "X64.GCMencryptstdcall.va_ens_gcm_make_length_stdcall",
@@ -40,7 +40,7 @@
         "unit_typing"
       ],
       0,
-      "3d3ed9a722004486fc2a4089fbaeaf9e"
+      "016c106e5eadcddba0fd13d3144dda50"
     ],
     [
       "X64.GCMencryptstdcall.va_lemma_gcm_make_length_stdcall",
@@ -56,7 +56,7 @@
         "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d"
       ],
       0,
-      "ed48216d79e3592ebbbd673447d6f622"
+      "2a1797102b4f9b184331b2283db18034"
     ],
     [
       "X64.GCMencryptstdcall.va_lemma_gcm_make_length_stdcall",
@@ -97,13 +97,8 @@
         "equation_X64.Vale.State.state_eq",
         "equation_X64.Vale.State.update_xmm",
         "fuel_guarded_inversion_X64.Vale.State.state",
-        "function_token_typing_Types_s.quad32",
-        "function_token_typing_Words_s.nat32",
-        "function_token_typing_X64.Memory.vuint128",
-        "function_token_typing_X64.Memory.vuint64",
-        "function_token_typing_X64.Vale.QuickCodes.range1", "int_typing",
-        "l_imp-interp", "l_not-interp",
-        "lemma_FStar.Seq.Base.lemma_index_upd1",
+        "function_token_typing_Words_s.nat32", "int_typing", "l_imp-interp",
+        "l_not-interp", "lemma_FStar.Seq.Base.lemma_index_upd1",
         "lemma_X64.Memory.buffer_length_buffer_as_seq",
         "lemma_X64.Memory.loc_includes_refl",
         "lemma_X64.Memory.loc_includes_union_l_buffer",
@@ -150,12 +145,14 @@
         "refinement_kinding_Tm_refine_8d65e998a07dd53ec478e27017d9dba5",
         "string_typing",
         "typing_FStar.StrongExcludedMiddle.strong_excluded_middle",
-        "typing_Words_s.__proj__Mkfour__item__hi3",
+        "typing_Types_s.quad32", "typing_Words_s.__proj__Mkfour__item__hi3",
         "typing_X64.Memory.buffer_as_seq", "typing_X64.Memory.buffer_read",
         "typing_X64.Memory.buffer_readable",
         "typing_X64.Memory.buffer_write", "typing_X64.Memory.loc_buffer",
         "typing_X64.Memory.loc_union", "typing_X64.Memory.modifies",
-        "typing_X64.Vale.QuickCodes.label", "typing_X64.Vale.Regs.eta_sel",
+        "typing_X64.Memory.vuint128", "typing_X64.Memory.vuint64",
+        "typing_X64.Vale.QuickCodes.label",
+        "typing_X64.Vale.QuickCodes.range1", "typing_X64.Vale.Regs.eta_sel",
         "typing_X64.Vale.State.__proj__Mkstate__item__mem",
         "typing_X64.Vale.State.__proj__Mkstate__item__ok",
         "typing_X64.Vale.State.__proj__Mkstate__item__regs",
@@ -167,7 +164,7 @@
         "typing_tok_X64.Machine_s.Rsi@tok", "unit_typing"
       ],
       0,
-      "3335dc149624e92a5020b38a16124c11"
+      "04b2cd378b36f3d2ba45fc1a67a224ab"
     ],
     [
       "X64.GCMencryptstdcall.va_wp_gcm_make_length_stdcall",
@@ -182,7 +179,7 @@
         "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d"
       ],
       0,
-      "8306cdfc4b682f54b6a57038d8b1bc42"
+      "37c40d985f4b90777e57569a349e9be7"
     ],
     [
       "X64.GCMencryptstdcall.va_wpMonotone_gcm_make_length_stdcall",
@@ -238,7 +235,7 @@
         "typing_tok_X64.Machine_s.Rsp@tok", "unit_typing"
       ],
       0,
-      "3f1054e8bff9e501a2471e7645852456"
+      "a23c8c968699f20620ebf8e4f9581aeb"
     ],
     [
       "X64.GCMencryptstdcall.va_wpCompute_gcm_make_length_stdcall",
@@ -252,7 +249,7 @@
         "fuel_guarded_inversion_X64.Vale.State.state"
       ],
       0,
-      "35153dbd1db6690d3f07b9af28553344"
+      "370065a876cb88b4b3d6b428c2c8e536"
     ],
     [
       "X64.GCMencryptstdcall.va_wpProof_gcm_make_length_stdcall",
@@ -264,7 +261,7 @@
         "refinement_interpretation_Tm_refine_8d65e998a07dd53ec478e27017d9dba5"
       ],
       0,
-      "992d74d39ffac8bfe71f6a2d5f2ded31"
+      "c42d4fd7d4e2d1a33f593658bb6c9fb1"
     ],
     [
       "X64.GCMencryptstdcall.va_wpProof_gcm_make_length_stdcall",
@@ -364,7 +361,7 @@
         "typing_tok_X64.Machine_s.Rsp@tok", "unit_typing"
       ],
       0,
-      "3ac07f76cfb9424412d1e3e98a1a6ac9"
+      "7e8c12594f9549dc4d4bc749bc65bd4c"
     ]
   ]
 ]

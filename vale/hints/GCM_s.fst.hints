@@ -55,7 +55,7 @@
         "typing_Words.Seq_s.seq_to_seq_four_LE"
       ],
       0,
-      "6cb18847010d8ecb027ae4f8131fe175"
+      "992b06df7ad172e55a136cb7f4291ef8"
     ],
     [
       "GCM_s.gcm_encrypt_LE",
@@ -64,7 +64,7 @@
       0,
       [ "@query" ],
       0,
-      "0a0fa687b344cdd89bd5afec58d4d02f"
+      "c6e3003742804c1b16135d74740ef597"
     ],
     [
       "GCM_s.gcm_decrypt_LE_def",
@@ -83,7 +83,6 @@
         "equation_AES_s.is_aes_key", "equation_AES_s.is_aes_key_LE",
         "equation_Collections.Seqs_s.compose",
         "equation_Collections.Seqs_s.seq_map", "equation_FStar.UInt32.n",
-        "equation_FStar.UInt8.n", "equation_GCTR_s.gctr_plain_LE",
         "equation_GCTR_s.is_gctr_plain_LE", "equation_Prims.eqtype",
         "equation_Prims.nat", "equation_Types_s.quad32",
         "equation_Words.Seq_s.seq16",
@@ -91,16 +90,11 @@
         "equation_Words.Seq_s.seq_to_seq_four_LE",
         "equation_Words.Seq_s.seqn", "equation_Words_s.nat32",
         "equation_Words_s.nat8", "equation_Words_s.natN",
-        "equation_Words_s.pow2_2", "fuel_guarded_inversion_AES_s.algorithm",
-        "function_token_typing_FStar.UInt32.n",
-        "function_token_typing_FStar.UInt8.n",
-        "function_token_typing_GCTR_s.gctr_plain_LE",
+        "fuel_guarded_inversion_AES_s.algorithm",
         "function_token_typing_Prims.__cache_version_number__",
-        "function_token_typing_Types_s.quad32",
         "function_token_typing_Words_s.nat32",
         "function_token_typing_Words_s.nat8",
-        "function_token_typing_Words_s.pow2_2",
-        "haseqTm_refine_e5e1444c782916d97951a08c4f200853", "int_typing",
+        "haseqTm_refine_116ee9574f9963faf2665e321544c061", "int_typing",
         "kinding_Words_s.four@tok", "lemma_FStar.Seq.Base.lemma_create_len",
         "lemma_FStar.Seq.Base.lemma_init_len",
         "lemma_FStar.Seq.Base.lemma_len_append",
@@ -117,15 +111,16 @@
         "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
         "refinement_interpretation_Tm_refine_b836d39e81cfc717f7393f7117d32554",
         "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
-        "typing_FStar.Seq.Base.append", "typing_FStar.Seq.Base.create",
-        "typing_FStar.Seq.Base.length",
+        "typing_AES_s.aes_key", "typing_FStar.Seq.Base.append",
+        "typing_FStar.Seq.Base.create", "typing_FStar.Seq.Base.length",
+        "typing_FStar.UInt32.n",
         "typing_Tm_abs_096bb302736193d14a805bbd1f1b4c4e",
         "typing_Tm_abs_45bc106d66ff9e2c3c9f4100524b39b3",
-        "typing_Types_s.reverse_bytes_quad32",
+        "typing_Types_s.quad32", "typing_Types_s.reverse_bytes_quad32",
         "typing_Words.Seq_s.seq_to_seq_four_LE"
       ],
       0,
-      "2c89d04007e3b8a94fff9c4d05bfefb7"
+      "e19f7da273318d8d62a2f9497e74906a"
     ],
     [
       "GCM_s.gcm_decrypt_LE",
@@ -134,7 +129,7 @@
       0,
       [ "@query" ],
       0,
-      "45867e350aaf8849ae97be33276c3dae"
+      "d6b7471c5d2da4e4bd001e971ce3cd5a"
     ],
     [
       "GCM_s.gcm_encrypt_LE_def",
@@ -192,7 +187,7 @@
         "typing_Words.Seq_s.seq_to_seq_four_LE"
       ],
       0,
-      "3bcedb5ceab1c161fd1bb36ae9da1456"
+      "ffb3fde08a5d1452e89c682c362dadfc"
     ],
     [
       "GCM_s.gcm_encrypt_LE",
@@ -201,7 +196,7 @@
       0,
       [ "@query" ],
       0,
-      "2e618e2f8305eae2e790d5ae91fd92e5"
+      "acd5df07d81ce15de297dd5f4e05101a"
     ],
     [
       "GCM_s.gcm_decrypt_LE_def",
@@ -220,7 +215,6 @@
         "equation_AES_s.is_aes_key", "equation_AES_s.is_aes_key_LE",
         "equation_Collections.Seqs_s.compose",
         "equation_Collections.Seqs_s.seq_map", "equation_FStar.UInt32.n",
-        "equation_FStar.UInt8.n", "equation_GCTR_s.gctr_plain_LE",
         "equation_GCTR_s.is_gctr_plain_LE", "equation_Prims.eqtype",
         "equation_Prims.nat", "equation_Types_s.quad32",
         "equation_Words.Seq_s.seq16",
@@ -228,16 +222,11 @@
         "equation_Words.Seq_s.seq_to_seq_four_LE",
         "equation_Words.Seq_s.seqn", "equation_Words_s.nat32",
         "equation_Words_s.nat8", "equation_Words_s.natN",
-        "equation_Words_s.pow2_2", "fuel_guarded_inversion_AES_s.algorithm",
-        "function_token_typing_FStar.UInt32.n",
-        "function_token_typing_FStar.UInt8.n",
-        "function_token_typing_GCTR_s.gctr_plain_LE",
+        "fuel_guarded_inversion_AES_s.algorithm",
         "function_token_typing_Prims.__cache_version_number__",
-        "function_token_typing_Types_s.quad32",
         "function_token_typing_Words_s.nat32",
         "function_token_typing_Words_s.nat8",
-        "function_token_typing_Words_s.pow2_2",
-        "haseqTm_refine_e5e1444c782916d97951a08c4f200853", "int_typing",
+        "haseqTm_refine_116ee9574f9963faf2665e321544c061", "int_typing",
         "kinding_Words_s.four@tok", "lemma_FStar.Seq.Base.lemma_create_len",
         "lemma_FStar.Seq.Base.lemma_init_len",
         "lemma_FStar.Seq.Base.lemma_len_append",
@@ -254,15 +243,16 @@
         "refinement_interpretation_Tm_refine_a0cd7d06c5da6444b6b51b319febde8e",
         "refinement_interpretation_Tm_refine_b836d39e81cfc717f7393f7117d32554",
         "refinement_interpretation_Tm_refine_ba523126f67e00e7cd55f0b92f16681d",
-        "typing_FStar.Seq.Base.append", "typing_FStar.Seq.Base.create",
-        "typing_FStar.Seq.Base.length",
+        "typing_AES_s.aes_key", "typing_FStar.Seq.Base.append",
+        "typing_FStar.Seq.Base.create", "typing_FStar.Seq.Base.length",
+        "typing_FStar.UInt32.n",
         "typing_Tm_abs_096bb302736193d14a805bbd1f1b4c4e",
         "typing_Tm_abs_45bc106d66ff9e2c3c9f4100524b39b3",
-        "typing_Types_s.reverse_bytes_quad32",
+        "typing_Types_s.quad32", "typing_Types_s.reverse_bytes_quad32",
         "typing_Words.Seq_s.seq_to_seq_four_LE"
       ],
       0,
-      "3e95c5e98d214f6d26df2cd34d4ca773"
+      "81df77bfc4fb0b6ffecddbc0598f018b"
     ],
     [
       "GCM_s.gcm_decrypt_LE",
@@ -271,7 +261,7 @@
       0,
       [ "@query" ],
       0,
-      "95983bfcac1998eee2f70ce4d575960a"
+      "84b1ef22b46878933df52a7859b13042"
     ]
   ]
 ]
