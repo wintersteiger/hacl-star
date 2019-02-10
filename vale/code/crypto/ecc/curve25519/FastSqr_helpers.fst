@@ -16,7 +16,6 @@ let lemma_dbl_pow2_six (z0 z1 z2 z3 z4 z5:nat) :
   =
   ()
 
-
 #push-options "--z3rlimit 3000 --max_fuel 0 --max_ifuel 0"
 let lemma_sqr_part3
       (a:nat) (a0 a1 a2 a3:nat64)      
@@ -53,7 +52,7 @@ let lemma_sqr_part3
   ()
 #pop-options
 
-#push-options "--z3rlimit 20"
+#push-options "--z3rlimit 20 --max_fuel 2 --max_ifuel 2 --initial_fuel 2 --initial_ifuel 2"
 let lemma_sqr (a:int) (a0 a1 a2 a3 
                r8 r9 r10 r11 r12 r13 rax rcx
                r8' r9' r10' r11' r12' r13' r14'
