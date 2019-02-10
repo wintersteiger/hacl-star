@@ -186,9 +186,10 @@ let lemma_bytes_and_mod2 x =
 let lemma_bytes_and_mod3 x =
   assert_by_tactic (logand #64 x (0x1000000 - 1) == mod #64 x 0x1000000) bv_tac
 
+#reset-options "--z3cliopt smt.QI.EAGER_THRESHOLD=100 --z3cliopt smt.CASE_SPLIT=3 --z3cliopt smt.arith.nl=false --max_fuel 1 --max_ifuel 1 --smtencoding.elim_box true --smtencoding.nl_arith_repr wrapped --smtencoding.l_arith_repr native --z3rlimit 30 --z3refresh --using_facts_from 'Prims FStar.Math.Lemma FStar.UInt'"
+
 let lemma_bytes_and_mod4 x =
-  assert_by_tactic (logand #64 x (0x100000000 - 1) == mod #64 x 0x100000000) bv_tac;
-  admit ()
+  assert_by_tactic (logand #64 x (0x100000000 - 1) == mod #64 x 0x100000000) bv_tac
 
 let lemma_bytes_and_mod5 x =
   assert_by_tactic (logand #64 x (0x10000000000 - 1) == mod #64 x 0x10000000000) bv_tac
@@ -198,6 +199,8 @@ let lemma_bytes_and_mod6 x =
 
 let lemma_bytes_and_mod7 x =
   assert_by_tactic (logand #64 x (0x100000000000000 - 1) == mod #64 x 0x100000000000000) bv_tac
+
+#reset-options "--z3cliopt smt.QI.EAGER_THRESHOLD=100 --z3cliopt smt.CASE_SPLIT=3 --z3cliopt smt.arith.nl=false --max_fuel 1 --max_ifuel 1 --smtencoding.elim_box true --smtencoding.nl_arith_repr wrapped --smtencoding.l_arith_repr native --z3rlimit 30 --z3refresh"
 
 let lemma_bytes_and_mod (x:nat64) (y:nat64) =
   reveal_iand_all 64;
