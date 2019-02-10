@@ -51,6 +51,7 @@ let pre_cond8 (h:HS.mem) (ctx_b:b8) (in_b:b8) (num_val:nat64) (k_b:b8) =
   (let k_b128 = BV.mk_buffer_view k_b Views.view128 in
 k_reqs (BV.as_seq h k_b128))
 
+#push-options "--max_fuel 0 --max_ifuel 0"
 let post_cond8 (h:HS.mem) (h':HS.mem) (ctx_b:b8) (in_b:b8) (num_val:nat64) (k_b:b8) = 
   live h ctx_b /\ live h in_b /\ live h k_b /\
   live h' ctx_b /\ live h' in_b /\ live h' k_b /\
@@ -67,6 +68,7 @@ let post_cond8 (h:HS.mem) (h':HS.mem) (ctx_b:b8) (in_b:b8) (num_val:nat64) (k_b:
   (Seq.length input_LE) % 64 = 0 /\
   hash_out == update_multi_transparent hash_in input_LE
 )
+#pop-options
 
 #set-options "--initial_fuel 6 --max_fuel 6 --initial_ifuel 0 --max_ifuel 0"
 let create_buffer_list (ctx_b:b8) (in_b:b8) (k_b:b8) (stack_b:b8)  : (l:list b8{
@@ -467,11 +469,13 @@ let simplify_quad_aux (b:B.buffer UInt8.t) (h:HS.mem) : Lemma
   BV.get_view_mk_buffer_view b Views.view128;
   BV.length_eq (BV.mk_buffer_view b Views.view128)
 
-#reset-options "--z3rlimit 60"
+#reset-options "--z3rlimit 60 --max_fuel 0 --max_ifuel 0"
+
 let simplify_quad_bytes (b:B.buffer UInt8.t) (h:HS.mem) : Lemma
   (requires B.length b % 16 == 0 /\ B.live h b)
-  (ensures (let b128 = BV.mk_buffer_view b Views.view128 in
-    seq_nat8_to_seq_uint8 (le_seq_quad32_to_bytes (BV.as_seq h b128)) == B.as_seq h b)) =
+  (ensures (B.length b % 8 == 0 /\
+            (let b128 = BV.mk_buffer_view b Views.view128 in
+             seq_nat8_to_seq_uint8 (le_seq_quad32_to_bytes (BV.as_seq h b128)) == B.as_seq h b))) =
   let s_init = B.as_seq h b in
   let b128 = BV.mk_buffer_view b Views.view128 in
   let s = BV.as_seq h b128 in
