@@ -329,7 +329,7 @@ let lemma_dbl_pow2_six (z0 z1 z2 z3 z4 z5:nat) :
   =
   ()
   
-#push-options "--z3rlimit 20"
+#push-options "--z3rlimit 20 --max_fuel 0 --max_ifuel 0"
 let lemma_sqr (a:int) (a0 a1 a2 a3 
                r8 r9 r10 r11 r12 r13 rax rcx
                r8' r9' r10' r11' r12' r13' r14'
@@ -365,7 +365,6 @@ let lemma_sqr (a:int) (a0 a1 a2 a3
   let regs = pow2_eight 0 r8' r9' r10' r11' r12' r13' r14' in
   let rhs:int = squares + regs in
   assert_by_tactic (lhs == rhs) int_canon; // PASSES
-
   assert_by_tactic (regs == pow2_64 * pow2_seven r8' r9' r10' r11' r12' r13' r14') int_canon;  // PASSES
   assert (pow2_64 * pow2_seven r8' r9' r10' r11' r12' r13' r14' == pow2_64 * pow2_six (2*r8) (2*r9) (2*(r10+rax)) (2*(r11+rcx)) (2*r12) (2*r13));  // PASSES
   assert_by_tactic (pow2_64 * pow2_six (2*r8) (2*r9) (2*(r10+rax)) (2*(r11+rcx)) (2*r12) (2*r13) == pow2_seven 0 (2*r8) (2*r9) (2*(r10+rax)) (2*(r11+rcx)) (2*r12) (2*r13)) int_canon; // PASSES
