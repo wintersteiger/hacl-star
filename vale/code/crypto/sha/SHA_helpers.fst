@@ -350,6 +350,8 @@ let lemma_sha256_rnds2_two_steps (abef cdgh xmm0:quad32) (t:counter) (block:bloc
   let hash0 = make_hash abef cdgh in
   let hash1 = shuffle_core_opaque block hash0 t in
   let hash2 = shuffle_core_opaque block hash1 (t + 1) in
+  lemma_add_wrap_is_add_mod (vv (k0 SHA2_256).[t]  ) (ws_opaque block t);
+  lemma_add_wrap_is_add_mod (vv (k0 SHA2_256).[t+1]) (ws_opaque block (t+1));
   sha256_rnds2_spec_quad32_is_shuffle_core_x2 abef cdgh xmm0 block t;
   lemma_sha256_rnds2_spec_quad32 cdgh abef xmm0;
   ()
@@ -733,6 +735,16 @@ let lemma_mod_transform (quads:seq quad32) : Lemma
   =
   ()
 
+#push-options "--max_fuel 0 --max_ifuel 0"
+let split_block_wrapper
+  (blocks: Spec.Hash.Definitions.bytes_blocks SHA2_256)
+  (n: nat{n <= Seq.length blocks / 64}):
+  Tot (p:(Spec.Hash.Definitions.bytes_blocks SHA2_256 * Spec.Hash.Definitions.bytes_blocks SHA2_256)
+         {fst p == fst (Seq.split blocks (FStar.Mul.(n * 64))) /\
+	  snd p == snd (Seq.split blocks (FStar.Mul.(n * 64)))})
+  = split_block SHA2_256 blocks n
+#pop-options
+
 #reset-options "--max_fuel 0 --max_ifuel 0"
 let rec lemma_update_multi_equiv_vale (hash hash':hash256) (quads:seq quad32) (r_quads:seq quad32)
   (nat8s:seq nat8) (blocks:seq UInt8.t) :
@@ -766,7 +778,14 @@ let rec lemma_update_multi_equiv_vale (hash hash':hash256) (quads:seq quad32) (r
     let bytes_pivot = (num_blocks - 1) * 64 in
 
     // Use associativity of update_multi to rearrange recursion to better match update_multi_quads' recursion
-    let input1,input2 = split_block SHA2_256 blocks (bytes_pivot / 64) in
+    let input1,input2 = split_block_wrapper blocks (bytes_pivot / 64) in
+
+    //the need for split_block_wrapper:
+    //we need the following two assertions for input1 and input2 being slices of blocks
+    //z3 wasn't able to figure it
+    //assert (input1 == fst (Seq.split blocks (FStar.Mul.((bytes_pivot / 64) * Spec.Hash.Definitions.block_length SHA2_256))));
+    //assert (input2 == snd (Seq.split blocks (FStar.Mul.((bytes_pivot / 64) * Spec.Hash.Definitions.block_length SHA2_256))));
+
     let h_bytes1 = update_multi SHA2_256 hash input1 in
     let h_bytes2 = update_multi SHA2_256 h_bytes1 input2 in
     update_multi_associative SHA2_256 hash blocks bytes_pivot;
@@ -810,9 +829,9 @@ let rec lemma_update_multi_equiv_vale (hash hash':hash256) (quads:seq quad32) (r
     Collections.Seqs.slice_seq_map_commute reverse_bytes_quad32 quads 0 (length quads - 4);
     //   seq_nat8_to_seq_U8 (le_seq_quad32_to_bytes (reverse_bytes_quad32_seq (slice (reverse_bytes_quad32_seq quads) 0 (length quads - 4)))
     //   seq_nat8_to_seq_U8 (le_seq_quad32_to_bytes r_prefix)
-    // }   
+    // }
     // assert (seq_nat8_to_seq_U8 (le_seq_quad32_to_bytes r_prefix) == input1); // Conclusion of the calc
-    assert (h_prefix == h_bytes1);  // Conclusion of Step 1
+    assert (Seq.equal h_prefix h_bytes1);  // Conclusion of Step 1
     // To invoke lemma_endian_relation below, 
     // we need to show (1):
     // calc {
