@@ -95,7 +95,6 @@ val update_small:
     (ensures fun h0 s' h1 ->
       update_post a s s' prev data len h0 h1)
 
-#push-options "--admit_smt_queries true"
 let split_at_last_small (a: Hash.alg) (b: bytes) (d: bytes): Lemma
   (requires (
     let _, rest = split_at_last a b in
@@ -111,7 +110,6 @@ let split_at_last_small (a: Hash.alg) (b: bytes) (d: bytes): Lemma
   assert ((S.length b + S.length d) / block_length a = S.length b / block_length a);
   assert (S.equal (S.append (S.append blocks rest) d) (S.append blocks' rest'));
   ()
-#pop-options
 
 #push-options "--z3rlimit 100"
 let add_len_small a (total_len: UInt64.t) (len: UInt32.t): Lemma
@@ -338,7 +336,7 @@ let update a s prev data len =
 inline_for_extraction noextract
 val mk_finish: a:Hash.alg -> finish_st a
 
-#push-options "--z3rlimit 300 --admit_smt_queries true"
+#push-options "--z3rlimit 300"
 inline_for_extraction noextract
 let mk_finish a s prev dst =
   let h0 = ST.get () in
@@ -403,7 +401,7 @@ let mk_finish a s prev dst =
   Hash.frame_invariant_implies_footprint_preservation
     B.(loc_region_only false (HS.get_tip h5)) hash_state h5 h6;
 
-  assert (hashes h6 s (G.reveal prev))
+  assert (B.(modifies (loc_union (loc_buffer dst) (footprint s h0)) h0 h6))
 
   // So much for automated proofs.
 
