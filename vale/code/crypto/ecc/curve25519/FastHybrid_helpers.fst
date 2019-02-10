@@ -117,16 +117,16 @@ let lemma_carry_wide (a0 a1 a2 a3 a4 a5 a6 a7
   }
 
 
-#push-options "--admit_smt_queries true"
 let pow2int_four (c0 c1 c2 c3:int) : int = c0 + c1 * pow2_64 + c2 * pow2_128 + c3 * pow2_192
 
+#reset-options "--max_fuel 0 --max_ifuel 0 --using_facts_from 'Prims'"
 let lemma_mul_pow256_sub (x y:nat) : 
   Lemma ((x - y * pow2_256) % prime == (x - y * 38) % prime)
   =
   assert_norm (pow2_256 % prime == 38);
   ()
-#pop-options
-  
+
+#reset-options "--z3rlimit 30 --max_fuel 0 --max_ifuel 0"
 let lemma_carry_sub_prime (a0 a1 a2 a3 a0' a1' a2' a3' carry_in:nat64) (carry:bit) : Lemma
   (requires pow2_four a0' a1' a2' a3' - carry * pow2_256 == pow2_four a0 a1 a2 a3 - carry_in * 38 /\
             carry_in * 38 - 1 + 38 < pow2_64)
