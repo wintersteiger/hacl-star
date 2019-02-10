@@ -11,8 +11,6 @@ module BV = LowStar.BufferView
 
 friend X64.Memory
 
-#set-options "--admit_smt_queries true"
-
 let same_domain h m = Set.equal (I.addrs_set h.ptrs h.addrs) (Map.domain m)
 
 let lemma_same_domains h m1 m2 = ()
@@ -87,6 +85,7 @@ let length_up128 (b:buffer128) (h:mem) (k:nat{k < buffer_length b}) (i:nat{i < 1
   BV.get_view_mk_buffer_view b uint128_view;
   ()
 
+#push-options "--max_fuel 0 --max_ifuel 0"
 let same_mem_get_heap_val128 b j v k h1 h2 mem1 mem2 =
   let ptr = buffer_addr b h1 + 16 `op_Multiply` k in
   let addr = buffer_addr b h1 in
@@ -108,6 +107,7 @@ let same_mem_get_heap_val128 b j v k h1 h2 mem1 mem2 =
   Classical.forall_intro aux;
   assert (forall i. addr + (16 `op_Multiply` k + i) == ptr + i);
   ()
+#pop-options
 
 let rec written_buffer_down128_aux1 (b:buffer128) (i:nat{i < buffer_length b}) (v:quad32)
       (ps:list b8{I.list_disjoint_or_eq ps /\ List.memP b ps})
@@ -242,6 +242,7 @@ let in_bounds128 (h:mem) (b:buffer128) (i:nat{i < buffer_length b}) : Lemma
   length_t_eq (TBase TUInt128) b;
   ()
 
+#push-options "--max_fuel 0 --max_ifuel 0"
 let bytes_valid128 ptr h =
   let t = TBase TUInt128 in
   let b = get_addr_ptr t ptr h h.ptrs in
@@ -264,7 +265,8 @@ let bytes_valid128 ptr h =
   I.addrs_set_mem h.ptrs b h.addrs (ptr+14);
   I.addrs_set_mem h.ptrs b h.addrs (ptr+15);
   ()
-  
+#pop-options
+
 let equiv_load_mem ptr h =
   let t = TBase TUInt64 in
   let b = get_addr_ptr t ptr h h.ptrs in
@@ -290,6 +292,7 @@ let same_domain_update64 b i v h =
 
 open X64.BufferViewStore
 
+#push-options "--max_fuel 0 --max_ifuel 0 --z3rlimit 40"
 let low_lemma_store_mem64_aux 
   (b:buffer64)
   (heap:S.heap)
@@ -310,7 +313,7 @@ let low_lemma_store_mem64_aux
    assert (I.disjoint_or_eq b b');
    length_t_eq (TBase TUInt64) b';
    bv_upd_update_heap64 b heap i v h.addrs h.ptrs h.hs
-
+#pop-options
 
 val valid_state_store_mem64_aux: (i:int) -> (v:nat64) -> (h:mem) -> Lemma 
   (requires valid_mem64 i h)
@@ -380,6 +383,7 @@ let same_domain_update128 b i v h =
   low_lemma_valid_mem128 b i h;
   X64.Bytes_Semantics.same_domain_update128 (buffer_addr b h + 16 `op_Multiply` i) v (get_heap h)
 
+#push-options "--max_fuel 0 --max_ifuel 0"
 let low_lemma_store_mem128_aux 
   (b:buffer128)
   (heap:S.heap)
@@ -400,6 +404,7 @@ let low_lemma_store_mem128_aux
    assert (I.disjoint_or_eq b b');
    length_t_eq (TBase TUInt128) b';
    bv_upd_update_heap128 b heap i v h.addrs h.ptrs h.hs
+#pop-options
 
 val valid_state_store_mem128_aux: (i:int) -> (v:quad32) -> (h:mem) -> Lemma 
   (requires valid_mem128 i h)
@@ -410,6 +415,7 @@ val valid_state_store_mem128_aux: (i:int) -> (v:quad32) -> (h:mem) -> Lemma
     heap' == I.down_mem h'.hs h'.addrs h'.ptrs 
   ))
 
+#set-options "--max_fuel 0 --max_ifuel 0"
 let valid_state_store_mem128_aux i v h =
   let heap = get_heap h in
   let heap' = S.update_heap128 i v heap in
