@@ -71,6 +71,7 @@ let lemma_bignum_to_128_ h0 h1 h2 =
   cut (v1 = pow2 88 * (v h2 % pow2 40) + pow2 64 * ((v h1 * pow2 44)/ pow2 64));
   Math.Lemmas.lemma_div_mod (v h1 * pow2 44) (pow2 64)
 
+#reset-options "--max_fuel 0 --max_ifuel 0 --using_facts_from 'Prims FStar.Math.Lemmas'"
 private val lemma_aux: a:nat -> b:nat -> c:nat -> Lemma
   (requires (a < pow2 44 /\ b < pow2 44 /\ c < pow2 40))
   (ensures (a + pow2 44 * b + pow2 88 * c < pow2 128))
@@ -87,7 +88,7 @@ val lemma_bignum_to_128:
   h0:limb{v h0 < pow2 44} -> h1:limb{v h1 < pow2 44} -> h2:limb{v h2 < pow2 42} ->
   Lemma (((v h2 * (pow2 24)) % pow2 64 + v h1 / pow2 20) * pow2 64 + ((v h1 * pow2 44) % pow2 64) + v h0
     = (v h0 + pow2 44 * v h1 + pow2 88 * v h2) % pow2 128)
-#push-options "--admit_smt_queries true --z3rlimit 400 --max_fuel 0 --max_ifuel 1 --initial_ifuel 1 --using_facts_from '* -Hacl.Spec.* -Spec.* -FStar.Seq.*'"
+#reset-options "--admit_smt_queries true --z3rlimit 400 --max_fuel 0 --max_ifuel 1 --initial_ifuel 1 --using_facts_from '* -Hacl.Spec.* -Spec.* -FStar.Seq.*'"
 let lemma_bignum_to_128 h0 h1 h2 =
   lemma_bignum_to_128_ h0 h1 h2;
   let z = (v h0 + pow2 44 * v h1 + pow2 88 * v h2) % pow2 128 in
@@ -98,7 +99,6 @@ let lemma_bignum_to_128 h0 h1 h2 =
   assert_norm((pow2 44 - 1) + pow2 44 * (pow2 44 - 1) + (pow2 40 - 1) * pow2 88 < pow2 128);
   lemma_aux (v h0) (v h1) (v h2 % pow2 40);
   Math.Lemmas.modulo_lemma (v h0 + pow2 44 * v h1 + pow2 88 * (v h2 % pow2 40)) (pow2 128)
-#pop-options
 
 #reset-options "--max_fuel 0 --z3rlimit 200"
 
