@@ -40,7 +40,9 @@ inline_for_extraction let sint64_to_sint8 a = uint64_to_uint8 a
 inline_for_extraction val sint128_to_sint64: a:S128.t -> Tot (b:S64.t{S64.v b = S128.v a % pow2 64})
 inline_for_extraction let sint128_to_sint64 a = FStar.UInt128.uint128_to_uint64 a
 inline_for_extraction val sint128_to_sint32: a:S128.t -> Tot (b:S32.t{S32.v b = S128.v a % pow2 32})
-inline_for_extraction let sint128_to_sint32 a = uint64_to_uint32 (FStar.UInt128.uint128_to_uint64 a)
+inline_for_extraction let sint128_to_sint32 a =
+  FStar.Math.Lemmas.pow2_modulo_modulo_lemma_1 (S128.v a) 32 128;
+  uint64_to_uint32 (FStar.UInt128.uint128_to_uint64 a)
 inline_for_extraction val sint128_to_sint8 : a:S128.t -> Tot (b:S8.t{S8.v b = S128.v a % pow2 8})
 inline_for_extraction let sint128_to_sint8 a = uint64_to_uint8 (FStar.UInt128.uint128_to_uint64 a)
 
