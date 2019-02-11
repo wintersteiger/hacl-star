@@ -1101,6 +1101,8 @@ procedure{:quick}fmul1(
     //store4(dst_b);
 }
 
+#set-options "--admit_smt_queries true"
+
 procedure{:quick}{:public} fmul1_stdcall(
     inline win:bool,
     ghost dst_b:buffer64,
