@@ -39,7 +39,6 @@ module X64.Poly1305
 #reset-options "--z3rlimit 5000"
 
 #verbatim{:interface}{:implementation}
-open Opaque_s
 open Types_s
 open Arch.Types
 open X64.Machine_s
@@ -212,7 +211,7 @@ procedure{:quick} poly1305_iteration(ghost r1:nat64) returns(ghost hh:int)
 
     (ghost var hd) := poly1305_multiply(r1);
     hh := poly1305_reduce();
-    reveal modp';
+    Opaque_s.reveal_opaque(modp');
     assert hh == (n * n) * h2 + n * h1 + h0 /\ (h * r) % p == hh % p;
 }
 
@@ -301,7 +300,7 @@ procedure{:quick} poly1305_blocks(
     h := h_in;
     assert modp(h) == poly1305_heap_blocks(modp(h_in), padbit * (n * n), r, buffer64_as_seq(mem, inp_b), 0) by
     {
-        reveal modp';
+        Opaque_s.reveal_opaque(modp');
         reveal_poly1305_heap_blocks(modp(h_in), padbit * (n * n), r, buffer64_as_seq(mem, inp_b), 0);
     }
 
@@ -363,7 +362,7 @@ procedure{:quick} poly1305_blocks(
         {
             reveal_poly1305_heap_blocks(modp(h_in), padbit * (nn * nn), r, buffer64_as_seq(mem, inp_b), word_index);
             reveal_poly1305_heap_blocks(modp(h_in), padbit * (nn * nn), r, buffer64_as_seq(mem, inp_b), word_index - 2);
-            reveal modp';
+            Opaque_s.reveal_opaque(modp');
             lemma_poly_demod(p, hp, hq - hp, r);
             lemma_poly1305_heap_blocks_unroll(modp(h_in), padbit * (nn * nn), r, buffer64_as_seq(mem, inp_b), word_index);
             lemma_poly1305_heap_blocks_unroll(modp(h_in), padbit * (nn * nn), r, buffer64_as_seq(mem, inp_b), word_index - 2);
@@ -442,7 +441,7 @@ procedure{:quick} poly1305_last_block()
 
         assert padLast == lowerUpper128_opaque(0, rdx) by {
             lemma_power2_add64(#nat64(8 * nExtra - 64));
-            reveal lowerUpper128;
+            Opaque_s.reveal_opaque(lowerUpper128);
         }
 
         // inpLast := (inpLast % padLast)
@@ -464,12 +463,12 @@ procedure{:quick} poly1305_last_block()
     }
 
     ghost var h := hBlocks + (inpLast % padLast) + padLast;
-    assert h == h2 * (n * n) + h1 * n + h0 by { reveal lowerUpper192; reveal lowerUpper128; }
-    assert r == r1 * n + r0 by { reveal lowerUpper128; }
+    assert h == h2 * (n * n) + h1 * n + h0 by { Opaque_s.reveal_opaque(lowerUpper192); Opaque_s.reveal_opaque(lowerUpper128); }
+    assert r == r1 * n + r0 by { Opaque_s.reveal_opaque(lowerUpper128); }
     (ghost var hLast) := poly1305_iteration(r1);
-    assert hLast == lowerUpper192_opaque(lowerUpper128_opaque(h0, h1), h2) by { reveal lowerUpper192; reveal lowerUpper128; }
+    assert hLast == lowerUpper192_opaque(lowerUpper128_opaque(h0, h1), h2) by { Opaque_s.reveal_opaque(lowerUpper192); Opaque_s.reveal_opaque(lowerUpper128); }
     lemma_poly_demod(p, hBlocks, (inpLast % padLast) + padLast, r);
-    assert modp(hLast) == modp((modp(hBlocks) + padLast + (inpLast % padLast)) * r) by { reveal modp'; }
+    assert modp(hLast) == modp((modp(hBlocks) + padLast + (inpLast % padLast)) * r) by { Opaque_s.reveal_opaque(modp'); }
 }
 
 // h := (h % p) % 2^128;
@@ -494,7 +493,7 @@ procedure{:quick} poly1305_reduce_last()
     Adc64Wrap(r10, 0);
 
     assert h + 5 == lowerUpper192_opaque(lowerUpper128_opaque(r8, r9), r10)
-        by { reveal lowerUpper128; reveal lowerUpper192; }
+        by { Opaque_s.reveal_opaque(lowerUpper128); Opaque_s.reveal_opaque(lowerUpper192); }
     lemma_reduce128(h, old(h2), old(h1), old(h0), h + 5, r10, r9, r8);
 
     Shr64(r10, 2);
@@ -604,12 +603,12 @@ procedure{:quick} poly1305_impl(
     Store64_buffer(ctx, r1, 32, Public, ctx_b, 4);
 
     ghost var r:nat128 := lowerUpper128_opaque(r0, r1);
-    assert r == r0 + n * r1 by { reveal lowerUpper128; }
+    assert r == r0 + n * r1 by { Opaque_s.reveal_opaque(lowerUpper128); }
 
     let mask:nat128 := 0x0ffffffc_0ffffffc_0ffffffc_0fffffff; // REVIEW: why do we need to put this constant in a variable?
     assert r == iand128(key_r, mask) by
     {
-        reveal lowerUpper128;
+        Opaque_s.reveal_opaque(lowerUpper128);
         lemma_lowerUpper128_and(key_r, key_r0, key_r1, mask,
             0x0fff_fffc_0fff_ffff, 0x0fff_fffc_0fff_fffc, r, r0, r1);
     }
@@ -628,7 +627,7 @@ procedure{:quick} poly1305_impl(
     assert modp(0) == 0 by
     {
         modp_0();
-//        reveal modp';
+//        Opaque_s.reveal_opaque(modp');
 //        assert_by_tactic(modp(0) == 0, retain_only_modp());
     }
     lemma_poly1305_heap_hash_blocks_alt(0, n * n, r, mem, inp_b, old(len) / 16);
@@ -636,7 +635,7 @@ procedure{:quick} poly1305_impl(
     reveal_logand128(key_r, mask);
     assert r == bare_r(key_r);
     assert h == lowerUpper192_opaque(lowerUpper128_opaque(h0, h1), h2)
-        by { reveal lowerUpper192; reveal lowerUpper128; }
+        by { Opaque_s.reveal_opaque(lowerUpper192); Opaque_s.reveal_opaque(lowerUpper128); }
 
     Load64_buffer(r15, ctx, 56, Public, ctx_b, 7);
     // assert r15 == len_in % 16;
@@ -648,7 +647,7 @@ procedure{:quick} poly1305_impl(
         Load64_buffer(r9, inp, 8, Public, inp_b, (len_in / 16) * 2 + 1);
         ghost var a := seqTo128_app(buffer64_as_seq(mem, inp_b), len_in / 16);
         assert lowerUpper128_opaque(r8, r9) == a
-            by { /* reveal heapletTo128; */ reveal lowerUpper128; }
+            by { /* Opaque_s.reveal_opaque(heapletTo128); */ Opaque_s.reveal_opaque(lowerUpper128); }
         poly1305_last_block();
         h := lowerUpper192_opaque(lowerUpper128_opaque(h0, h1), h2);
     }
@@ -663,7 +662,7 @@ procedure{:quick} poly1305_impl(
     h := lowerUpper128_opaque(h0, h1);
 
     assert h == poly1305_hash(key_r, key_s, seqTo128(buffer64_as_seq(mem, inp_b)), len_in)
-        by { reveal mod2_128'; reveal modp'; }
+        by { Opaque_s.reveal_opaque(mod2_128'); Opaque_s.reveal_opaque(modp'); }
 }
 
 // poly1305(ctx, inp, len)

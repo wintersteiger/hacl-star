@@ -5,7 +5,6 @@ include "../../../arch/x64/X64.Vale.InsVector.vaf"
 module X64.Stack
 
 #verbatim{:interface}{:implementation}
-//open Opaque_s
 open FStar.Seq
 open Words_s
 open Words.Seq_s

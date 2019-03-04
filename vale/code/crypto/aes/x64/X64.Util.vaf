@@ -1,7 +1,6 @@
 include "../../../arch/x64/X64.Vale.InsBasic.vaf"
 include "../../../arch/x64/X64.Vale.InsMem.vaf"
 include "../../../arch/x64/X64.Vale.InsVector.vaf"
-include{:fstar}{:open} "Opaque_s"
 include{:/*TODO*/fstar}{:open} "FStar.Seq.Base"
 include{:fstar}{:open} "Words_s"
 include{:fstar}{:open} "Words.Seq_s"
@@ -28,7 +27,6 @@ include{:fstar}{:open} "X64.Vale.QuickCodes"
 module X64.Util
 
 #verbatim{:interface}{:implementation}
-open Opaque_s
 open FStar.Seq
 open Words_s
 open Words.Seq_s

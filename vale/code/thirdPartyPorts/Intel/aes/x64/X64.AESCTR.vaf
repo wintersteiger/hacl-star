@@ -4,7 +4,6 @@ include "../../../../arch/x64/X64.Vale.InsVector.vaf"
 include "../../../../arch/x64/X64.Vale.InsAes.vaf"
 include "../../../../crypto/aes/x64/X64.GHash.vaf"
 include{:fstar}{:open} "Prop_s"
-include{:fstar}{:open} "Opaque_s"
 include{:fstar}{:open} "Words_s"
 include{:fstar}{:open} "Types_s"
 include{:/*TODO*/fstar}{:open} "FStar.Seq.Base"
@@ -31,7 +30,6 @@ module X64.AESCTR
 #verbatim{:interface}{:implementation}
 module GHash = GHash
 open Prop_s
-open Opaque_s
 open Words_s
 open Types_s
 open FStar.Seq
@@ -82,8 +80,8 @@ ghost procedure finish_aes_encrypt_le(ghost alg:algorithm, ghost input_LE:quad32
     ensures
         aes_encrypt_le(alg, key, input_LE) == cipher_opaque(alg, input_LE, key_to_round_keys_LE(alg, key));
 {
-    reveal aes_encrypt_LE_def;
-    reveal cipher;
+    Opaque_s.reveal_opaque(aes_encrypt_LE_def);
+    Opaque_s.reveal_opaque(cipher);
 }
 
 // TODO: Write one procedure that unrolls to these variants?
@@ -121,7 +119,7 @@ procedure {:quick exportOnly} aes_round_4way(
         ctr3 == rounds_opaque(init3, round_keys, n);
         ctr4 == rounds_opaque(init4, round_keys, n);
 {
-    reveal rounds;
+    Opaque_s.reveal_opaque(rounds);
     commute_sub_bytes_shift_rows_forall();
     AESNI_enc(ctr1, round_key);
     AESNI_enc(ctr2, round_key);

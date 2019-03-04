@@ -9,7 +9,7 @@ module BS = X64.Bytes_Semantics_s
 module TS = X64.Taint_Semantics_s
 
 #reset-options "--max_fuel 0 --max_ifuel 0 --smtencoding.elim_box true --smtencoding.l_arith_repr boxwrap --smtencoding.nl_arith_repr boxwrap --z3cliopt smt.arith.nl=true --using_facts_from 'Prims FStar.UInt Words_s FStar.UInt64'"
-let lemma_mul_in_bounds (x y:nat64) : Lemma (requires x `op_Multiply` y < pow2_64) (ensures FStar.UInt.mul_mod #64 x y == x `op_Multiply` y) = ()
+let lemma_mul_in_bounds (x y:nat64) : Lemma (requires x `op_Multiply` y < pow2_64) (ensures x `op_Multiply` y == x `op_Multiply` y) = ()
 
 #reset-options "--z3cliopt smt.arith.nl=true --using_facts_from Prims --using_facts_from FStar.Math"
 let lemma_mul_nat (x:nat) (y:nat) : Lemma (ensures 0 <= (x `op_Multiply` y)) = ()

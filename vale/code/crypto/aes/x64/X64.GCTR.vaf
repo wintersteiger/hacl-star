@@ -3,7 +3,6 @@ include "../../../arch/x64/X64.Vale.InsMem.vaf"
 include "../../../arch/x64/X64.Vale.InsVector.vaf"
 include "X64.AES.vaf"
 include "../../../thirdPartyPorts/Intel/aes/x64/X64.AESCTRplain.vaf"
-include{:fstar}{:open} "Opaque_s"
 include{:fstar}{:open} "Words_s"
 include{:fstar}{:open} "Types_s"
 include{:fstar}{:open} "Arch.Types"
@@ -27,7 +26,6 @@ module X64.GCTR
 
 #verbatim{:interface}{:implementation}
 module GCTR = GCTR
-open Opaque_s
 open Words_s
 open Types_s
 open Arch.Types
@@ -113,7 +111,7 @@ procedure {:quick}{:public} gctr_register(
     InitPshufbMask(xmm2, r12);
     Pshufb(xmm0, xmm2);
     AESEncryptBlock(alg, reverse_bytes_quad32(icb_BE), key, round_keys, keys_b);
-    reveal aes_encrypt_LE_def;
+    Opaque_s.reveal_opaque(aes_encrypt_LE_def);
     //assert xmm0 == aes_encrypt_LE(alg, key, reverse_bytes_quad32(icb_BE));
 
     Pxor(xmm1, xmm0);
@@ -222,7 +220,7 @@ procedure {:quick} gctr_core(
         Mov128(xmm0, icb);
         Pshufb(xmm0, mask);
         AESEncryptBlock(alg, reverse_bytes_quad32(icb), key, round_keys, keys_b);
-        reveal aes_encrypt_LE_def;
+        Opaque_s.reveal_opaque(aes_encrypt_LE_def);
 
         Load128_buffer(xmm2, r9, 0, Secret, in_b, block_offset + rdx);
         Pxor(xmm2, xmm0);

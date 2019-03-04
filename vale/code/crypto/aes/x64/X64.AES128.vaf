@@ -2,7 +2,6 @@ include "../../../arch/x64/X64.Vale.InsBasic.vaf"
 include "../../../arch/x64/X64.Vale.InsMem.vaf"
 include "../../../arch/x64/X64.Vale.InsVector.vaf"
 include "../../../arch/x64/X64.Vale.InsAes.vaf"
-include{:fstar}{:open} "Opaque_s"
 include{:fstar}{:open} "Types_s"
 include{:/*TODO*/fstar}{:open} "FStar.Seq.Base"
 include{:fstar}{:open} "AES_s"
@@ -19,7 +18,6 @@ include{:fstar}{:open} "X64.CPU_Features_s"
 module X64.AES128
 
 #verbatim{:interface}{:implementation}
-open Opaque_s
 open Types_s
 open FStar.Seq
 open AES_s
@@ -80,7 +78,7 @@ procedure{:quick} KeyExpansionRound(
 
     // assert xmm1 == simd_round_key_128(old(xmm1), rcon);
     lemma_simd_round_key(old(xmm1), rcon);
-    reveal expand_key_128_def;
+    Opaque_s.reveal_opaque(expand_key_128_def);
 }
 
 procedure{:quick exportOnly}{:recursive}{:decrease n} KeyExpansionRoundUnrolledRecursive(
@@ -106,7 +104,7 @@ procedure{:quick exportOnly}{:recursive}{:decrease n} KeyExpansionRoundUnrolledR
         forall j {buffer128_read(dst, j, mem)} :: 0 <= j <= n ==>
             buffer128_read(dst, j, mem) == expand_key_128(key, j);
 {
-    reveal expand_key_128_def;
+    Opaque_s.reveal_opaque(expand_key_128_def);
     inline if (0 < n <= 10) {
         KeyExpansionRoundUnrolledRecursive(key, dst, n - 1);
         KeyExpansionRound(#nat64(n - 1), #nat8(aes_rcon(n - 1)), dst, key);
@@ -149,7 +147,7 @@ procedure{:quick}{:public} KeyExpansion128Stdcall(
     Store128_buffer(rdx, xmm1, 0, Secret, output_key_expansion_b, 0);
     KeyExpansionRoundUnrolledRecursive(key, output_key_expansion_b, 10);
     lemma_expand_key_128(key, 11);
-    reveal key_to_round_keys_LE_def;
+    Opaque_s.reveal_opaque(key_to_round_keys_LE_def);
 
     // Clear secrets out of registers
     Pxor(xmm1, xmm1);

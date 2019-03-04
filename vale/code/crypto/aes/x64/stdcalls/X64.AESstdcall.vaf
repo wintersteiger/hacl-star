@@ -16,7 +16,6 @@ include{:fstar}{:open} "X64.Vale.QuickCode"
 include{:fstar}{:open} "X64.Vale.QuickCodes"
 include{:fstar}{:open} "Arch.Types"
 include{:fstar}{:open} "AES256_helpers"
-include{:fstar}{:open} "Opaque_s"
 include{:fstar}{:open} "GCTR"
 include{:fstar}{:open} "X64.CPU_Features_s"
 
@@ -39,7 +38,6 @@ open X64.Vale.QuickCodes
 open Arch.Types
 //open AES_helpers
 open AES256_helpers
-open Opaque_s
 open X64.AES128
 open X64.AES256
 open GCTR
@@ -242,7 +240,7 @@ procedure {:quick}{:exportSpecs}{:public} aes_EncryptBlockBEStdcall(
     {
         Store128_buffer(rdi, xmm0, 0, Secret, output_b, 0);
     }
-    reveal aes_encrypt_LE_def;
+    Opaque_s.reveal_opaque(aes_encrypt_LE_def);
 
     callee_restore_registers(win, stack_b, old(xmm6), old(xmm7), old(xmm8),
         old(xmm9), old(xmm10), old(xmm11), old(xmm12), old(xmm13), old(xmm14), old(xmm15));

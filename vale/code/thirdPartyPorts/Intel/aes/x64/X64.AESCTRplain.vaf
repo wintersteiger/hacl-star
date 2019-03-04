@@ -4,7 +4,6 @@ include "../../../../arch/x64/X64.Vale.InsVector.vaf"
 include "../../../../arch/x64/X64.Vale.InsAes.vaf"
 include "X64.AESCTR.vaf"
 include{:fstar}{:open} "Prop_s"
-include{:fstar}{:open} "Opaque_s"
 include{:fstar}{:open} "Words_s"
 include{:fstar}{:open} "Types_s"
 include{:/*TODO*/fstar}{:open} "FStar.Seq.Base"
@@ -28,7 +27,6 @@ module X64.AESCTRplain
 
 #verbatim{:interface}{:implementation}
 open Prop_s
-open Opaque_s
 open Words_s
 open Types_s
 open FStar.Seq

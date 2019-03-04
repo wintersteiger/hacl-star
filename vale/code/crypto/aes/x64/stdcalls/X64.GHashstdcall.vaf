@@ -31,7 +31,6 @@ module X64.GHashstdcall
 
 #verbatim{:interface}{:implementation}
 module GHash = GHash // REVIEW: it's strange to have to do this to refer to GHash.*
-open Opaque_s
 open FStar.Seq
 open Words_s
 open Types_s

@@ -16,7 +16,6 @@ include{:fstar}{:open} "X64.Vale.QuickCode"
 include{:fstar}{:open} "X64.Vale.QuickCodes"
 include{:fstar}{:open} "Arch.Types"
 include{:fstar}{:open} "AES256_helpers"
-include{:fstar}{:open} "Opaque_s"
 include{:fstar}{:open} "GCTR"
 include{:fstar}{:open} "X64.CPU_Features_s"
 
@@ -39,7 +38,6 @@ open X64.Vale.QuickCodes
 open Arch.Types
 //open AES_helpers
 open AES256_helpers
-open Opaque_s
 open X64.AES128
 open X64.AES256
 open GCTR

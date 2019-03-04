@@ -5,7 +5,6 @@ include "../../../../lib/util/x64/X64.Stack.vaf"
 include "../X64.AES.vaf"
 include "../../../../thirdPartyPorts/Intel/aes/x64/X64.AESCTRplain.vaf"
 include "../X64.GCTR.vaf"
-include{:fstar}{:open} "Opaque_s"
 include{:fstar}{:open} "Words_s"
 include{:fstar}{:open} "Types_s"
 include{:fstar}{:open} "Arch.Types"
@@ -29,7 +28,6 @@ module X64.GCTRstdcall
 
 #verbatim{:interface}{:implementation}
 module GCTR = GCTR
-open Opaque_s
 open Words_s
 open Types_s
 open Arch.Types
