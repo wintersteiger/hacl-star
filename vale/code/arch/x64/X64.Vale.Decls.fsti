@@ -399,6 +399,15 @@ let valid_stack_slots (m:M.mem) (rsp:int) (b:M.buffer64) (num_slots:int) (memTai
      0 <= rsp - 8 * num_slots /\
      rsp < pow2_64)
 
+let valid_stack_args (m:M.mem) (rsp:int) (b:M.buffer64) (num_slots:int) (memTaint:M.memtaint) =
+    M.valid_taint_buf64 b m memTaint Public /\
+    buffer_readable m b /\
+    num_slots <= buffer_length b /\
+    (let open FStar.Mul in
+     rsp == M.buffer_addr b m /\
+     0 <= rsp /\
+     rsp + 8 * num_slots < pow2_64)
+
 let modifies_buffer_specific128 (b:M.buffer128) (h1 h2:M.mem) (start last:nat) : GTot prop0 =
     modifies_buffer128 b h1 h2 /\
     // TODO: Consider replacing this with: modifies (loc_buffer (gsub_buffer b i len)) h1 h2

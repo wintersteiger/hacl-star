@@ -29,7 +29,6 @@ procedure {:quick}{:exportSpecs}{:public} memcpy(inline win:bool,ghost stack_b:b
         valid_taint_buf64(src, mem, memTaint, Secret);
         buffer_length(src) == 2;
         buffer_length(dst) == 2;        
-        buffer_length(stack_b) >= 3;
         valid_stack_slots(mem, rsp, stack_b, 3, memTaint);
         win ==> rcx == buffer_addr(dst, mem);
         win ==> rdx == buffer_addr(src, mem);

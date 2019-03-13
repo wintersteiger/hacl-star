@@ -17,7 +17,9 @@ open X64.Vale.QuickCodes
 #set-options "--z3rlimit 20"
 #endverbatim
 
-procedure {:quick}{:exportSpecs}{:public} test(inline win:bool,ghost stack_b:buffer64,
+procedure {:quick}{:exportSpecs}{:public} test(inline win:bool,
+    ghost stack_read_b:buffer64,
+    ghost stack_b:buffer64,
     ghost arg0:buffer64,
     ghost arg1:buffer64,
     ghost arg2:buffer64,
@@ -37,24 +39,24 @@ procedure {:quick}{:exportSpecs}{:public} test(inline win:bool,ghost stack_b:buf
         buffer_readable(mem, arg6);
         buffer_readable(mem, arg7);        
         valid_taint_buf64(stack_b, mem, memTaint, Public);
-        buffer_length(stack_b) >= 13;
+        valid_stack_args(mem, rsp, stack_read_b, 8, memTaint);
         valid_stack_slots(mem, rsp, stack_b, 1, memTaint);
         win ==> rcx == buffer_addr(arg0, mem);
         win ==> rdx == buffer_addr(arg1, mem);
         win ==> r8 == buffer_addr(arg2, mem);
         win ==> r9 == buffer_addr(arg3, mem);
-        win ==> buffer64_read(stack_b, 1 + 4 + 1 + 0, mem) == buffer_addr(arg4, mem);
-        win ==> buffer64_read(stack_b, 1 + 4 + 1 + 1, mem) == buffer_addr(arg5, mem);
-        win ==> buffer64_read(stack_b, 1 + 4 + 1 + 2, mem) == buffer_addr(arg6, mem);
-        win ==> buffer64_read(stack_b, 1 + 4 + 1 + 3, mem) == buffer_addr(arg7, mem);      
+        win ==> buffer64_read(stack_read_b, 4 + 1 + 0, mem) == buffer_addr(arg4, mem);
+        win ==> buffer64_read(stack_read_b, 4 + 1 + 1, mem) == buffer_addr(arg5, mem);
+        win ==> buffer64_read(stack_read_b, 4 + 1 + 2, mem) == buffer_addr(arg6, mem);
+        win ==> buffer64_read(stack_read_b, 4 + 1 + 3, mem) == buffer_addr(arg7, mem);      
         !win ==> rdi == buffer_addr(arg0, mem);
         !win ==> rsi == buffer_addr(arg1, mem);
         !win ==> rdx == buffer_addr(arg2, mem);
         !win ==> rcx == buffer_addr(arg3, mem);
         !win ==> r8 == buffer_addr(arg4, mem);
         !win ==> r9 == buffer_addr(arg5, mem);
-        !win ==> buffer64_read(stack_b, 1 + 1 + 0, mem) == buffer_addr(arg6, mem);
-        !win ==> buffer64_read(stack_b, 1 + 1 + 1, mem) == buffer_addr(arg7, mem);
+        !win ==> buffer64_read(stack_read_b, 1 + 0, mem) == buffer_addr(arg6, mem);
+        !win ==> buffer64_read(stack_read_b, 1 + 1, mem) == buffer_addr(arg7, mem);
     ensures
         win ==>  rbx == old(rbx);
         win ==>  rbp == old(rbp);

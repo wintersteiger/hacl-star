@@ -74,8 +74,9 @@ val buffer_readable_reveal
   (x:buf_t src bt)
   (args:IX64.arity_ok max_arity arg)
   (h0:HS.mem)
-  (stack:IX64.stack_buffer n{mem_roots_p h0 (arg_of_sb stack::args)}) : Lemma (
-    let mem = mk_mem (arg_of_sb stack::args) h0 in
+  (stack_args_b:IX64.stack_buffer 8)
+  (stack:IX64.stack_buffer n{mem_roots_p h0 (arg_of_sb stack_args_b::arg_of_sb stack::args)}) : Lemma (
+    let mem = mk_mem (arg_of_sb stack_args_b::arg_of_sb stack::args) h0 in
     ME.buffer_readable (as_vale_mem mem) (as_vale_buffer x) <==>
       List.memP (mut_to_b8 src x) (ptrs_of_mem mem))
 
@@ -83,9 +84,10 @@ val get_heap_mk_mem_reveal
   (#n:_)
   (args:IX64.arg_list)
   (h0:HS.mem)
-  (stack:IX64.stack_buffer n{mem_roots_p h0 (arg_of_sb stack::args)}) : Lemma
-  (let mem = mk_mem (arg_of_sb stack::args) h0 in
-   liveness_disjointness (arg_of_sb stack::args) h0;
+  (stack_args_b:IX64.stack_buffer 8)
+  (stack:IX64.stack_buffer n{mem_roots_p h0 (arg_of_sb stack_args_b::arg_of_sb stack::args)}) : Lemma
+  (let mem = mk_mem (arg_of_sb stack_args_b::arg_of_sb stack::args) h0 in
+   liveness_disjointness (arg_of_sb stack_args_b::arg_of_sb stack::args) h0;
    MES.get_heap (as_vale_mem mem) == I.down_mem mem)
 
 val buffer_as_seq_reveal
@@ -94,11 +96,12 @@ val buffer_as_seq_reveal
   (x:buf_t src t)
   (args:IX64.arg_list)
   (h0:HS.mem)
-  (stack:IX64.stack_buffer n{mem_roots_p h0 (arg_of_sb stack::args)}) : Lemma
+  (stack_args_b:IX64.stack_buffer 8)
+  (stack:IX64.stack_buffer n{mem_roots_p h0 (arg_of_sb stack_args_b::arg_of_sb stack::args)}) : Lemma
   (let y = as_vale_buffer x in
    let db = get_downview x in
    DV.length_eq db;
-   let mem = mk_mem (arg_of_sb stack::args) h0 in
+   let mem = mk_mem (arg_of_sb stack_args_b::arg_of_sb stack::args) h0 in
    Seq.equal 
     (LSig.nat_to_uint_seq_t t (ME.buffer_as_seq (as_vale_mem mem) y))
     (UV.as_seq h0 (UV.mk_buffer db (LSig.view_of_base_typ t))))
@@ -108,12 +111,13 @@ val immbuffer_as_seq_reveal
   (src t:ME.base_typ)
   (x:ibuf_t src t)
   (args:IX64.arg_list)
-  (h0:HS.mem)
-  (stack:IX64.stack_buffer n{mem_roots_p h0 (arg_of_sb stack::args)}) : Lemma
+  (h0:HS.mem)  
+  (stack_args_b:IX64.stack_buffer 8)
+  (stack:IX64.stack_buffer n{mem_roots_p h0 (arg_of_sb stack_args_b::arg_of_sb stack::args)}) : Lemma  
   (let y = as_vale_immbuffer x in
    let db = get_downview x in
    DV.length_eq db;
-   let mem = mk_mem (arg_of_sb stack::args) h0 in
+   let mem = mk_mem (arg_of_sb stack_args_b::arg_of_sb stack::args) h0 in
    Seq.equal 
     (LSig.nat_to_uint_seq_t t (ME.buffer_as_seq (as_vale_mem mem) y))
     (UV.as_seq h0 (UV.mk_buffer db (LSig.view_of_base_typ t))))
@@ -201,12 +205,13 @@ val core_create_lemma_taint_hyp
     (#n:_)
     (args:IX64.arg_list)
     (h0:HS.mem)
+    (stack_args_b:IX64.stack_buffer 8{B.length stack_args_b >= (List.Tot.length args - max_arity) + 5})
     (stack:IX64.stack_buffer n{
-      B.length stack >= n/8 + (List.Tot.length args - max_arity) + 5 /\
-      mem_roots_p h0 (arg_of_sb stack::args)})
+      mem_roots_p h0 (arg_of_sb stack_args_b::arg_of_sb stack::args)})
   : Lemma
-      (ensures (let va_s = LSig.create_initial_vale_state #max_arity #arg_reg args h0 stack in
+      (ensures (let va_s = LSig.create_initial_vale_state #max_arity #arg_reg args h0 stack_args_b stack in
                 LSig.taint_hyp args va_s /\
+                ME.valid_taint_buf64 (as_vale_buffer stack_args_b) va_s.VS.mem va_s.VS.memTaint X64.Machine_s.Public /\                
                 ME.valid_taint_buf64 (as_vale_buffer stack) va_s.VS.mem va_s.VS.memTaint X64.Machine_s.Public))
 
 val buffer_writeable_reveal (src t:ME.base_typ) (x:buf_t src t) : Lemma

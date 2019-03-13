@@ -16,7 +16,7 @@ open X64.MemoryAdapters
 
 [@__reduce__]
 let vale_pre_tl (num_b8_slots:IX64.max_slots) (dom:list td) =
-    n_arrow dom (V.va_state -> IX64.stack_buffer num_b8_slots -> prop)
+    n_arrow dom (V.va_state -> IX64.stack_buffer 8 -> IX64.stack_buffer num_b8_slots -> prop)
 
 [@__reduce__]
 let vale_pre n (dom:list td) =
@@ -26,7 +26,7 @@ let vale_pre n (dom:list td) =
 [@__reduce__]
 let vale_post_tl n (dom:list td) =
     n_arrow dom
-            (s0:V.va_state -> sb:IX64.stack_buffer n -> s1:V.va_state -> f:V.va_fuel -> prop)
+            (s0:V.va_state -> stack_args:IX64.stack_buffer 8 -> sb:IX64.stack_buffer n -> s1:V.va_state -> f:V.va_fuel -> prop)
 
 [@__reduce__]
 let vale_post n (dom:list td) =
@@ -117,18 +117,20 @@ let vale_sig_nil #n
                  (pre:vale_pre_tl n [])
                  (post:vale_post_tl n []) =
     va_s0:V.va_state ->
+    stack_args:IX64.stack_buffer 8 ->
     stack_b:IX64.stack_buffer n ->
     Ghost (V.va_state & V.va_fuel)
      (requires
-       elim_nil pre va_s0 stack_b)
+       elim_nil pre va_s0 stack_args stack_b)
      (ensures (fun r ->
        let va_s1 = state_of r in
        let f = fuel_of r in
        V.eval_code code va_s0 f va_s1 /\
        vale_calling_conventions va_s0 va_s1 regs_modified xmms_modified /\
-       elim_nil post va_s0 stack_b va_s1 f /\
+       elim_nil post va_s0 stack_args stack_b va_s1 f /\
        readable args VS.(va_s1.mem) /\
-       ME.modifies (mloc_modified_args (arg_of_sb stack_b :: args)) va_s0.VS.mem va_s1.VS.mem))
+       Seq.equal (ME.buffer_as_seq va_s0.VS.mem (as_vale_buffer stack_args)) (ME.buffer_as_seq va_s1.VS.mem (as_vale_buffer stack_args)) /\
+       ME.modifies (mloc_modified_args (arg_of_sb stack_b :: args)) va_s0.VS.mem va_s1.VS.mem)) // stack_args should not be modified
 
 [@__reduce__]
 let rec vale_sig_tl #n

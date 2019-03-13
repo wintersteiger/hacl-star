@@ -36,7 +36,7 @@ let arity_ok n 'a = l:list 'a { List.Tot.length l <= n }
    for extra arguments + the extra slots needed.
    Note that this number can be increased if needed*)
 let arg_list = l:list arg{List.Tot.length l <= 20}
-let arg_list_sb = l:list arg{List.Tot.length l <= 21}
+let arg_list_sb = l:list arg{List.Tot.length l <= 22}
 
 unfold
 let injective f = forall x y. f x == f y ==> x == y
@@ -128,12 +128,11 @@ let rec register_of_args (max_arity:nat)
 // Pass extra arguments on the stack. The arity_ok condition on inline wrappers ensures that
 // this only happens for stdcalls
 [@__reduce__]
-let rec stack_of_args (#num_b8_slots:_)
-                      (max_arity:nat)
+let rec stack_of_args (max_arity:nat)
                       (n:nat)
                       (args:arg_list{List.Tot.length args = n})
-                      (stack_b:stack_buffer num_b8_slots
-                        {B.length stack_b >= num_b8_slots/8 + (List.Tot.length args - max_arity) + 5 })
+                      (stack_b:stack_buffer 8
+                        {B.length stack_b >= (List.Tot.length args - max_arity) + 5 })
                       (h:HS.mem{B.live h stack_b})
                       : GTot (h1:HS.mem{B.modifies (B.loc_buffer stack_b) h h1}) =
   match args with
@@ -144,7 +143,6 @@ let rec stack_of_args (#num_b8_slots:_)
       let i = (n - max_arity) - 1 // Arguments on the stack are pushed from right to left
         + (if IA.win then 4 else 0) // The shadow space on Windows comes next
         + 1 // The return address is then pushed on the stack
-        + num_b8_slots / 8 // And we then have all the extra slots required for the Vale procedure
       in
       let h1 = stack_of_args max_arity (n-1) tl stack_b h in
       let v = UInt64.uint_to_t (arg_as_nat64 hd) in // We will store the arg hd
@@ -219,12 +217,13 @@ let rec mk_taint_equiv
 
 let state_builder_t (max_arity:nat) (num_b8_slots:max_slots) (args:arg_list) (codom:Type) =
     h0:HS.mem ->
+    stack_args:stack_buffer 8{
+      B.length stack_args >= (List.Tot.length args - max_arity) + 5} ->
     stack:stack_buffer num_b8_slots{
-      B.length stack >= num_b8_slots/8 + (List.Tot.length args - max_arity) + 5 /\
-      mem_roots_p h0 (arg_of_sb stack::args)} ->
+      mem_roots_p h0 (arg_of_sb stack_args::arg_of_sb stack::args)} ->
     GTot codom
 
-let live_arg_modifies (#n:_) (h0 h1:HS.mem) (args:arg_list) (b:stack_buffer n) : Lemma
+let live_arg_modifies (#n:_) (h0 h1:HS.mem) (args:list arg) (b:stack_buffer n) : Lemma
   (requires 
     B.live h0 b /\ all_live h0 args /\ 
     BigOps.big_and' (disjoint_or_eq_1 (arg_of_sb b)) args /\  
@@ -243,6 +242,9 @@ let live_arg_modifies (#n:_) (h0 h1:HS.mem) (args:arg_list) (b:stack_buffer n) :
   in 
   Classical.forall_intro (Classical.move_requires aux)
 
+// Needed to reason about stack_args::stack::args
+#push-options "--max_fuel 2 --initial_fuel 2"
+
 // Splitting the construction of the initial state into two functions
 // one that creates the initial trusted state (i.e., part of our TCB)
 // and another that just creates the vale state, a view upon the trusted one
@@ -253,16 +255,17 @@ let create_initial_trusted_state
       (args:arg_list)
       (down_mem: down_mem_t)
   : state_builder_t max_arity num_b8_slots args (TS.traceState & mem) =
-  fun h0 stack ->
+  fun h0 stack_args stack ->
     let open MS in
     let regs = register_of_args max_arity arg_reg (List.Tot.length args) args IA.init_regs in
     let regs = FunctionalExtensionality.on reg (regs_with_stack regs stack) in
     let xmms = FunctionalExtensionality.on xmm IA.init_xmms in
-    let h1 = stack_of_args max_arity (List.Tot.length args) args stack h0 in
-    live_arg_modifies h0 h1 args stack;
-    let args = arg_of_sb stack::args in
+    let h1 = stack_of_args max_arity (List.Tot.length args) args stack_args h0 in
+    live_arg_modifies h0 h1 (arg_of_sb stack::args) stack_args;
+    let args = arg_of_sb stack_args::arg_of_sb stack::args in
     liveness_disjointness args h1;
     let mem:mem = mk_mem args h1 in
+    
     let (s0:BS.state) = {
       BS.ok = true;
       BS.regs = regs;
@@ -276,6 +279,8 @@ let create_initial_trusted_state
       TS.memTaint = create_memtaint mem (args_b8 args) (mk_taint args init_taint)
     },
     mem
+
+#pop-options
 
 ////////////////////////////////////////////////////////////////////////////////
 let prediction_pre_rel_t (c:TS.tainted_code) (args:arg_list) =
@@ -291,7 +296,8 @@ let prediction_post_rel_t (c:TS.tainted_code) (num_b8_slots:max_slots) (args:arg
     s0:TS.traceState ->
     push_h0:mem_roots args ->
     alloc_push_h0:mem_roots args ->
-    b:stack_buffer num_b8_slots{mem_roots_p alloc_push_h0 (arg_of_sb b::args)} ->
+    stack_args:stack_buffer 8 ->
+    b:stack_buffer num_b8_slots{mem_roots_p alloc_push_h0 (arg_of_sb stack_args::arg_of_sb b::args)} ->
     (UInt64.t & nat & mem) ->
     sn:TS.traceState ->
     prop
@@ -309,17 +315,19 @@ let prediction_pre
     (s0:TS.traceState)
     (push_h0:mem_roots args)
     (alloc_push_h0:mem_roots args)
+    (stack_args:stack_buffer 8{
+      B.length stack_args >= (List.Tot.length args - n) + 5})
     (b:stack_buffer num_b8_slots{
-      B.length b >= num_b8_slots/8 + (List.Tot.length args - n) + 5 /\ 
-      mem_roots_p alloc_push_h0 (arg_of_sb b::args)})
+      mem_roots_p alloc_push_h0 (arg_of_sb stack_args::arg_of_sb b::args)})
     =
   pre_rel h0 /\
   HS.fresh_frame h0 push_h0 /\
   B.modifies B.loc_none push_h0 alloc_push_h0 /\
   HS.get_tip push_h0 == HS.get_tip alloc_push_h0 /\
   B.frameOf b == HS.get_tip alloc_push_h0 /\
+  B.live alloc_push_h0 stack_args /\
   B.live alloc_push_h0 b /\
-  s0 == fst (create_initial_trusted_state n arg_reg num_b8_slots args down_mem alloc_push_h0 b)
+  s0 == fst (create_initial_trusted_state n arg_reg num_b8_slots args down_mem alloc_push_h0 stack_args b)
 
 [@__reduce__]
 let prediction_post
@@ -335,7 +343,8 @@ let prediction_post
     (s0:TS.traceState)
     (push_h0:mem_roots args)
     (alloc_push_h0:mem_roots args)
-    (sb:stack_buffer num_b8_slots{mem_roots_p alloc_push_h0 (arg_of_sb sb::args)})
+    (stack_args:stack_buffer 8)
+    (sb:stack_buffer num_b8_slots{mem_roots_p alloc_push_h0 (arg_of_sb stack_args::arg_of_sb sb::args)})
     (rax_fuel_mem:(UInt64.t & nat & mem)) =
   let s_args = arg_of_sb sb :: args in
   let rax, fuel, final_mem = rax_fuel_mem in
@@ -343,12 +352,13 @@ let prediction_post
     let s1 = Some?.v (TS.taint_eval_code c fuel s0) in
     let h1 = hs_of_mem final_mem in
     FStar.HyperStack.ST.equal_domains alloc_push_h0 h1 /\
-    B.modifies (loc_modified_args s_args) alloc_push_h0 h1 /\
-    mem_roots_p h1 s_args /\
-    down_mem (mk_mem s_args h1) == s1.TS.state.BS.mem /\
+    B.modifies (loc_modified_args s_args) alloc_push_h0 h1 /\ // stack_args should not be modified
+    Seq.equal (B.as_seq alloc_push_h0 stack_args) (B.as_seq h1 stack_args) /\
+    mem_roots_p h1 (arg_of_sb stack_args :: s_args) /\
+    down_mem (mk_mem (arg_of_sb stack_args :: s_args) h1) == s1.TS.state.BS.mem /\
     calling_conventions s0 s1 regs_modified xmms_modified /\
     rax == return_val s1 /\
-    post_rel h0 s0 push_h0 alloc_push_h0 sb rax_fuel_mem s1
+    post_rel h0 s0 push_h0 alloc_push_h0 stack_args sb rax_fuel_mem s1
   )
 
 let prediction
@@ -366,12 +376,13 @@ let prediction
   s0:TS.traceState ->
   push_h0:mem_roots args ->
   alloc_push_h0:mem_roots args ->
+  stack_args:stack_buffer 8{
+    B.length stack_args >= (List.Tot.length args - n) + 5} ->
   b:stack_buffer num_b8_slots{
-    B.length b >= num_b8_slots/8 + (List.Tot.length args - n) + 5 /\
-    mem_roots_p h0 args /\ mem_roots_p alloc_push_h0 (arg_of_sb b::args)} ->
+    mem_roots_p h0 args /\ mem_roots_p alloc_push_h0 (arg_of_sb stack_args::arg_of_sb b::args)} ->
   Ghost (UInt64.t & nat & mem)
-    (requires prediction_pre n arg_reg down_mem c num_b8_slots args pre_rel h0 s0 push_h0 alloc_push_h0 b)
-    (ensures prediction_post n regs_modified xmms_modified down_mem c num_b8_slots args post_rel h0 s0 push_h0 alloc_push_h0 b)
+    (requires prediction_pre n arg_reg down_mem c num_b8_slots args pre_rel h0 s0 push_h0 alloc_push_h0 stack_args b)
+    (ensures prediction_post n regs_modified xmms_modified down_mem c num_b8_slots args post_rel h0 s0 push_h0 alloc_push_h0 stack_args b)
 
 noeq
 type as_lowstar_sig_ret =
@@ -381,9 +392,10 @@ type as_lowstar_sig_ret =
       args:arg_list ->
       push_h0:mem_roots args ->
       alloc_push_h0:mem_roots args ->
+      stack_args:stack_buffer 8{
+        B.length stack_args >= (List.Tot.length args - n) + 5} ->
       b:stack_buffer num_b8_slots{
-        B.length b >= num_b8_slots/8 + (List.Tot.length args - n) + 5 /\
-        mem_roots_p alloc_push_h0 (arg_of_sb b::args)} ->
+        mem_roots_p alloc_push_h0 (arg_of_sb stack_args::arg_of_sb b::args)} ->
       fuel:nat ->
       final_mem:mem ->
       as_lowstar_sig_ret
@@ -414,14 +426,15 @@ let as_lowstar_sig_post
   n == As_lowstar_sig_ret?.n ret /\
  (let push_h0 = As_lowstar_sig_ret?.push_h0 ret in
   let alloc_push_h0 = As_lowstar_sig_ret?.alloc_push_h0 ret in
+  let stack_args = As_lowstar_sig_ret?.stack_args ret in
   let b = As_lowstar_sig_ret?.b ret in
   let fuel = As_lowstar_sig_ret?.fuel ret in
   let final_mem = As_lowstar_sig_ret?.final_mem ret in
-  let s0 = fst (create_initial_trusted_state n arg_reg num_b8_slots args down_mem alloc_push_h0 b) in
+  let s0 = fst (create_initial_trusted_state n arg_reg num_b8_slots args down_mem alloc_push_h0 stack_args b) in
   let pre_pop = hs_of_mem final_mem in
-  prediction_pre n arg_reg down_mem c num_b8_slots args pre_rel h0 s0 push_h0 alloc_push_h0 b /\
-  (rax, fuel, final_mem) == predict h0 s0 push_h0 alloc_push_h0 b /\
-  prediction_post n regs_modified xmms_modified down_mem c num_b8_slots args post_rel h0 s0 push_h0 alloc_push_h0 b (rax, fuel, final_mem) /\
+  prediction_pre n arg_reg down_mem c num_b8_slots args pre_rel h0 s0 push_h0 alloc_push_h0 stack_args b /\
+  (rax, fuel, final_mem) == predict h0 s0 push_h0 alloc_push_h0 stack_args b /\
+  prediction_post n regs_modified xmms_modified down_mem c num_b8_slots args post_rel h0 s0 push_h0 alloc_push_h0 stack_args b (rax, fuel, final_mem) /\
   FStar.HyperStack.ST.equal_domains alloc_push_h0 pre_pop /\
   HS.poppable pre_pop /\
   h1 == HS.pop pre_pop)
@@ -450,10 +463,11 @@ let as_lowstar_sig_post_weak
   n == As_lowstar_sig_ret?.n ret /\
  (let push_h0 = As_lowstar_sig_ret?.push_h0 ret in
   let alloc_push_h0 = As_lowstar_sig_ret?.alloc_push_h0 ret in
+  let stack_args = As_lowstar_sig_ret?.stack_args ret in  
   let b = As_lowstar_sig_ret?.b ret in
   let fuel = As_lowstar_sig_ret?.fuel ret in
   let final_mem = As_lowstar_sig_ret?.final_mem ret in
-  let s0 = fst (create_initial_trusted_state n arg_reg num_b8_slots args down_mem alloc_push_h0 b) in
+  let s0 = fst (create_initial_trusted_state n arg_reg num_b8_slots args down_mem alloc_push_h0 stack_args b) in
   let pre_pop = hs_of_mem final_mem in
   (exists fuel
      final_mem
@@ -462,7 +476,7 @@ let as_lowstar_sig_post_weak
      HS.poppable pre_pop /\
      h1 == HS.pop pre_pop /\
      rax == return_val s1 /\
-     post_rel h0 s0 push_h0 alloc_push_h0 b (return_val s1, fuel, final_mem) s1))
+     post_rel h0 s0 push_h0 alloc_push_h0 stack_args b (return_val s1, fuel, final_mem) s1))
 
 [@__reduce__]
 let as_lowstar_sig (c:TS.tainted_code) =
