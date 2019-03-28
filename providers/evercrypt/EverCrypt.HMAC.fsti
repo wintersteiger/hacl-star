@@ -21,7 +21,7 @@ val hmac:
   a: alg -> //18-07-09 can't mix refinements and erasure??
   key: bytes{ keysized a (Seq.length key) } ->
   data: bytes{ Seq.length data + block_length a < max_input_length a } ->
-  GTot (lbytes (hash_length a))
+  Tot (lbytes (hash_length a))
 
 open FStar.HyperStack.ST
 open LowStar.Buffer

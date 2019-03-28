@@ -37,7 +37,7 @@ let rec expand0 :
     tagLength a + length info + 1 + blockLength a < maxLength a /\
     count < 255 /\
     required <= (255 - count) * tagLength a } ->
-  GTot (lbytes required)
+  Tot (lbytes required)
 =
   fun a prk info required count last ->
   let count = count + 1 in
@@ -55,7 +55,7 @@ let expand:
     HMAC.keysized a (Seq.length prk) /\
     tagLength a + length info + 1 + blockLength a < maxLength a /\
     required <= 255 * tagLength a } ->
-  GTot (lbytes required)
+  Tot (lbytes required)
 =
   fun a prk info required ->
   expand0 a prk info required 0 Seq.empty
