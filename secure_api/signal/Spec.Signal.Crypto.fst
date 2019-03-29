@@ -4,7 +4,7 @@ open FStar.Mul
 open Lib.IntTypes
 open Lib.ByteSequence
 open Lib.Sequence
-
+open Spec.Old.Ed25519
 
 #reset-options "--initial_fuel 0 --max_fuel 0 --initial_ifuel 0 --max_ifuel 0"
 
