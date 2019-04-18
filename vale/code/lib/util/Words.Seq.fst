@@ -6,6 +6,8 @@ open Words.Four_s
 open Words.Seq_s
 open FStar.Mul
 open Util.Meta
+open Collections.Seqs_s
+open Collections.Seqs
 
 let two_to_seq_to_two_LE #a x =
   assert (equal (two_to_seq_LE (seq_to_two_LE x)) x)
@@ -65,12 +67,12 @@ let four_to_nat_to_four_8 (x:natN (pow2_norm 32)) :
   lemma_fundamental_div_mod_4 x;
   ()
 
-#reset-options "--z3rlimit 200 --using_facts_from 'Words_s Prims'"
+#reset-options "--z3rlimit 400 --using_facts_from 'Words_s Prims'"
 let nat_to_four_to_nat (x:four (natN (pow2_norm 8))) :
   Lemma (nat_to_four 8 (four_to_nat 8 x) == x)
-  [SMTPat (nat_to_four 8 (four_to_nat 8 x) == x)]
+  [SMTPat (nat_to_four 8 (four_to_nat 8 x))]
   =
-    let size = 8 in
+  let size = 8 in
   let n1 = pow2_norm size in
   let n2 = pow2_norm (2 * size) in
   let n3 = pow2_norm (3 * size) in
@@ -150,7 +152,10 @@ let seq_nat8_to_seq_uint8_to_seq_nat8 (x:seq UInt8.t) =
 
 let seq_uint8_to_seq_nat8_to_seq_uint8 (x:seq nat8) =
   assert (equal (seq_uint8_to_seq_nat8 (seq_nat8_to_seq_uint8 x)) x)
-  
+
+let seq_nat8_to_seq_uint8_injective b b' =
+  seq_map_injective UInt8.uint_to_t b b'
+
 let seq_four_to_seq_LE_injective (a:eqtype) :
   Lemma (forall (x x': seq (four a)). seq_four_to_seq_LE #a x == seq_four_to_seq_LE #a x' ==> x == x')
   =
@@ -192,3 +197,6 @@ let append_distributes_seq_to_seq_four_LE (#a:Type) (x:seq a{length x % 4 == 0})
   =
   assert (equal (seq_to_seq_four_LE (x @| y)) (seq_to_seq_four_LE x @| seq_to_seq_four_LE y));
   ()
+
+let append_distributes_seq_four_to_seq_LE #a x y =
+  assert (equal (seq_four_to_seq_LE (x @| y)) (seq_four_to_seq_LE x @| seq_four_to_seq_LE y))

@@ -7,21 +7,23 @@ module S = FStar.Seq
 
 open EverCrypt.Helpers
 open FStar.Integers
+open Spec.Hash.Lemmas
 
 let _: squash (inversion alg) = allow_inversion alg
 
 #set-options "--max_fuel 0 --max_ifuel 0"
-let wrap (a:alg) (key: bytes{S.length key < max_input8 a}): GTot (lbytes (size_block a))
+
+let wrap (a:alg) (key: bytes{S.length key < max_input_length a}): GTot (lbytes (block_length a))
 =
-  let key0 = if S.length key <= size_block a then key else spec a key in
-  let paddingLength = size_block a - S.length key0 in
+  let key0 = if S.length key <= block_length a then key else spec a key in
+  let paddingLength = block_length a - S.length key0 in
   S.append key0 (S.create paddingLength 0uy)
 
-let wrap_lemma (a:alg) (key: bytes{Seq.length key < max_input8 a}): Lemma
-  (requires S.length key > size_block a)
+let wrap_lemma (a:alg) (key: bytes{Seq.length key < max_input_length a}): Lemma
+  (requires S.length key > block_length a)
   (ensures wrap a key == (
     let key0 = EverCrypt.Hash.spec a key in
-    let paddingLength = size_block a - S.length key0 in
+    let paddingLength = block_length a - S.length key0 in
     S.append key0 (S.create paddingLength 0uy))) = ()
 
 // better than Integer's [^^] to tame polymorphism in the proof?
@@ -63,32 +65,32 @@ module ST = FStar.HyperStack.ST
 
 // we rely on the output being zero-initialized for the correctness of padding
 
-#set-options "--max_fuel 0 --max_ifuel 0 --z3rlimit 50"
+#set-options "--max_fuel 0 --max_ifuel 0 --z3rlimit 100"
 
 inline_for_extraction
 val wrap_key:
   a: ha ->
-  output: uint8_pl (size_block a) ->
-  key: uint8_p {length key < max_input8 a /\ disjoint output key} ->
+  output: uint8_pl (block_length a) ->
+  key: uint8_p {length key < max_input_length a /\ disjoint output key} ->
   len: UInt32.t {v len = length key} ->
   Stack unit
     (requires fun h0 ->
       live h0 output /\ live h0 key /\
-      as_seq h0 output == Seq.create (size_block a) 0uy)
+      as_seq h0 output == Seq.create (block_length a) 0uy)
     (ensures fun h0 _ h1 ->
       live h1 output /\ live h1 key /\ live h0 output /\ live h0 key /\
-      as_seq h0 output == Seq.create (size_block a) 0uy /\
+      as_seq h0 output == Seq.create (block_length a) 0uy /\
       modifies (loc_buffer output) h0 h1 /\
-      as_seq h1 output == wrap a (as_seq h0 key) )
+      as_seq h1 output == wrap a (as_seq h0 key))
 
 unfold
-let block_len a = Hacl.Hash.Definitions.size_block_ul a
+let block_len a = Hacl.Hash.Definitions.block_len a
 
 unfold
-let tag_len a = Hacl.Hash.Definitions.size_hash_ul a
+let tag_len a = Hacl.Hash.Definitions.hash_len a
 
 inline_for_extraction
-let helper_smtpat (a: ha) (len: uint32_t{ v len < max_input8 a }):
+let helper_smtpat (a: ha) (len: uint32_t{ v len < max_input_length a }):
   x:uint32_t { x <= block_len a } =
   if len <= block_len a then len else tag_len a
 
@@ -127,10 +129,10 @@ inline_for_extraction
 val part1:
   a: alg ->
   acc: state a ->
-  s2: uint8_pl (size_block a) ->
+  s2: uint8_pl (block_length a) ->
   data: uint8_p {
-    length data + size_block a  < pow2 32 /\ (*required by 32-bit length for update_last *)
-    // length data + size_block a <= max_input8 a /\ (*always true*)
+    length data + block_length a  < pow2 32 /\ (*required by 32-bit length for update_last *)
+    // length data + block_length a <= max_input_length a /\ (*always true*)
     disjoint data s2} ->
   len: UInt32.t {length data = v len} ->
   ST unit
@@ -144,27 +146,27 @@ val part1:
       live h1 s2 /\ live h1 data /\
       invariant acc h1 /\
       footprint acc h1 == footprint acc h0 /\ //18-08-02 avoidable? this footprint is constant!
+      preserves_freeable acc h0 h1 /\
       modifies (loc_union (footprint acc h0) (loc_buffer s2)) h0 h1 /\
       (
-      let hash0 = Seq.slice (as_seq h1 s2) 0 (size_hash a) in
-      length data + size_block a < max_input8 a /\ (*always true, required by spec below*)
+      let hash0 = Seq.slice (as_seq h1 s2) 0 (hash_length a) in
+      length data + block_length a < max_input_length a /\ (*always true, required by spec below*)
       hash0 == EverCrypt.Hash.spec a (Seq.append (as_seq h0 s2) (as_seq h0 data))))
 
 let hash0 (#a:alg) (b:bytes_blocks a): GTot (acc a) =
   compress_many (acc0 #a) b
 
-#push-options "--z3rlimit 200"
-
+#push-options  "--z3rlimit 600 --max_fuel 0 --max_ifuel 0"
 // we use auxiliary functions only for clarity and proof modularity
 inline_for_extraction
 let part1 a (acc: state a) key data len =
-  assert (size_block a <= 128);
+  assert (block_length a <= 128);
   assert_norm (pow2 61 <= pow2 125);
-  assert (pow2 61 <= max_input8 a);
+  assert (pow2 61 <= max_input_length a);
   assert_norm(pow2 32 + 128 <= pow2 61);
   let ll = len % block_len a in
-  assert ((v len - v ll) % size_block a = 0);
-  assert ((size_block a + v len - v ll) % size_block a = 0);
+  assert ((v len - v ll) % block_length a = 0);
+  assert ((block_length a + v len - v ll) % block_length a = 0);
   let lb = len - ll in
   let blocks = sub data 0ul lb in
   let last = offset data lb in
@@ -178,31 +180,30 @@ let part1 a (acc: state a) key data len =
   assert(
     let k = as_seq h0 key in
     FStar.Seq.lemma_eq_intro (Seq.append (Seq.empty #UInt8.t) k) k;
-    repr acc h1 == hash0 k);
+    Seq.equal (repr acc h1) (hash0 k));
   Hash.update_multi
     #(Ghost.hide a)
     acc blocks lb;
   let h2 = ST.get() in
-  assert_norm(size_block a + v len < max_input8 a);
+  assert_norm(block_length a + v len < max_input_length a);
   assert (repr acc h2 == hash0 S.(as_seq h0 key @| as_seq h0 blocks));
   Hash.update_last
     #(Ghost.hide a)
     acc last (Int.Cast.Full.uint32_to_uint64 (block_len a + len));
   let h3 = ST.get() in
   assert (v (Int.Cast.Full.uint32_to_uint64 (block_len a + len)) =
-    size_block a + v len);
+    block_length a + v len);
   assert (v (Int.Cast.Full.uint32_to_uint64 (block_len a + len)) = v (block_len a + len));
   assert (S.equal (as_seq h0 last) (as_seq h2 last));
   assert (repr acc h3 ==
     compress_many (hash0 (S.append (as_seq h0 key) (as_seq h0 blocks)))
-      (S.append (as_seq h0 last) (Spec.Hash.Common.pad a (v (block_len a + len)))));
+      (S.append (as_seq h0 last) (Spec.Hash.PadFinish.pad a (v (block_len a + len)))));
   // assert(LowStar.Buffer.live h3 key);
   let tag = sub key 0ul (tag_len a) in (* Salvage memory *)
   Hash.finish #(Ghost.hide a) acc tag;
   let h4 = ST.get() in
-  (
-    modifies_trans (footprint acc h0) h0 h3 (loc_buffer key) h4; // should this implicitly trigger?
-    let p = size_block a in
+
+    let p = block_length a in
     let key1 = as_seq h1 key in
     let blocks1 = as_seq h1 blocks in
     let acc1 = repr acc h1 in
@@ -217,7 +218,7 @@ let part1 a (acc: state a) key data len =
     assert(acc2 == hash0 #a v2);
     let data1 = as_seq h1 data in
     let last1 = as_seq h1 last in
-    let suffix1 = Spec.Hash.Common.pad a (p + v len) in
+    let suffix1 = Spec.Hash.PadFinish.pad a (p + v len) in
     Seq.lemma_eq_intro data1 S.(blocks1 @| last1);
     let acc3 = repr acc h3 in
     let ls = Seq.length suffix1 in
@@ -229,16 +230,19 @@ let part1 a (acc: state a) key data len =
     Seq.append_assoc v2 last1 suffix1;
     Seq.append_assoc key1 blocks1 last1;
     assert(acc3 == hash0 #a S.((key1 @| data1) @| suffix1));
-    assert(extract acc3 == EverCrypt.Hash.spec a S.(key1 @| data1)))
+    assert(extract acc3 == EverCrypt.Hash.spec a S.(key1 @| data1));
+    let h1 = h4 in
+    let s2 = key in
+    assert (      modifies (loc_union (footprint acc h0) (loc_buffer s2)) h0 h1)
 
 // the two parts have the same stucture; let's keep their proofs in sync.
 inline_for_extraction
 val part2:
   a: alg ->
   acc: state a ->
-  mac: uint8_pl (size_hash a) ->
-  opad: uint8_pl (size_block a) ->
-  tag: uint8_pl (size_hash a) ->
+  mac: uint8_pl (hash_length a) ->
+  opad: uint8_pl (block_length a) ->
+  tag: uint8_pl (hash_length a) ->
   ST unit
     (requires fun h0 ->
       invariant acc h0 /\
@@ -251,20 +255,21 @@ val part2:
     (ensures fun h0 _ h1 ->
       live h1 mac /\ live h1 opad /\ live h1 tag /\
       invariant acc h1 /\ footprint acc h1 == footprint acc h0 /\
+      preserves_freeable acc h0 h1 /\
       modifies (loc_union (footprint acc h0) (loc_buffer mac)) h0 h1 /\
       ( let payload = Seq.append (as_seq h0 opad) (as_seq h0 tag) in
-        Seq.length payload < max_input8 a /\
+        Seq.length payload < max_input_length a /\
         as_seq h1 mac = EverCrypt.Hash.spec a payload))
 
-#set-options "--z3rlimit 200"
+#set-options "--z3rlimit 300"
 inline_for_extraction
 let part2 a acc mac opad tag =
   let totLen = block_len a + tag_len a in
-  assert (size_block a <= 128);
+  assert (block_length a <= 128);
   assert_norm (pow2 61 <= pow2 125);
-  assert (pow2 61 <= max_input8 a);
+  assert (pow2 61 <= max_input_length a);
   assert_norm(pow2 32 + 128 <= pow2 61);
-  assert(v totLen < max_input8 a);
+  assert(v totLen < max_input_length a);
   let h0 = ST.get() in
   //assume(LowStar.Modifies.(loc_disjoint (footprint acc h0) (loc_buffer opad)));
   Hash.init #(Ghost.hide a) acc;
@@ -277,6 +282,7 @@ let part2 a acc mac opad tag =
   assert(
     let k = as_seq h0 opad in
     FStar.Seq.lemma_eq_intro (Seq.append (Seq.empty #UInt8.t) k) k;
+    S.equal (repr acc h1) (hash0 k) /\
     repr acc h1 == hash0 k);
   Hash.update_last #(Ghost.hide a) acc tag (Int.Cast.Full.uint32_to_uint64 totLen);
   let h2 = ST.get() in
@@ -290,7 +296,7 @@ let part2 a acc mac opad tag =
     //lemma_compress (acc0 #a) v1;
     assert(acc1 == hash0 v1);
     let tag1 = as_seq h1 tag in
-    let suffix1 = Spec.Hash.Common.pad a (size_block a + size_hash a) in
+    let suffix1 = Spec.Hash.PadFinish.pad a (block_length a + hash_length a) in
     let acc2 = repr acc h2 in
     //lemma_hash2 (acc0 #a) v1 S.(tag1 @| suffix1);
     Seq.append_assoc v1 tag1 suffix1;
@@ -302,11 +308,11 @@ inline_for_extraction
 val hmac_core:
   a: alg ->
   acc: state a ->
-  tag: uint8_pl (size_hash a) ->
-  key: uint8_pl (size_block a) {disjoint key tag} ->
+  tag: uint8_pl (hash_length a) ->
+  key: uint8_pl (block_length a) {disjoint key tag} ->
   data: uint8_p{
-    length data + size_block a < pow2 32 /\ (*required for 32-bit allocation*)
-    // length data + size_block a <= max_input8 a /\ (*always true*)
+    length data + block_length a < pow2 32 /\ (*required for 32-bit allocation*)
+    // length data + block_length a <= max_input_length a /\ (*always true*)
     disjoint data key } ->
   datalen: UInt32.t {v datalen = length data} ->
   ST unit
@@ -321,13 +327,14 @@ val hmac_core:
     live h1 tag /\ live h0 tag /\
     live h1 key /\ live h0 key /\
     live h1 data /\ live h0 data /\
+    preserves_freeable acc h0 h1 /\
     modifies (loc_union (footprint acc h0) (loc_buffer tag)) h0 h1 /\
     ( let k = as_seq h0 key in
       let k1 = xor 0x36uy k in
       let k2 = xor 0x5cuy k in
-      length data + size_block a < max_input8 a /\ ( (*always true*)
+      length data + block_length a < max_input_length a /\ ( (*always true*)
       let v1 = EverCrypt.Hash.spec a S.(k1 @| as_seq h0 data) in
-      Seq.length S.(k2 @| v1) < max_input8 a /\
+      Seq.length S.(k2 @| v1) < max_input_length a /\
       as_seq h1 tag == EverCrypt.Hash.spec a S.(k2 @| v1))))
 
 inline_for_extraction
@@ -354,20 +361,17 @@ let hmac_core a acc tag key data len =
   let h00 = ST.get() in
   push_frame ();
   let h01 = ST.get() in
-  fresh_frame_modifies h00 h01; //18-08-02 a trigger would be nice!
   Hash.frame_invariant loc_none acc h00 h01;
   // assert(invariant acc h01);
   let ipad = alloca 0x36uy (block_len a) in
   let h02 = ST.get() in
   //  assert (loc_in (footprint acc h01) h01);
   // TR: now works thanks to Hash.invariant_loc_in_footprint
-  fresh_is_disjoint (loc_buffer ipad) (footprint acc h01)  h01 h02;
   let l = block_len a in
   let opad = alloca 0x5cuy l in
   xor_bytes_inplace ipad key l;
   xor_bytes_inplace opad key l;
   let h0 = ST.get() in
-  modifies_address_liveness_insensitive_unused_in h01 h0;
   // assert(loc_in (footprint acc h0) h0);
   // TR: now works thanks to
   // modifies_address_liveness_insensitive_unused_in: if no
@@ -385,12 +389,12 @@ let hmac_core a acc tag key data len =
   (
     let h3 = ST.get() in
     let k = as_seq h0 key in
-    let k1: lbytes (size_block a) = xor 0x36uy k in
-    let k2: lbytes (size_block a) = xor 0x5cuy k in
+    let k1: lbytes (block_length a) = xor 0x36uy k in
+    let k2: lbytes (block_length a) = xor 0x5cuy k in
     let vdata = as_seq h0 data in
-    let v1: lbytes (size_hash a) = as_seq h1 inner in
-    assert_norm(size_block a + size_hash a <= max_input8 a);
-    assert(Seq.length S.(k2 @| v1) < max_input8 a);
+    let v1: lbytes (hash_length a) = as_seq h1 inner in
+    assert_norm(block_length a + hash_length a <= max_input_length a);
+    assert(Seq.length S.(k2 @| v1) < max_input_length a);
     let v2 = as_seq h2 tag in
     xor_lemma 0x36uy k;
     xor_lemma 0x5cuy k;
@@ -409,10 +413,6 @@ let hmac_core a acc tag key data len =
     // modified location that does not necessarily have its liveness
     // preserved (e.g. an abstract footprint) shall be disjoint from
     // any location whose liveness we want to preserve.
-    assert (modifies (loc_union (footprint acc h00) (loc_buffer tag)) h00 h3);
-    modifies_liveness_insensitive_buffer (footprint acc h00) (loc_buffer tag) h00 h3 tag;
-    modifies_liveness_insensitive_buffer (footprint acc h00) (loc_buffer tag) h00 h3 key;
-    modifies_liveness_insensitive_buffer (footprint acc h00) (loc_buffer tag) h00 h3 data;
     //modifies_liveness_insensitive_buffer (footprint acc h00) (loc_buffer tag) h00 h3 tag;
     //
     //
@@ -427,16 +427,20 @@ let hmac_core a acc tag key data len =
   )
 
 
-let compute a mac key keylen data datalen =
+inline_for_extraction noextract
+val mk_compute: a: ha -> compute_st a
+
+inline_for_extraction noextract
+let mk_compute a mac key keylen data datalen =
   let h00 = ST.get() in
   push_frame ();
-  assert (size_block a <= 128);
+  assert (block_length a <= 128);
   assert_norm (pow2 32 + 128 < pow2 61);
   assert_norm (pow2 61 < pow2 125);
-  assert(pow2 32 + size_block a < max_input8 a);
-  assert(length data + size_block a <= max_input8 a);
+  assert(pow2 32 + block_length a < max_input_length a);
+  assert(length data + block_length a <= max_input_length a);
   let keyblock = alloca 0x00uy (block_len a) in
-  let acc = Hash.create a in
+  let acc = Hash.alloca a in
   let h0 = ST.get() in
   wrap_key a keyblock key keylen;
   let h1 = ST.get() in
@@ -444,58 +448,18 @@ let compute a mac key keylen data datalen =
   Hash.frame_invariant_implies_footprint_preservation (loc_buffer keyblock) acc h0 h1;
   hmac_core a acc mac keyblock data datalen;
   let h2 = ST.get() in
-  Hash.free #(Ghost.hide a) acc;
-  pop_frame ();
-  let hf = ST.get () in
+  pop_frame ()
   // TR: modifies clause proven by erasing all memory locations that
   // were unused in h00:
-  LowStar.Buffer.modifies_only_not_unused_in (loc_buffer mac) h00 hf
 
-
-
-
-
-(* 18-08-02 older stuff. Was:
-// not much point in separating hmac_core? verbose, but it helps
-// monomorphise stack allocations.
+let compute_sha1: compute_st SHA1 = mk_compute SHA1
+let compute_sha2_256: compute_st SHA2_256 = mk_compute SHA2_256
+let compute_sha2_384: compute_st SHA2_384 = mk_compute SHA2_384
+let compute_sha2_512: compute_st SHA2_512 = mk_compute SHA2_512
 
 let compute a mac key keylen data datalen =
-  push_frame ();
-  assert_norm(pow2 32 <= max_input8 a);
-  let keyblock = Buffer.create 0x00uy (block_len a) in
-  wrap_key a keyblock key keylen;
-  ( match a with
-  | SHA256 ->
-      push_frame();
-      // 18-04-15 hardcoding the type to prevent extraction errors :(
-      let acc = Buffer.create #UInt32.t (state_zero a) (state_size a) in
-      hmac_core SHA256 acc mac keyblock data datalen;
-      pop_frame()
-  | SHA384 ->
-      push_frame();
-      let acc = Buffer.create #UInt64.t (state_zero a) (state_size a) in
-      hmac_core SHA384 acc mac keyblock data datalen;
-      pop_frame()
-  | SHA512 ->
-      push_frame();
-      let acc = Buffer.create #UInt64.t (state_zero a) (state_size a) in
-      hmac_core SHA512 acc mac keyblock data datalen;
-      pop_frame());
-  pop_frame ()
-
-// 18-04-11 this alternative is leaky and does not typecheck.
-// I get an error pointing to `sub_effect DIV ~> GST = lift_div_gst` in HyperStack
-
-let compute a mac key keylen data datalen =
-  push_frame ();
-  let keyblock = Buffer.create 0x00uy (block_len a) in
-  assert_norm(pow2 32 <= max_input8 a);
-  wrap_key a keyblock key keylen;
-  let acc =
-    match a with
-    | SHA256 -> Buffer.rcreate HyperStack.root 0ul (state_size a)
-    | SHA384 -> Buffer.rcreate HyperStack.root 0UL (state_size a)
-    | SHA512 -> Buffer.rcreate HyperStack.root 0UL (state_size a) in
-  hmac_core SHA256 acc mac keyblock data datalen;
-  pop_frame ()
-*)
+  match a with
+  | SHA1 -> compute_sha1 mac key keylen data datalen
+  | SHA2_256 -> compute_sha2_256 mac key keylen data datalen
+  | SHA2_384 -> compute_sha2_384 mac key keylen data datalen
+  | SHA2_512 -> compute_sha2_512 mac key keylen data datalen

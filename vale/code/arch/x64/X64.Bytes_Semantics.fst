@@ -31,11 +31,19 @@ let same_mem_get_heap_val32 ptr mem1 mem2 =
   reveal_opaque get_heap_val32_def;
   four_to_nat_8_injective ()
   
-let frame_update_heap32 (ptr:int) (v:nat32) (mem:heap) : Lemma
-  (let mem' = update_heap32 ptr v mem in
-  forall i. i < ptr \/ i >= ptr + 4 ==> mem.[i] == mem'.[i]) =
+let frame_update_heap32 ptr v mem =
   reveal_opaque get_heap_val32_def;
   reveal_opaque update_heap32_def
+
+let same_domain_update32 ptr v mem =
+  reveal_opaque get_heap_val32_def;
+  reveal_opaque update_heap32_def;
+  assert (Set.equal (Map.domain mem) (Map.domain (update_heap32 ptr v mem)))
+
+let update_heap32_get_heap32 ptr mem =
+  reveal_opaque get_heap_val32_def;
+  reveal_opaque update_heap32_def;
+  assert (Map.equal mem (update_heap32 ptr (get_heap_val32 ptr mem) mem))
 
 let frame_update_heap128 ptr v mem =
   let mem1 = update_heap32 ptr v.lo0 mem in
@@ -158,9 +166,11 @@ val update_operand_flags_same_unspecified (dst:operand) (v:nat64) (s:state) : Le
   forall x. not (Map.contains s1.mem x && Map.contains s.mem x) ==> s1.mem.[x] == s.mem.[x])
   [SMTPat (update_operand_preserve_flags' dst v s)]
 
+#push-options "--max_fuel 0 --max_ifuel 1 --initial_ifuel 1"
 let update_operand_flags_same_unspecified dst v s = match dst with
   | OMem _ -> reveal_opaque update_heap64_def
   | _ -> ()
+#pop-options
 
 val update_operand_same_unspecified (dst:operand) (ins:ins) (v:nat64) (s:state) : Lemma
   (let s1 = update_operand' dst ins v s in

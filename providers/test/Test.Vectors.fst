@@ -2,13 +2,13 @@ module Test.Vectors
 
 open Test.Lowstarize
 open EverCrypt.Hash
-open Spec.Hash.Helpers
+open Spec.Hash.Definitions
 
 /// Hash algorithms
 
 type hash_alg = EverCrypt.Hash.alg
 
-#reset-options "--max_fuel 0 --max_ifuel 0"
+#reset-options "--max_fuel 0 --max_ifuel 0 --z3rlimit 100"
 
 noeq noextract
 type hash_vector = {
