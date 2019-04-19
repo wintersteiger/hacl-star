@@ -1,0 +1,35 @@
+include Makefile
+
+OUTPUT_DIR = .extracted
+
+FSTAR_INCLUDES+= --include $(HACL_HOME)/specs/tests
+FSTAR_NO_FLAGS = $(FSTAR_HOME)/bin/fstar.exe --use_hints --record_hints --use_hint_hashes \
+   --odir $(OUTPUT_DIR) --cache_checked_modules $(FSTAR_INCLUDES) --cmi \
+   --warn_error '+241@247-272' \
+   --cache_dir obj
+
+SPECS=Spec.SHA3 \
+   Spec.Chacha20Poly1305
+TESTS=tests/Spec.Test.SHA3 \
+	tests/Spec.Test.Chacha20Poly1305
+
+SPEC_FILES=$(addsuffix .fst, $(SPECS))
+TEST_FILES=$(addsuffix .fst, $(TESTS))
+
+SHA3_DEPS=Spec_SHA3_Constants.ml Spec_SHA3.ml
+Chacha20Poly1305_DEPS=Spec_Chacha20.ml Spec_Poly1305.ml Spec_Chacha20Poly1305.ml
+
+all-test-vectors: $(addsuffix .exe, $(TESTS))
+
+.PRECIOUS: .extracted
+.extracted:
+	$(MAKE) -C $(HACL_HOME)/tests
+	$(FSTAR) $(FSTAR_INCLUDES) --extract '* -FStar -LowStar' --lax --codegen OCaml --odir $(OUTPUT_DIR) $(SPEC_FILES) $(TEST_FILES) $(LIBS_FILES)
+
+EXTRACTED=$(wildcard $(addsuffix /*.ml,$(OUTPUT_DIR)))
+
+tests/Spec.Test.%.exe: .extracted
+	mkdir -p .extracted-$* && cp .extracted/*.ml .extracted-$*/
+	@echo 'let _ = test()' >> .extracted-$*/Spec_Test_$*.ml
+	$(OCAMLOPT) -I tests -I .extracted-$* .extracted-$*/Spec_Helpers_Types.ml tests/Spec_Helpers.ml $(addprefix .extracted-$*/, $(LIBS_ML) $($*_DEPS) Spec_Test_$*.ml) -o $@
+	./$@

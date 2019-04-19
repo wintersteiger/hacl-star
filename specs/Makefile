@@ -38,6 +38,7 @@ LIBS = Lib.IntTypes.fst Lib.RawIntTypes.fst Lib.NatMod.fst Lib.LoopCombinators.f
 LIBS_FILES= $(addprefix ../lib/fst/, $(LIBS))
 LIBS_ML = Lib_IntTypes.ml Lib_RawIntTypes.ml Lib_NatMod.ml Lib_LoopCombinators.ml Lib_Sequence.ml Lib_ByteSequence.ml Lib_IntVector.ml 
 LIBS_EX = $(addprefix --extract_module , $(LIBS:.fst=))
+LIBS_EX_NEW = --extract '$(LIBS:.fst=)'
 
 #
 # Main targets
@@ -54,7 +55,7 @@ test-unified-target: Chacha20.exe Curve25519.exe Curve448.exe SHA2.exe Blake2.ex
 test-individual-target: Poly1305.exe Chacha20Poly1305.exe Ed25519.exe hmac.exe hkdf.exe argon2i.exe kyber.exe aes.exe gf128.exe aes128gcm.exe rsapss.exe sha3.exe hpke.exe
 
 clean:
-	rm -rf *.cmi *.cmo *.cmx *.o *~ *.out *.exe *-ml
+	rm -rf *.cmi *.cmo *.cmx *.o *~ *.out *.exe *-ml .extracted*
 
 #
 # Primitive targets
