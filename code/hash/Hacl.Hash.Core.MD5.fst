@@ -7,6 +7,8 @@ module HST = FStar.HyperStack.ST
 module Spec = Spec.MD5
 open Lib.IntTypes
 
+module U32 = FStar.UInt32
+
 open Hacl.Hash.Definitions
 open Spec.Hash.Definitions
 
@@ -27,7 +29,7 @@ let alloca () =
    immutable buffers. *)
 
 inline_for_extraction
-let h0 (i: U32.t { U32.v i < 4 } ) : HST.Stack U32.t
+let h0 (i: U32.t { U32.v i < 4 } ) : HST.Stack uint32
   (requires (fun _ -> True))
   (ensures (fun h res h' ->
     B.modifies B.loc_none h h' /\
@@ -37,7 +39,7 @@ let h0 (i: U32.t { U32.v i < 4 } ) : HST.Stack U32.t
   B.index _h0 i
 
 inline_for_extraction
-let t (i: U32.t { U32.v i < 64 } ) : HST.Stack U32.t
+let t (i: U32.t { U32.v i < 64 } ) : HST.Stack uint32
   (requires (fun _ -> True))
   (ensures (fun h res h' ->
     B.modifies B.loc_none h h' /\
@@ -65,7 +67,7 @@ let init s =
   )
 
 inline_for_extraction
-let abcd_t = (b: B.buffer U32.t { B.length b == 4 } )
+let abcd_t = (b: B.buffer uint32 { B.length b == 4 } )
 
 inline_for_extraction
 let abcd_idx = (n: U32.t { U32.v n < 4 } )
@@ -74,17 +76,14 @@ inline_for_extraction
 let x_idx = (n: U32.t { U32.v n < 16 } )
 
 inline_for_extraction
-let x_t = (b: B.buffer U8.t { B.length b == 64 } )
+let x_t = (b: B.buffer uint8 { B.length b == 64 } )
 
 inline_for_extraction
 let t_idx = (n: U32.t { 1 <= U32.v n /\ U32.v n <= 64 } )
 
 inline_for_extraction
-let (<<<) = Spec.rotl
-
-inline_for_extraction
 val round_op_gen
-  (f: (U32.t -> U32.t -> U32.t -> Tot U32.t))
+  (f: (uint32 -> uint32 -> uint32 -> Tot uint32))
   (abcd: abcd_t)
   (x: x_t)
   (a b c d: abcd_idx)
@@ -101,7 +100,9 @@ val round_op_gen
     B.modifies (B.loc_buffer abcd) h h' /\
     B.live h' abcd /\
     B.live h' x /\ // better to add this here also to ease chaining
-    B.as_seq h' abcd == Spec.round_op_gen f (B.as_seq h abcd) (E.seq_uint32_of_le 16 (B.as_seq h x)) (U32.v a) (U32.v b) (U32.v c) (U32.v d) (U32.v k) s (U32.v i)
+    B.as_seq h' abcd == Spec.round_op_gen f (B.as_seq h abcd) 
+			(Lib.ByteSequence.uints_from_bytes_le #_ #_ #16 (B.as_seq h x)) 
+			(U32.v a) (U32.v b) (U32.v c) (U32.v d) (U32.v k) s (U32.v i)
   ))
 
 #set-options "--max_fuel 0 --max_ifuel 0"
@@ -110,7 +111,7 @@ let round_op_gen f abcd x a b c d k s i =
   let h = HST.get () in
   assert_norm (64 / 4 == 16);
   assert_norm (64 % 4 == 0);
-  let sx = Ghost.hide (E.seq_uint32_of_le 16 (B.as_seq h x)) in
+  let sx = Ghost.hide (Lib.ByteSequence.uints_from_bytes_le #_ #_ #16 (B.as_seq h x)) in
   let va = B.index abcd a in
   let vb = B.index abcd b in
   let vc = B.index abcd c in

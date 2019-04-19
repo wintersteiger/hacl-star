@@ -238,51 +238,5 @@ let hash_word_len (a: hash_alg): n:U32.t { U32.v n = hash_word_length a } =
 noextract inline_for_extraction
 let finish a s dst =
   match a with
-  | MD5 -> Lib.ByteBuffer.uints_to_bytes_le #U32 #SEC (hash_word_len a) dst s
-  | _ -> Lib.ByteBuffer.uints_to_bytes_be #(word_t a) #SEC (hash_word_len a) dst s
-
-(*
-  let open FStar.Mul in
-  let h0 = ST.get () in
-  let inv (h: HS.mem) (i: nat) =
-    let words_state = B.as_seq h s in
-    let hash = B.as_seq h dst in
-    i <= hash_word_length a /\
-    B.live h dst /\ B.live h s /\
-    M.(modifies (loc_buffer dst) h0 h) /\
-    S.equal (S.slice hash 0 (i * Helpers.word_length a))
-      (bytes_of_words a #i (S.slice words_state 0 i))
-  in
-  let f (i: U32.t { U32.(0 <= v i /\ v i < hash_word_length a) }): ST.Stack unit
-    (requires (fun h -> inv h (U32.v i)))
-    (ensures (fun h0 _ h1 -> inv h0 (U32.v i) /\ inv h1 (U32.v i + 1)))
-  =
-    match a with
-    | MD5 ->
-        let dst0 = B.sub dst 0ul U32.(4ul *^ i) in
-        let dsti = B.sub dst U32.(4ul *^ i) 4ul in
-        Lib.ByteBuffer.uint_to_bytes_le #U32 #SEC dsti s.(i);
-        let h2 = ST.get () in
-        Endianness.le_of_seq_uint32_base (S.slice (B.as_seq h2 s) (U32.v i) (U32.v i + 1)) (B.as_seq h2 dsti);
-        Endianness.le_of_seq_uint32_append (S.slice (B.as_seq h2 s) 0 (U32.v i))
-          (S.slice (B.as_seq h2 s) (U32.v i) (U32.v i + 1))
-    | SHA1 | SHA2_224 | SHA2_256 ->
-        let dst0 = B.sub dst 0ul U32.(4ul *^ i) in
-        let dsti = B.sub dst U32.(4ul *^ i) 4ul in
-        Lib.ByteBuffer.uint_to_bytes_be #U64 #SEC dsti s.(i);
-        let h2 = ST.get () in
-        Endianness.be_of_seq_uint32_base (S.slice (B.as_seq h2 s) (U32.v i) (U32.v i + 1)) (B.as_seq h2 dsti);
-        Endianness.be_of_seq_uint32_append (S.slice (B.as_seq h2 s) 0 (U32.v i))
-          (S.slice (B.as_seq h2 s) (U32.v i) (U32.v i + 1))
-    | SHA2_384 | SHA2_512 ->
-        let dst0 = B.sub dst 0ul U32.(8ul *^ i) in
-        let dsti = B.sub dst U32.(8ul *^ i) 8ul in
-        Lib.ByteBuffer.uint_to_bytes_be #U128 #SEC dsti s.(i);
-        let h2 = ST.get () in
-        Endianness.be_of_seq_uint64_base (S.slice (B.as_seq h2 s) (U32.v i) (U32.v i + 1)) (B.as_seq h2 dsti);
-        Endianness.be_of_seq_uint64_append (S.slice (B.as_seq h2 s) 0 (U32.v i))
-          (S.slice (B.as_seq h2 s) (U32.v i) (U32.v i + 1))
-  in
-  C.Loops.for 0ul (hash_word_len a) inv f
-
-*)
+  | MD5 -> Lib.ByteBuffer.uints_to_bytes_le #U32 #SEC (hash_word_len a) dst (B.sub s 0ul (hash_word_len a))
+  | _ -> Lib.ByteBuffer.uints_to_bytes_be #(word_t a) #SEC (hash_word_len a) dst (B.sub s 0ul (hash_word_len a))
