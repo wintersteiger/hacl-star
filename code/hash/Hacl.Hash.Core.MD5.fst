@@ -5,10 +5,7 @@ module IB = LowStar.ImmutableBuffer
 module HS = FStar.HyperStack
 module HST = FStar.HyperStack.ST
 module Spec = Spec.MD5
-module U8 = FStar.UInt8
-module U32 = FStar.UInt32
-module E = FStar.Kremlin.Endianness
-module CE = C.Endianness
+open Lib.IntTypes
 
 open Hacl.Hash.Definitions
 open Spec.Hash.Definitions

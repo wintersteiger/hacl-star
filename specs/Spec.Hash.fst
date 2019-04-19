@@ -53,9 +53,11 @@ let rec update_multi
     let hash = update a hash block in
     update_multi a hash rem
 
+#reset-options "--z3rlimit 100"
 (* As defined in the NIST standard; pad, then update, then finish. *)
 let hash (a:hash_alg) (input:bytes{S.length input < max_input_length a}):
-  Tot (hash:bytes{Seq.length hash = hash_length a})
+  Tot (hash:lbytes (hash_length a))
 =
   let padding = pad a (S.length input) in
   finish a (update_multi a (init a) S.(input @| padding))
+
