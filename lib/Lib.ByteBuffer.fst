@@ -253,7 +253,7 @@ let uints_from_bytes_be #t #l #len o i =
   let h1 = ST.get() in
   assert (Seq.equal (as_seq h1 o) (BS.uints_from_bytes_be (as_seq h0 i)))
 
-#set-options "--z3rlimit 150"
+#reset-options "--z3rlimit 500"
 
 let uints_to_bytes_le #t #l len o i =
   let h0 = ST.get () in
@@ -276,3 +276,12 @@ let uints_to_bytes_be #t #l len o i =
     (fun j -> uint_to_bytes_be (sub o (mul_mod j (size (numbytes t))) (size (numbytes t))) i.(j));
   assert_norm (BS.uints_to_bytes_be (as_seq h0 i) ==
                norm [delta] BS.uints_to_bytes_be (as_seq h0 i))
+
+let uint_at_index_le #t #l #len i idx = 
+  let b = sub i (idx *! (size (numbytes t))) (size (numbytes t)) in
+  uint_from_bytes_le b
+
+let uint_at_index_be #t #l #len i idx = 
+  let b = sub i (idx *! (size (numbytes t))) (size (numbytes t)) in
+  uint_from_bytes_be b
+
