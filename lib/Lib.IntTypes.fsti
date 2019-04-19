@@ -166,6 +166,10 @@ val secret: #t:inttype -> u:uint_t t PUB -> v:uint_t t SEC{uint_v v == uint_v u}
 inline_for_extraction
 val uint: #t:inttype -> #l:secrecy_level -> (n:nat{n <= maxint t}) -> u:uint_t t l{uint_v u == n}
 
+val uint_uint_v_lemma: #t:inttype -> #l:secrecy_level -> u:uint_t t l -> 
+		       Lemma (uint #t #l (uint_v #t #l u) == u)
+		       [SMTPat (uint #t #l (uint_v #t #l u))]
+		       
 inline_for_extraction
 let u1 (n:nat{n <= maxint U1}) : u:uint1{uint_v #U1 u == n} = uint #U1 #SEC n
 
@@ -224,7 +228,7 @@ inline_for_extraction
 val byte_to_uint8: s:byte_t -> u:uint8{u == u8 (byte_v s)}
 
 inline_for_extraction
-val nat_to_uint: #t:inttype -> #l:secrecy_level -> (n:nat{n <= maxint t}) -> u:uint_t t l{uint_v u == n}
+let nat_to_uint (#t:inttype) (#l:secrecy_level) (n:nat{n <= maxint t}) : u:uint_t t l{uint_v u == n} = uint #t #l n
 
 inline_for_extraction
 val cast: #t:inttype -> #l:secrecy_level

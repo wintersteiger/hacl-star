@@ -24,8 +24,8 @@ let pad (a:hash_alg)
   max_input_size_len a;
   let encodedlen : lbytes (len_length a) =
     match a with
-    | MD5 -> Lib.ByteSequence.uint_to_bytes_le (u64 (total_len * 8))
-    | _ -> Lib.ByteSequence.uint_to_bytes_be (nat_to_uint #(len_int_type a) (total_len * 8))
+    | MD5 -> Lib.ByteSequence.uint_to_bytes_le (secret (nat_to_len a (total_len * 8)))
+    | _ -> Lib.ByteSequence.uint_to_bytes_be (secret (nat_to_len a (total_len * 8)))
   in
   S.(firstbyte @| zeros @| encodedlen)
 

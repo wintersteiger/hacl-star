@@ -41,6 +41,10 @@ let uint #t #l x =
   | U64 -> UInt64.uint_to_t x
   | U128 -> UInt128.uint_to_t x
 
+let uint_uint_v_lemma #t #l u = 
+  let x = uint #t #l (uint_v u) in
+  uintv_extensionality x u
+
 let u16_us x = x
 let u32_ul x = x
 let u64_uL x = x
@@ -55,14 +59,6 @@ let size_to_uint32 x = x
 
 let byte_to_uint8 x = x
 
-let nat_to_uint #t #l x =
-  match t with
-  | U1 -> u8 x
-  | U8 -> u8 x
-  | U16 -> u16 x
-  | U32 -> u32 x
-  | U64 -> u64 x
-  | U128 -> UInt128.uint_to_t x
 
 let cast #t #l t' l' u  =
   match t, t' with

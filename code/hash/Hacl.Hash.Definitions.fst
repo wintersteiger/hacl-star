@@ -15,12 +15,6 @@ open FStar.Mul
     successfully call this module. *)
 
 inline_for_extraction
-let word (a: hash_alg) =
-  match a with
-  | MD5 | SHA1 | SHA2_224 | SHA2_256 -> uint32
-  | SHA2_384 | SHA2_512 -> uint64
-
-inline_for_extraction
 type state (a: hash_alg) =
   b:B.buffer (word a) { B.length b = state_word_length a }
 

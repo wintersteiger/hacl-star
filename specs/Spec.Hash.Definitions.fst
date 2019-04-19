@@ -59,6 +59,10 @@ let len_int_type: hash_alg -> inttype = function
 inline_for_extraction
 let len_t (a:hash_alg) = uint_t (len_int_type a ) PUB
 
+inline_for_extraction
+let nat_to_len (a:hash_alg) (n:nat{n <= maxint (len_int_type a)}) = 
+  nat_to_uint #(len_int_type a ) #PUB n
+
 val len_v: a:hash_alg -> len_t a -> nat
 let len_v a l = uint_v l
 
