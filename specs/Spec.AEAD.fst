@@ -25,7 +25,11 @@ let expand #a k =
       let ekv_w = key_to_round_keys_LE (vale_alg_of_alg a) k_w in
       let ekv_nat = Types_s.le_seq_quad32_to_bytes ekv_w in
       Types_s.le_seq_quad32_to_bytes_length ekv_w;
-      Words.Seq_s.seq_nat8_to_seq_uint8 ekv_nat
+      let ek = Words.Seq_s.seq_nat8_to_seq_uint8 ekv_nat in
+      let hkeys_quad = OptPublic.get_hkeys_reqs (Types_s.reverse_bytes_quad32 (
+        aes_encrypt_LE (vale_alg_of_alg a) k_w (Words_s.Mkfour 0 0 0 0))) in
+      let hkeys = Words.Seq_s.seq_nat8_to_seq_uint8 (Types_s.le_seq_quad32_to_bytes hkeys_quad) in
+      Seq.append ek hkeys
 
 // For gctr_encrypt_recursive and its pattern!
 friend GCTR
@@ -70,8 +74,8 @@ let encrypt #a kv iv ad plain =
       // data", potato, potato
       let ad_nat = Words.Seq_s.seq_uint8_to_seq_nat8 ad in
       let plain_nat = Words.Seq_s.seq_uint8_to_seq_nat8 plain in
-      assert (max_length a = pow2 20 - 1);
-      assert_norm (4096 * (pow2 20 - 1) < Words_s.pow2_32);
+      assert (max_length a = pow2 20 - 1 - 16);
+      assert_norm (4096 * (pow2 20 - 1 - 16) < Words_s.pow2_32);
       let cipher_nat, tag_nat =
         GCM_s.gcm_encrypt_LE (vale_alg_of_alg a) kv_nat iv_nat plain_nat ad_nat
       in
@@ -105,8 +109,8 @@ let decrypt #a kv iv ad cipher =
       Spec.Chacha20Poly1305.aead_decrypt kv iv cipher tag ad
 
   | AES128_GCM | AES256_GCM ->
-      assert (max_length a = pow2 20 - 1);
-      assert_norm (4096 * (pow2 20 - 1) < Words_s.pow2_32);
+      assert (max_length a = pow2 20 - 1 - 16);
+      assert_norm (4096 * (pow2 20 - 1 - 16) < Words_s.pow2_32);
       let kv_nat = Words.Seq_s.seq_uint8_to_seq_nat8 kv in
       let iv_nat = Words.Seq_s.seq_uint8_to_seq_nat8 iv in
       let iv_nat = S.append iv_nat (S.create 4 0) in

@@ -2,6 +2,9 @@ module Gcm_simplify
 
 open Simplify_Sha
 
+let le_bytes_to_seq_quad32_uint8_to_nat8_length s =
+  FStar.Pervasives.reveal_opaque (`%le_bytes_to_seq_quad32) le_bytes_to_seq_quad32
+
 let gcm_simplify1 b h n =
   let db = get_downview b in
   DV.length_eq db;
@@ -170,6 +173,16 @@ let gcm_simplify3 b h =
   simplify_be_quad32 (low_buffer_read TUInt8 TUInt128 h b 0);
   gcm_simplify2 b h
 
+let lemma_same_seq_dv (h:HS.mem) (b:B.buffer UInt8.t) : Lemma
+  (Seq.equal (B.as_seq h b) (DV.as_seq h (get_downview b))) =
+  let db = get_downview b in
+  DV.length_eq db;
+  let aux (i:nat{i < B.length b}) : Lemma (Seq.index (B.as_seq h b) i == Seq.index (DV.as_seq h db) i) =
+    DV.as_seq_sel h db i;
+    DV.get_sel h db i;
+    Opaque_s.reveal_opaque Views.put8_def
+  in Classical.forall_intro aux
+
 #set-options "--z3rlimit 20 --max_fuel 0 --initial_ifuel 1 --max_ifuel 1"
 
 let aes_simplify_aux (s:seq16 nat8) : Lemma
@@ -225,3 +238,10 @@ let aes_simplify2 b h =
       (seq_nat8_to_seq_nat32_LE (seq_uint8_to_seq_nat8 (Seq.slice s_init 0 16)))
       (seq_nat8_to_seq_nat32_LE (seq_uint8_to_seq_nat8 (Seq.slice s_init 16 32)))
     ))
+
+let aes_simplify3 b h s =
+  let db = get_downview b in
+  DV.length_eq db;
+  let ub = UV.mk_buffer db Views.up_view128 in
+  assert (s == UV.as_seq h ub);
+  lemma_seq_nat8_le_seq_quad32_to_bytes_uint32 b h
