@@ -5,7 +5,7 @@ open Interop.Base
 open Vale.AsLowStar.MemoryHelpers
 open Words.Seq_s
 open Simplify_Sha
-
+friend Lib.IntTypes
 #set-options "--z3rlimit 100 --max_fuel 0 --max_ifuel 0"
 
 let math_aux (n:nat) : Lemma ( ((64 * n) * 1) / 16 == 4 * n) = ()

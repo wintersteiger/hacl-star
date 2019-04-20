@@ -8,15 +8,16 @@ module BV = LowStar.BufferView
 module HS = FStar.HyperStack
 open FStar.Mul
 open SHA_helpers
+open Lib.IntTypes
 
 unfold
-let uint32_p = B.buffer UInt32.t
+let uint32_p = B.buffer uint32
 unfold
-let uint32_i = IB.ibuffer UInt32.t
+let uint32_i = IB.ibuffer uint32
 unfold
-let uint8_p = B.buffer UInt8.t
+let uint8_p = B.buffer uint8
 unfold
-let uint64 = UInt64.t
+let uint64 = uint_t U64 PUB
 
 inline_for_extraction
 val sha256_update
