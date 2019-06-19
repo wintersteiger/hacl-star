@@ -6,6 +6,7 @@ threads=$3
 branchname=$4
 
 export FSTAR_HOME=$(pwd)/FStar
+export KREMLIN_HOME=$(pwd)/kremlin
 
 # Add ssh identity
 eval $(ssh-agent)
