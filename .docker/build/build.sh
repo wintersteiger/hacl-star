@@ -28,13 +28,11 @@ function export_home() {
 
 function vale_test() {
   echo Running Vale Test &&
-  fetch_kremlin &&
         fetch_vale &&
         env VALE_SCONS_PARALLEL_OPT="-j $threads" make -j $threads vale.build -k
 }
 
 function hacl_test() {
-    fetch_and_make_kremlin &&
         fetch_and_make_mlcrypto &&
         fetch_mitls &&
         fetch_vale &&
@@ -44,40 +42,6 @@ function hacl_test() {
 
 function hacl_test_and_hints() {
     hacl_test && refresh_hacl_hints
-}
-
-function fetch_and_make_kremlin() {
-    fetch_kremlin
-    # Default build target is minimal, unless specified otherwise
-    local localTarget
-    if [[ $1 == "" ]]; then
-        localTarget="minimal"
-    else
-        localTarget="$1"
-    fi
-    make -C kremlin -j $threads $localTarget ||
-        (cd kremlin && git clean -fdx && make -j $threads $localTarget)
-    OTHERFLAGS='--admit_smt_queries true' make -C kremlin/kremlib -j $threads
-    export PATH="$(pwd)/kremlin:$PATH"
-}
-
-# By default, kremlin master works against F* stable. Can also be overridden.
-function fetch_kremlin() {
-    if [ ! -d kremlin ]; then
-        git clone https://github.com/FStarLang/kremlin kremlin
-    fi
-    cd kremlin
-    git fetch origin
-    local ref=$(jq -c -r '.RepoVersions["kremlin_version"]' "$rootPath/.docker/build/config.json" )
-    if [[ $ref == "" || $ref == "null" ]]; then
-        echo "Unable to find RepoVersions.kremlin_version on $rootPath/.docker/build/config.json"
-        return -1
-    fi
-
-    echo Switching to KreMLin $ref
-    git reset --hard $ref
-    cd ..
-    export_home KREMLIN "$(pwd)/kremlin"
 }
 
 function fetch_and_make_mlcrypto() {

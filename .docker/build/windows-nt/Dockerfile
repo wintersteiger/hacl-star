@@ -7,7 +7,7 @@
 # replace latest with the commit id from github using 12 characters.
 ARG DOCKERHUBPROJECT
 ARG COMMITID
-FROM ${DOCKERHUBPROJECT}fstar-windows-nt:${COMMITID}
+FROM ${DOCKERHUBPROJECT}kremlin-windows-nt:${COMMITID}
 
 ARG BUILDLOGFILE
 ARG MAXTHREADS

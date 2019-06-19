@@ -2,11 +2,11 @@
     "ProjectName" : "hacl-star",
 
     "BaseContainerIsEverestImage" : true,
-    "BaseContainerImageName" : "fstar",
+    "BaseContainerImageName" : "kremlin",
     "BaseContainerImageTagOrCommitId": "latest",
     "BranchName" : "master",
-    "GithubCommitUrl" : "https://github.com/FStarLang/FStar/commit",
-    "OnDemandBuildDefinition" : "FStar\\FStar-{agentOS}",
+    "GithubCommitUrl" : "https://github.com/FStarLang/kremlin/commit",
+    "OnDemandBuildDefinition" : "Kremlin\\Kremlin-{agentOS}",
 
     "DockerFile": ".docker/build/{agentOS}/Dockerfile",
     "DependencyFiles" : [
@@ -30,7 +30,6 @@
     "TrackPerformance" : false,
 
     "RepoVersions" : {
-        "kremlin_version" : "origin/master",
         "mitls_version" : "origin/master",
         "mlcrypto_version" : "origin/master",
         ".vale_version" : "origin/master"
