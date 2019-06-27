@@ -204,6 +204,7 @@ export OTHERFLAGS="--use_hints --query_stats"
 export MAKEFLAGS="$MAKEFLAGS -Otarget"
 
 export_home FSTAR "$(pwd)/FStar"
+export_home KREMLIN "$(pwd)/kremlin"
 cd hacl-star
 rootPath=$(pwd)
 exec_build
