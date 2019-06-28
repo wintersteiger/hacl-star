@@ -15,6 +15,7 @@ open Vale.X64.Machine_s
 open Vale.X64.State
 open Vale.X64.Decls
 open Vale.X64.QuickCode
+open Vale.X64.QuickCodes
 unfold let vale_heap = Vale.X64.Memory.vale_heap
 unfold let vale_stack = Vale.X64.Stack_i.vale_stack
 open Vale.X64.CPU_Features_s

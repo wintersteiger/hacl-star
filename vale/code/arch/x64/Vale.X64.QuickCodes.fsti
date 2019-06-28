@@ -93,6 +93,9 @@ let wp_Bind_t (a:Type0) = vale_state -> a -> Type0
 let range1 = mk_range "" 0 0 0 0
 
 [@va_qattr]
+let loc_range s l1 c1 l2 c2 = mk_range s l1 c1 l2 c2
+
+[@va_qattr]
 let rec wp (#a:Type0) (cs:codes) (qcs:quickCodes a cs) (mods:mods_t) (k:vale_state -> a -> Type0) (s0:vale_state) :
   Tot Type0 (decreases %[cs; 0; qcs])
   =
