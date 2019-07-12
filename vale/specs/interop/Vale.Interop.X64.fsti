@@ -3,17 +3,26 @@ open FStar.Mul
 open Vale.Interop.Base
 module B = LowStar.Buffer
 module BS = Vale.X64.Machine_Semantics_s
-module UV = LowStar.BufferView.Up
-module DV = LowStar.BufferView.Down
+// module UV = LowStar.BufferView.Up
+// module DV = LowStar.BufferView.Down
 module HS = FStar.HyperStack
 module MS = Vale.X64.Machine_s
 module IA = Vale.Interop.Assumptions
 module List = FStar.List.Tot
 
+(*** Calling conventions (partly generic) ***)
+
 ////////////////////////////////////////////////////////////////////////////////
-//The calling convention w.r.t the register mapping
+//The calling convention w.r.t the register mapping The development is
+//parameterized by a choice of register mapping and instantiated to
+//specific calling conventions for windows, linux, and user-specified
+//inline assembly.
 ////////////////////////////////////////////////////////////////////////////////
 
+//This is also a generic definition using which the user specifies
+//which registers are callee saved. This is not trusted, as
+//such. However, its instances are. Instances for standard calls are
+//found at the end of this file.
 let calling_conventions
   (s0 s1:BS.machine_state)
   (regs_modified: MS.reg_64 -> bool)
@@ -41,6 +50,11 @@ let arg_list_sb = l:list arg{List.Tot.length l <= 21}
 unfold
 let injective f = forall x y. f x == f y ==> x == y
 
+/// This is the typeclass for the parameter passing convention,
+/// assigning arguments to specific registers. It is generic so as to
+/// support both standard calls and inline assembly. Stack spilling is
+/// for standard calls only, so it is not included here. Again, this
+/// definition in not trusted, though its instances are.
 noeq
 type arg_reg_relation' (n:nat) =
   | Rel: of_reg:(MS.reg_64 -> option (reg_nat n)) ->
@@ -95,6 +109,11 @@ let update_regs (n:nat)
   : GTot registers
   = upd_reg n arg_reg regs i (arg_as_nat64 x)
 
+
+/// This is the function that actually places arguments in registers,
+/// based on the provided arg_reg relation.
+///
+/// It is what creates the register file in the initial machine_state.
 [@__reduce__]
 let rec register_of_args (max_arity:nat)
                          (arg_reg:arg_reg_relation max_arity)
@@ -110,8 +129,11 @@ let rec register_of_args (max_arity:nat)
       else
         update_regs max_arity arg_reg hd (n - 1) (register_of_args max_arity arg_reg (n - 1) tl regs)
 
-// Pass extra arguments on the stack. The arity_ok condition on inline wrappers ensures that
-// this only happens for stdcalls
+/// Pass extra arguments on the stack. The arity_ok condition on inline
+/// wrappers ensures that this only happens for stdcalls.
+///
+/// See the comment above on arg_reg_relation': this is specific to
+/// stdcalls.
 [@__reduce__]
 let rec stack_of_args (max_arity:nat)
                       (n:nat)
@@ -134,6 +156,9 @@ let rec stack_of_args (max_arity:nat)
       BS.update_heap64 ptr v st1
 
 ////////////////////////////////////////////////////////////////////////////////
+
+(*** Taint tracking ***)
+
 let taint_map = b8 -> GTot MS.taint
 
 let upd_taint_map_b8 (taint:taint_map) (x:b8) (tnt:MS.taint)  : taint_map =
@@ -154,6 +179,9 @@ let upd_taint_map_arg (a:arg) (tm:taint_map) : GTot taint_map =
 
 let init_taint : taint_map = fun r -> MS.Public
 
+/// This constructs a taint map according to the user-specified taint
+/// annotation on each argument. `mk_taint_equiv` proves that the
+/// taint in the machine state accurately captures the annotation.
 [@__reduce__]
 let mk_taint (as:arg_list_sb) (tm:taint_map) : GTot taint_map =
   List.fold_right_gtot as upd_taint_map_arg init_taint
@@ -203,9 +231,19 @@ let state_builder_t (max_arity:nat) (args:arg_list) (codom:Type) =
     h0:HS.mem{mem_roots_p h0 args} ->
     GTot codom
 
-// Splitting the construction of the initial state into two functions
-// one that creates the initial trusted state (i.e., part of our TCB)
-// and another that just creates the vale state, a view upon the trusted one
+/// This function constructs the initial state by assembling the
+/// functions defined above for registers, stack, taint and lowering
+/// the memory.  Splitting the construction of the initial state into
+/// two functions one that creates the initial trusted state (i.e.,
+/// part of our TCB) and another that just creates the vale state, a
+/// view upon the trusted one
+///
+/// A main feature to call out is the parameterization by `down_mem`
+/// To construct the initial machine_state, the untrusted caller
+/// (e.g., in vale/code/arch/x64/interop/Vale.AsLowStar.Wrapper) is
+/// expected to provide a "memory injection" from the Low* memory to
+/// the Vale memory that satisfies Vale.Interop.Base.correct_down, a
+/// trusted correspondence relation between the memories.
 let create_initial_trusted_state
       (max_arity:nat)
       (arg_reg:arg_reg_relation max_arity)
@@ -241,6 +279,32 @@ let create_initial_trusted_state
     (s0, mem)
 
 ////////////////////////////////////////////////////////////////////////////////
+
+(*** Wrapping a Vale specification for Low* ***)
+
+/// Here's the general idea:
+///
+/// From Low*, we aim to execute a Vale procedure whose instructions
+/// are the code value `c`.
+///
+/// We will run this code on the trusted Vale interpreter
+/// (Machine_Semantics_s) on an initial machine state, as computed by
+/// `create_initial_trusted_state`.
+///
+/// But, to do this, we need a proof that it is safe to run the
+/// interpreter on this code, i.e., that the code executes no invalid
+/// instructions, only acccesses and updates the arrays passed to it
+/// from Low*, and that it terminates.
+///
+/// We call this proof a "prediction", since it predicts an upper
+/// bound on the amount of fuel needed to run the program to
+/// termination.
+///
+/// After running the interpreter, we obtain the final machine state,
+/// and update the Low* memory using Interop.Assumptions.st_put, and
+/// return to Low* with the contents of Rax as the return value, while
+/// discarding the rest of the Vale state.
+
 let prediction_pre_rel_t (c:BS.code) (args:arg_list) =
     h0:mem_roots args ->
     prop

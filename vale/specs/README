@@ -1,0 +1,72 @@
+TCB:
+
+--------------------------------------------------------------------------------
+
+General convention:
+        _s modules are spec
+        Everything in the specs directory should have this suffix
+
+defs:
+  Basic data types, integers, words etc. used throughout
+
+hardware:
+
+  - Machine_s
+     defines registers, operands, control flow, taint and observations
+
+  - Instruction_s
+      Typeclass of a generic instruction
+      And some utilities to help build instances
+
+  - Instructions_s
+      Instances of the generic instructions
+      Mov, Add, ...
+
+  - Bytes_Code_s
+
+      Datatype for instructions, both generic and a few stack-specific
+      instructions
+
+      Stack instructions are specific because the generic typeclass
+      doesn't include a stack update operation
+         - We may make this generic in the future
+
+  - Machine_Semantics_s
+       machine_state
+
+
+noeq
+type machine_state = {
+  ms_ok: bool;  //model only, doesn't correspond to a real machine state component
+  ms_regs: regs_t;
+  ms_flags: flags_t;
+  ms_heap: machine_heap;
+  ms_memTaint: memTaint_t; //model
+  ms_stack: machine_stack;
+  ms_stackTaint: memTaint_t; //model
+  ms_trace: list observation; /model
+}
+
+      evaluation rules for the control flow constructs
+      including taint propagation semantics for memory
+            and trace of observations
+
+    -
+
+interop:
+
+    - Vale.Interop.Assumptions: Basic assumptions about initial vale
+      states and atomic updates to Low* states.
+
+    - Vale.Interop.Types
+
+
+--------------------------------------------------------------------------------
+crypto: Specifications of algorithms implemented in Vale
+  - Everything related to AES-GCM: AES, GCM, GCTR, GF128,
+  - Poly1305
+
+  Other algorithms, are specified in hacl-star/specs
+  - SHA, Curve25519, ...
+
+math: Math needed to back up the crypto specs

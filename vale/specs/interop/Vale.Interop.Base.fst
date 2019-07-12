@@ -57,6 +57,24 @@ unfold
 let list_live mem (ptrs:list b8) =
   forall p . {:pattern (L.memP p ptrs)} L.memP p ptrs ==> B.live mem p.bsrc
 
+(***  A KEY ASSUMPTION ***)
+
+/// This defines a mapping between Low* addresses (abstract locations
+/// of allocation units) and Vale physical addresses.
+///
+/// The invariant is that valid disjoint Low* buffers are mapped to
+/// valid disjoint Vale address ranges.
+///
+/// Currently stated as an F* axiom, this is dangerous since it
+/// enables a contradiction by applying the global_addrs_map to, say,
+/// 2^64 disjoint buffers (although that many buffers could never
+/// really be allocated).
+///
+/// We will instead remove this axiom in favor of a trusted model
+/// (mk_addr_map below) that can construct an addr_map for some
+/// sufficiently small number of Low* buffers (e.g., 2^32). While that
+/// will remove the contradiction, it will still be a key assumption
+/// about the C memory allocator.
 assume val global_addrs_map : addr_map
 
 let mk_addr_map (ptrs : list b8 { list_disjoint_or_eq ptrs }) : GTot addr_map =
@@ -505,12 +523,25 @@ let create_memtaint
   : GTot MS.memTaint_t
   = List.Tot.fold_right_gtot ps (write_taint 0 mem ts) (FStar.Map.const MS.Public)
 
+/// A Low* array of fixed width integers (u8, ..., u128) `p` is mapped
+/// to a contiguous range of Vale physical addresses starting at
+/// `addr`, such that each of those addresses holds a value that
+/// corresponds to the byte stored in the Low* heap at the suitable
+/// offset of the array.
+///
+/// This makes manifest two aspects of the representation of Low* arrays:
+///
+///  1. The endianness of representation of machine integers, i.e.,
+///     the representation of each array element.
+///
+///  2. The representation of arrays as contiguous blocks of memory.
 let correct_down_p (mem:interop_heap) (h:BS.machine_heap) (p:b8) =
-  let b = get_downview p.bsrc in
+  let b = get_downview p.bsrc in //b is a view of p as a byte array, establishing property 1 above
   let length = DV.length b in
   let contents = DV.as_seq (hs_of_mem mem) b in
   let addr = addrs_of_mem mem p in
   let open BS in
+  // this property captures the contiguous layout and the correspondence of values
   (forall i.{:pattern (Seq.index contents i)}  0 <= i /\ i < length ==> h.[addr + i] == UInt8.v (FStar.Seq.index contents i))
 
 let rec addrs_ptr (i:nat) (addrs:addr_map) (ptr:b8{i <= DV.length (get_downview ptr.bsrc)}) (acc:Set.set int)
@@ -519,12 +550,23 @@ let rec addrs_ptr (i:nat) (addrs:addr_map) (ptr:b8{i <= DV.length (get_downview 
   = if i = DV.length (get_downview ptr.bsrc) then acc
     else addrs_ptr (i + 1) addrs ptr (Set.union (Set.singleton (addrs ptr + i)) acc)
 
+/// Given a list of live arrays passed from Low*, this returns the set
+/// of corresponding Vale addresses
 let addrs_set (mem:interop_heap) : GTot (Set.set int) =
   L.fold_right_gtot (ptrs_of_mem mem) (addrs_ptr 0 (addrs_of_mem mem)) Set.empty
 
+/// This is a key relation in the interop semantics. It captures the
+/// correspondence between Vale and Low* memory via two properties.
+///
+/// 1. Vale programs can only access addresses that correspond to the
+///    live Low* arrays passed through the interop layer.
+///
+/// 2. All live arrays in Low* mem are accurately layed out in Vale
+///    memory (i.e., contiguously and respecting endianness)
 let correct_down (mem:interop_heap) (h:BS.machine_heap) =
   Set.equal (addrs_set mem) (Map.domain h) /\
   (forall p.{:pattern (L.memP p (ptrs_of_mem mem))}
     L.memP p (ptrs_of_mem mem) ==> correct_down_p mem h p)
 
+/// The type of a function that correctly lowers a Low* memory to Vale
 let down_mem_t = m:interop_heap -> GTot (h:BS.machine_heap {correct_down m h})
