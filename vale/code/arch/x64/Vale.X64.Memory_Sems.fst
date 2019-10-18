@@ -33,8 +33,10 @@ let lemma_heap_get_heap h = ()
 
 let lemma_heap_upd_heap h m = ()
 
+let trig (i:int) = True
+
 val heap_shift (m1 m2:S.machine_heap) (base:int) (n:nat) : Lemma
-  (requires (forall i. 0 <= i /\ i < n ==> m1.[base + i] == m2.[base + i]))
+  (requires (forall i. trig i /\ 0 <= i /\ i < n ==> m1.[base + i] == m2.[base + i]))
   (ensures (forall i. {:pattern (m1.[i])} base <= i /\ i < base + n ==> m1.[i] == m2.[i]))
 
 #push-options "--smtencoding.l_arith_repr boxwrap"
@@ -321,7 +323,7 @@ val same_mem_get_heap_val128 (b:buffer128)
                           (mem2:S.machine_heap{IB.correct_down_p (_ih h2) mem2 b}) : Lemma
   (requires (Seq.index (buffer_as_seq h1 b) k == Seq.index (buffer_as_seq h2 b) k))
   (ensures (let ptr = buffer_addr b h1 + 16 * k in
-    forall i. {:pattern (mem1.[ptr+i])} i >= 0 /\ i < 16 ==> mem1.[ptr+i] == mem2.[ptr+i]))
+    forall i. {:pattern (mem1.[ptr+i]) \/ (trig i)} i >= 0 /\ i < 16 ==> mem1.[ptr+i] == mem2.[ptr+i]))
 
 val same_mem_eq_slices128 (b:buffer128)
                        (i:nat{i < buffer_length b})
@@ -379,6 +381,7 @@ let in_bounds128 (h:vale_heap) (b:buffer128) (i:nat{i < buffer_length b}) : Lemm
           j < (_ih h).IB.addrs b + DV.length (get_downview b.bsrc)) =
   length_t_eq TUInt128 b
 
+#push-options "--z3rlimit 20"
 let bytes_valid128 ptr h =
   FStar.Pervasives.reveal_opaque (`%S.valid_addr128) S.valid_addr128;
   let t = TUInt128 in
@@ -401,6 +404,7 @@ let bytes_valid128 ptr h =
   I.addrs_set_mem (_ih h) b (ptr+13);
   I.addrs_set_mem (_ih h) b (ptr+14);
   I.addrs_set_mem (_ih h) b (ptr+15)
+#pop-options
 
 let equiv_load_mem64 ptr h =
   let t = TUInt64 in
@@ -427,6 +431,8 @@ let equiv_load_mem64 ptr h =
 
 open Vale.X64.BufferViewStore
 
+(*
+#push-options "--z3rlimit 20"
 let low_lemma_store_mem64_aux
   (b:buffer64)
   (heap:S.machine_heap)
@@ -447,6 +453,8 @@ let low_lemma_store_mem64_aux
    let db = get_downview b.bsrc in
    let bv = UV.mk_buffer db Vale.Interop.Views.up_view64 in
    assert (UV.upd (_ih h).IB.hs bv i (UInt64.uint_to_t v) == (_ih h').IB.hs)
+#pop-options
+*)
 
 val valid_state_store_mem64_aux: (i:nat) -> (v:nat64) -> (h:vale_heap) -> Lemma
   (requires writeable_mem64 i h)
@@ -483,7 +491,7 @@ let low_lemma_store_mem64 b i v h =
   valid_state_store_mem64_aux (buffer_addr b h + 8 * i) v h;
   let heap = get_heap h in
   let heap' = S.update_heap64 (buffer_addr b h + 8 * i) v heap in
-  low_lemma_store_mem64_aux b heap i v h;
+//  low_lemma_store_mem64_aux b heap i v h;
   Vale.Arch.MachineHeap.frame_update_heap (buffer_addr b h + 8 * i) v heap;
   in_bounds64 h b i;
   I.update_buffer_up_mem (_ih h) b heap heap'
@@ -538,6 +546,7 @@ let low_lemma_load_mem128 b i h =
 //  low_lemma_valid_mem128 b i h;
 //  Vale.Arch.MachineHeap.same_domain_update128 (buffer_addr b h + 16 * i) v (get_heap h)
 
+(*
 let low_lemma_store_mem128_aux
   (b:buffer128)
   (heap:S.machine_heap)
@@ -558,6 +567,7 @@ let low_lemma_store_mem128_aux
    let db = get_downview b.bsrc in
    let bv = UV.mk_buffer db Vale.Interop.Views.up_view128 in
    assert (UV.upd (_ih h).IB.hs bv i v == (_ih h').IB.hs)
+*)
 
 val valid_state_store_mem128_aux (i:int) (v:quad32) (h:vale_heap) : Lemma
   (requires writeable_mem128 i h)
@@ -742,6 +752,7 @@ let valid_state_store_mem128_aux i v h =
   in aux (); aux2 ();
   Map.lemma_equal_intro mem1 mem2
 
+#push-options "--z3rlimit 20"
 let low_lemma_store_mem128 b i v h =
   lemma_valid_mem128 b i h;
   lemma_store_mem128 b i v h;
@@ -749,10 +760,11 @@ let low_lemma_store_mem128 b i v h =
   let heap = get_heap h in
   let heap' = S.update_heap128 (buffer_addr b h + 16 * i) v heap in
   let h' = store_mem128 (buffer_addr b h + 16 * i) v h in
-  low_lemma_store_mem128_aux b heap i v h;
+//  low_lemma_store_mem128_aux b heap i v h;
   Vale.Arch.MachineHeap.frame_update_heap128 (buffer_addr b h + 16 * i) v heap;
   in_bounds128 h b i;
   I.update_buffer_up_mem (_ih h) b heap heap'
+#pop-options
 
 #push-options "--smtencoding.l_arith_repr boxwrap"
 let low_lemma_valid_mem128_64 b i h =

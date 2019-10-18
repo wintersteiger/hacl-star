@@ -11,7 +11,7 @@ module BC = Vale.X64.Bytes_Code_s
 module S = Vale.X64.Machine_Semantics_s
 let has_taint128 (o:operand128) (t:taint) : bool =
   match o with
-  | OMem (_, t') | OStack (_, t') -> t = t'
+  | OMem (_, t', _) | OStack (_, t') -> t = t'
   | _ -> true
 
 val lemma_valid_buf_maddr64 (h:vale_heap) (memTaint:memTaint_t) (b:buffer64) (i:int) (t:taint) : Lemma
@@ -25,12 +25,12 @@ val lemma_valid_buf_maddr128 (h:vale_heap) (memTaint:memTaint_t) (b:buffer128) (
   [SMTPat (valid_buffer_read h b i); SMTPat (valid_taint_buf128 b h memTaint t)]
 
 //val lemma_valid_taint64_operand (m:maddr) (t:taint) (s:va_state) : Lemma
-//  (requires valid_operand (OMem (m, t)) s)
+//  (requires valid_operand (OMem (m, t, _)) s)
 //  (ensures taint_at s.vs_memTaint (eval_maddr m s) == t)
 //  [SMTPat (eval_maddr m s); SMTPat (OMem #int #reg (m, t))]
 
 //val lemma_valid_taint128_operand (m:maddr) (t:taint) (s:va_state) : Lemma
-//  (requires valid_operand128 (OMem (m, t)) s)
+//  (requires valid_operand128 (OMem (m, t, _)) s)
 //  (ensures taint_at s.vs_memTaint (eval_maddr m s) == t)
 //  [SMTPat (eval_maddr m s); SMTPat (OMem #int #reg (m, t))]
 

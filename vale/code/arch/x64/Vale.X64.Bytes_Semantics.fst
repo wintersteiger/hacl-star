@@ -42,7 +42,7 @@ open Vale.X64.Instruction_s
 //  FStar.Pervasives.reveal_opaque (`%valid_addr128) valid_addr128;
 //  Vale.Def.Opaque_s.reveal_opaque update_heap128_def;
 //  match o with
-//  | OMem (m, t) ->
+//  | OMem (m, t, _) ->
 //      let ptr = eval_maddr m s_orig in
 //      if not (valid_addr128 ptr (heap_get s.ms_heap)) then ()
 //      else
@@ -105,7 +105,7 @@ open Vale.X64.Instruction_s
 //  FStar.Pervasives.reveal_opaque (`%valid_addr128) valid_addr128;
 //  Vale.Def.Opaque_s.reveal_opaque update_heap128_def;
 //  match o with
-//  | OMem (m, t) ->
+//  | OMem (m, t, _) ->
 //      let ptr = eval_maddr m s_orig in
 //      if not (valid_addr128 ptr (heap_get s.ms_heap)) then ()
 //      else

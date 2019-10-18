@@ -344,31 +344,48 @@ let get_seq_heap_as_seq (heap1 heap2:machine_heap) (mem:interop_heap) (b:b8) : L
   (ensures DV.as_seq (hs_of_mem mem) (get_downview b.bsrc) == get_seq_heap heap2 (addrs_of_mem mem) b) =
   assert (Seq.equal (DV.as_seq (hs_of_mem mem) (get_downview b.bsrc)) (get_seq_heap heap2 (addrs_of_mem mem) b))
 
-let rec up_mem_aux
-  (h:machine_heap)
-  (ps:list b8)
-  (accu:list b8)
-  (m:interop_heap{Set.equal (addrs_set m) (Map.domain h) /\
-    (forall p. List.memP p accu ==> correct_down_p m h p) /\
-    (forall p. List.memP p (ptrs_of_mem m) <==> List.memP p ps \/ List.memP p accu)}) : GTot
-  (m':interop_heap{ptrs_of_mem m == ptrs_of_mem m' /\
-    correct_down m' h}) =
+let rec up_mem_aux (mh:machine_heap) (ps:list b8) (ih:interop_heap) :
+  Ghost interop_heap
+    (requires (forall p. List.memP p ps ==> List.memP p (ptrs_of_mem ih)))
+    (ensures fun _ -> True)
+  =
   match ps with
-  | [] -> m
+  | [] -> ih
   | hd::tl ->
-    let s = get_seq_heap h (addrs_of_mem m) hd in
+    let s = get_seq_heap mh (addrs_of_mem ih) hd in
     let b = get_downview hd.bsrc in
-    DV.upd_seq_spec (hs_of_mem m) b s;
-    let m' = DV.upd_seq (hs_of_mem m) b s in
-    let aux1 (p:b8) : Lemma
-      (requires MB.live (hs_of_mem m) p.bsrc /\
-        MB.loc_disjoint (MB.loc_buffer p.bsrc) (MB.loc_buffer hd.bsrc))
-      (ensures DV.as_seq (hs_of_mem m) (get_downview p.bsrc) == DV.as_seq m' (get_downview p.bsrc))
-      = lemma_dv_equal (down_view p.src) p.bsrc (hs_of_mem m) m'
-    in Classical.forall_intro (Classical.move_requires aux1);
-    up_mem_aux h tl (hd::accu) (InteropHeap m.ptrs m.addrs m')
+    DV.upd_seq_spec (hs_of_mem ih) b s;
+    let ih' = DV.upd_seq (hs_of_mem ih) b s in
+    up_mem_aux mh tl (InteropHeap ih.ptrs ih.addrs ih')
 
-let up_mem heap mem = up_mem_aux heap (ptrs_of_mem mem) [] mem
+let rec lemma_up_mem_aux (mh:machine_heap) (ps:list b8) (accu:list b8) (ih:interop_heap) : Lemma
+  (requires 
+    Set.equal (addrs_set ih) (Map.domain mh) /\
+    (forall p. List.memP p accu ==> correct_down_p ih mh p) /\
+    (forall p. List.memP p (ptrs_of_mem ih) <==> List.memP p ps \/ List.memP p accu))
+  (ensures (
+    let ih' = up_mem_aux mh ps ih in
+    ptrs_of_mem ih == ptrs_of_mem ih' /\
+    correct_down ih' mh))
+  =
+  match ps with
+  | [] -> ()
+  | hd::tl ->
+    let s = get_seq_heap mh (addrs_of_mem ih) hd in
+    let b = get_downview hd.bsrc in
+    DV.upd_seq_spec (hs_of_mem ih) b s;
+    let ih' = DV.upd_seq (hs_of_mem ih) b s in
+    let aux1 (p:b8) : Lemma
+      (requires MB.live (hs_of_mem ih) p.bsrc /\
+        MB.loc_disjoint (MB.loc_buffer p.bsrc) (MB.loc_buffer hd.bsrc))
+      (ensures DV.as_seq (hs_of_mem ih) (get_downview p.bsrc) == DV.as_seq ih' (get_downview p.bsrc))
+      = lemma_dv_equal (down_view p.src) p.bsrc (hs_of_mem ih) ih'
+    in Classical.forall_intro (Classical.move_requires aux1);
+    lemma_up_mem_aux mh tl (hd::accu) (InteropHeap ih.ptrs ih.addrs ih')
+
+let up_mem mh ih =
+  lemma_up_mem_aux mh (ptrs_of_mem ih) [] ih;
+  up_mem_aux mh (ptrs_of_mem ih) ih
 
 let rec down_up_identity_aux
   (h:machine_heap)
@@ -376,7 +393,7 @@ let rec down_up_identity_aux
   (accu:list b8)
   (m:interop_heap{correct_down m h /\
     (forall p. List.memP p (ptrs_of_mem m) <==> List.memP p ps \/ List.memP p accu)})
-  : Lemma (m == up_mem_aux h ps accu m) =
+  : Lemma (m == up_mem_aux h ps m) =
   match ps with
   | [] -> ()
   | hd::tl ->
@@ -448,8 +465,8 @@ let rec update_buffer_up_mem_aux
       h1.[x] == h2.[x])
   )
   (ensures
-    (List.memP b accu ==> up_mem_aux h2 ps accu m == m) /\
-    (~(List.memP b accu) ==> hs_of_mem (up_mem_aux h2 ps accu m) ==
+    (List.memP b accu ==> up_mem_aux h2 ps m == m) /\
+    (~(List.memP b accu) ==> hs_of_mem (up_mem_aux h2 ps m) ==
       DV.upd_seq (hs_of_mem m) (get_downview b.bsrc) (get_seq_heap h2 (addrs_of_mem m) b))) =
   match ps with
   | [] -> ()

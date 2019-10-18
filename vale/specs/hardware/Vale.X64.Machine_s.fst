@@ -51,13 +51,16 @@ type taint:eqtype =
   | Public
   | Secret
 
+let heaplet_index = int
+
 type tmaddr:eqtype = maddr & taint
+type tmhaddr:eqtype = maddr & taint & heaplet_index
 
 [@va_qattr]
 type operand (tc tr:eqtype) : eqtype =
   | OConst: n:tc -> operand tc tr
   | OReg: r:tr -> operand tc tr
-  | OMem: m:tmaddr -> operand tc tr
+  | OMem: m:tmhaddr -> operand tc tr
   | OStack: m:tmaddr -> operand tc tr
 
 [@va_qattr]

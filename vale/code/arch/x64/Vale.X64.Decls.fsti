@@ -145,7 +145,7 @@ let valid_mem_operand128 (addr:int) (t:taint) (s_mem:vale_heap) (s_memTaint:M.me
 let valid_operand (o:operand64) (s:vale_state) : prop0 =
   Vale.X64.State.valid_src_operand o s /\
   ( match o with
-    | OMem (m, t) -> valid_mem_operand64 (eval_maddr m s) t (M.get_vale_heap s.vs_heap) s.vs_memTaint
+    | OMem (m, t, _) -> valid_mem_operand64 (eval_maddr m s) t (M.get_vale_heap s.vs_heap) s.vs_memTaint
     | OStack (m, t) -> S.valid_taint_stack64 (eval_maddr m s) t s.vs_stackTaint
     | _ -> True
   )
@@ -154,7 +154,7 @@ let valid_operand (o:operand64) (s:vale_state) : prop0 =
 let valid_operand128 (o:operand128) (s:vale_state) : prop0 =
   Vale.X64.State.valid_src_operand128 o s /\
   ( match o with
-    | OMem (m, t) -> valid_mem_operand128 (eval_maddr m s) t (M.get_vale_heap s.vs_heap) s.vs_memTaint
+    | OMem (m, t, _) -> valid_mem_operand128 (eval_maddr m s) t (M.get_vale_heap s.vs_heap) s.vs_memTaint
     | OStack (m, t) -> S.valid_taint_stack128 (eval_maddr m s) t s.vs_stackTaint
     | _ -> True
   )
@@ -196,9 +196,9 @@ val va_fuel_default : unit -> va_fuel
 [@va_qattr]
 unfold let va_opr_code_Mem (o:va_operand) (offset:int) (t:taint) : va_operand =
   match o with
-  | OConst n -> OMem (MConst (n + offset), t)
-  | OReg r -> OMem (MReg (Reg 0 r) offset, t)
-  | _ -> OMem (MConst 42, t)
+  | OConst n -> OMem (MConst (n + offset), t, 0) // TODO HEAPLET
+  | OReg r -> OMem (MReg (Reg 0 r) offset, t, 0)
+  | _ -> OMem (MConst 42, t, 0)
 
 val va_opr_lemma_Mem (s:va_state) (base:va_operand) (offset:int) (b:M.buffer64) (index:int) (t:taint) : Lemma
   (requires (
@@ -231,8 +231,8 @@ val va_opr_lemma_Stack (s:va_state) (base:va_operand) (offset:int) (t:taint) : L
 [@va_qattr]
 unfold let va_opr_code_Mem128 (o:va_operand) (offset:int) (t:taint) : va_operand128 =
   match o with
-  | OReg r -> OMem (MReg (Reg 0 r) offset, t)
-  | _ -> OMem (MConst 42, t)
+  | OReg r -> OMem (MReg (Reg 0 r) offset, t, 0) // TODO HEAPLET
+  | _ -> OMem (MConst 42, t, 0)
 
 val va_opr_lemma_Mem128 (s:va_state) (base:va_operand) (offset:int) (t:taint) (b:M.buffer128) (index:int) : Lemma
   (requires (
@@ -314,7 +314,7 @@ let va_update_operand (o:va_operand) (sM:va_state) (sK:va_state) : va_state =
   match o with
   | OConst n -> sK
   | OReg r -> va_update_reg64 r sM sK
-  | OMem (m, _) -> va_update_mem sM sK
+  | OMem (m, _, _) -> va_update_mem sM sK
   | OStack (m, _) -> va_update_stack sM sK
 
 [@va_qattr] unfold
@@ -355,7 +355,7 @@ let va_upd_operand_dst_opr64 (o:va_operand) (v:nat64) (s:vale_state) =
   match o with
   | OConst n -> s
   | OReg r -> update_reg_64 r v s
-  | OMem (m, _) -> s // TODO: support destination memory operands
+  | OMem (m, _, _) -> s // TODO: support destination memory operands
   | OStack (m, _) -> s // TODO: support destination stack operands
 
 [@va_qattr]
@@ -363,7 +363,7 @@ let va_upd_operand_reg_opr64 (o:va_operand) (v:nat64) (s:vale_state) =
   match o with
   | OConst n -> s
   | OReg r -> update_reg_64 r v s
-  | OMem (m, _) -> s
+  | OMem (m, _, _) -> s
   | OStack (m, _) -> s
 
 let va_lemma_upd_update (sM:vale_state) : Lemma
