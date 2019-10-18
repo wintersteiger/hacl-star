@@ -22,3 +22,13 @@ let lemma_heap_of_interop (ih:interop_heap) : Lemma
   FStar.Pervasives.reveal_opaque (`%_ih) _ih;
   down_up_identity ih;
   ()
+
+let heap_get_unchanged_memory hi =
+  let ValeHeap mh mh0 ih0 thi = hi in
+  ValeHeap mh0 mh0 ih0 thi
+
+let heap_get_heaplet hi idx =
+  let heap = hi.mh in
+  let to_heaplet_index = hi.to_heaplet_index in
+  let restricted_domain = admit () in
+  Map.restrict restricted_domain heap
