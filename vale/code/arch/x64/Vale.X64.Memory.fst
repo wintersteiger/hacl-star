@@ -297,9 +297,9 @@ let buffer_write #t b i v h =
     let hs' = UV.upd (_ih h).hs bv i (v_of_typ t v) in
     let ih' = InteropHeap (_ih h).ptrs (_ih h).addrs hs' in
     let mh' = Vale.Interop.down_mem ih' in
-    let ValeHeap _ mh0 ih0 = h in
+    let ValeHeap _ mh0 ih0 thi = h in
 assume False; // TODO
-    let h':vale_heap = ValeHeap mh' mh0 ih0 in
+    let h':vale_heap = ValeHeap mh' mh0 ih0 thi in
     seq_upd (_ih h).hs bv i (v_of_typ t v);
     assert (Seq.equal (buffer_as_seq h' b) (Seq.upd (buffer_as_seq h b) i v));
     h'

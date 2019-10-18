@@ -12,7 +12,7 @@ let heap_upd hi mh' =
   mi_heap_upd hi mh'
 
 let heap_of_interop ih =
-  ValeHeap (down_mem ih) (down_mem ih) (Ghost.hide ih)
+  ValeHeap (down_mem ih) (down_mem ih) (Ghost.hide ih) (fun i -> 0)
 
 let lemma_heap_of_interop (ih:interop_heap) : Lemma
   (requires True)
