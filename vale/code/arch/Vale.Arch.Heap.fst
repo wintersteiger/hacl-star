@@ -1,6 +1,7 @@
 module Vale.Arch.Heap
 open FStar.Mul
 open Vale.Interop
+open Vale.Lib.Set
 open Vale.Arch.HeapImpl
 friend Vale.Arch.HeapImpl
 
@@ -30,5 +31,6 @@ let heap_get_unchanged_memory hi =
 let heap_get_heaplet hi idx =
   let heap = hi.mh in
   let to_heaplet_index = hi.to_heaplet_index in
-  let restricted_domain = admit () in
+  let restricted_domain =
+    set_restrict (Map.domain heap) (fun addr -> to_heaplet_index addr = idx) in
   Map.restrict restricted_domain heap

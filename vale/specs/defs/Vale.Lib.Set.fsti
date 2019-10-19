@@ -12,3 +12,10 @@ val remove_between_reveal (s:S.set int) (start:int) (finish:int) (i:int) : Lemma
 
 val lemma_sel_restrict (#a:Type) (s:S.set int) (m:M.t int a) (k:int) : Lemma
   (Map.sel m k == Map.sel (Map.restrict s m) k)
+
+val set_restrict (#t:eqtype) (s:S.set t) (p:t -> bool) : (r:S.set t)
+
+val lemma_set_restrict (#t:eqtype) (s:S.set t) (p:t -> bool) :
+  Lemma
+    (ensures (
+        (forall x. S.mem x (set_restrict s p) <==> (S.mem x s /\ p x))))
