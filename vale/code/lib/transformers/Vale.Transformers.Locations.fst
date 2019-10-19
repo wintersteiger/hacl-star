@@ -124,7 +124,13 @@ let lemma_locations_complete s1 s2 flags ok trace =
   assert (overflow s1.ms_flags == overflow s2.ms_flags);
   assert (cf s1.ms_flags == cf s2.ms_flags);
   assert (FStar.FunctionalExtensionality.feq s1.ms_flags s2.ms_flags);
-  assume (s1.ms_heap == s2.ms_heap); // TODO:FIXME
+  FStar.Classical.forall_intro (
+    (fun idx ->
+       assert (eval_location (ALocHeaplet idx) s1 == eval_location (ALocHeaplet idx) s2) (* OBSERVE *)
+    ) <: (idx:_ -> Lemma (heap_get_heaplet s1.ms_heap idx == heap_get_heaplet s2.ms_heap idx))
+  );
+  heap_extensional_equality s1.ms_heap s2.ms_heap;
+  assert (s1.ms_heap == s2.ms_heap);
   assert (s1.ms_memTaint == s2.ms_memTaint);
   assert (s1.ms_stack == s2.ms_stack);
   assert (s1.ms_stackTaint == s2.ms_stackTaint);

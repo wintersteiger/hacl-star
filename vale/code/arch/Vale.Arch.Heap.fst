@@ -42,3 +42,8 @@ let heap_upd_heaplet hi idx mh' =
   assume (heap_get_heaplet hi' idx == mh'); // TODO:FIXME
   assume (forall idx'. idx' <> idx ==> heap_get_heaplet hi' idx' == heap_get_heaplet hi idx'); // TODO:FIXME
   hi'
+
+let heap_extensional_equality hi1 hi2 =
+  let ValeHeap mh1 mh01 ih01 thi1 = hi1 in
+  let ValeHeap mh2 hm02 ih02 thi2 = hi2 in
+  assume (mh1 == mh2) // TODO:FIXME

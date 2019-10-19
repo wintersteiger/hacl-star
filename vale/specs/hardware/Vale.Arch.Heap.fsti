@@ -27,3 +27,10 @@ val heap_upd_heaplet (hi:heap_impl) (idx:int) (mh':machine_heap) : Pure heap_imp
       (heap_get_unchanged_memory hi' == heap_get_unchanged_memory hi) /\
       (heap_get_heaplet hi' idx == mh') /\
       (forall idx'. idx' <> idx ==> heap_get_heaplet hi' idx' == heap_get_heaplet hi idx'))
+
+val heap_extensional_equality (hi1 hi2:heap_impl) :
+  Lemma
+    (requires (
+        heap_get_unchanged_memory hi1 == heap_get_unchanged_memory hi2 /\
+        (forall idx. heap_get_heaplet hi1 idx == heap_get_heaplet hi2 idx)))
+    (ensures (hi1 == hi2))
