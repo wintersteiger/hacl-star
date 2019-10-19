@@ -54,7 +54,7 @@ let downgrade_val_raise_val_u0_u1 #a x = FStar.Universe.downgrade_val_raise_val 
 let location_val_t a =
   match a with
   | ALocMem -> heap_impl & memTaint_t
-  | ALocHeaplet _ -> FStar.Universe.raise_t (machine_heap & memTaint_t)
+  | ALocHeaplet _ -> FStar.Universe.raise_t machine_heap
   | ALocStack -> FStar.Universe.raise_t (machine_stack & memTaint_t)
   | ALocReg r -> FStar.Universe.raise_t (t_reg r)
   | ALocCf -> FStar.Universe.raise_t flag_val_t
@@ -74,7 +74,7 @@ let location_val_eqt a =
 let eval_location a s =
   match a with
   | ALocMem -> heap_get_unchanged_memory s.ms_heap, s.ms_memTaint
-  | ALocHeaplet h -> FStar.Universe.raise_val (heap_get_heaplet s.ms_heap h, s.ms_memTaint)
+  | ALocHeaplet h -> FStar.Universe.raise_val (heap_get_heaplet s.ms_heap h)
   | ALocStack -> FStar.Universe.raise_val (s.ms_stack, s.ms_stackTaint)
   | ALocReg r -> FStar.Universe.raise_val (eval_reg r s)
   | ALocCf -> FStar.Universe.raise_val (cf s.ms_flags)
@@ -86,9 +86,11 @@ let update_location a v s =
   | ALocMem ->
     // let v = coerce v in
     // { s with ms_heap = fst v ; ms_memTaint = snd v }
-    admit () // TODO:FIXME
-  | ALocHeaplet _ ->
-    admit () // TODO:FIXME
+    admit () // TODO:FIXME -- unsure how to implement this, because it _should_ remain unchanged?
+  | ALocHeaplet h ->
+    let v = FStar.Universe.downgrade_val (coerce v) in
+    admit (); // TODO:FIXME -- unsure how to restrict to [is_machine_heap_update]
+    { s with ms_heap = heap_upd_heaplet s.ms_heap h v }
   | ALocStack ->
     let v = FStar.Universe.downgrade_val (coerce v) in
     { s with ms_stack = fst v ; ms_stackTaint = snd v }

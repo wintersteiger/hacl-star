@@ -34,3 +34,11 @@ let heap_get_heaplet hi idx =
   let restricted_domain =
     set_restrict (Map.domain heap) (fun addr -> to_heaplet_index addr = idx) in
   Map.restrict restricted_domain heap
+
+let heap_upd_heaplet hi idx mh' =
+  let heap = hi.mh in
+  let heap' = Map.concat heap mh' in
+  let hi' = heap_upd hi heap' in
+  assume (heap_get_heaplet hi' idx == mh'); // TODO:FIXME
+  assume (forall idx'. idx' <> idx ==> heap_get_heaplet hi' idx' == heap_get_heaplet hi idx'); // TODO:FIXME
+  hi'

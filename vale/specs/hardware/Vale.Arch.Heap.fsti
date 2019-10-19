@@ -20,3 +20,10 @@ val heap_of_interop (ih:interop_heap) : GTot heap_impl
 val heap_get_unchanged_memory (hi:heap_impl) : heap_impl
 
 val heap_get_heaplet (hi:heap_impl) (idx:int) : machine_heap
+
+val heap_upd_heaplet (hi:heap_impl) (idx:int) (mh':machine_heap) : Pure heap_impl
+  (requires (is_machine_heap_update (heap_get_heaplet hi idx) mh'))
+  (ensures fun hi' ->
+      (heap_get_unchanged_memory hi' == heap_get_unchanged_memory hi) /\
+      (heap_get_heaplet hi' idx == mh') /\
+      (forall idx'. idx' <> idx ==> heap_get_heaplet hi' idx' == heap_get_heaplet hi idx'))
