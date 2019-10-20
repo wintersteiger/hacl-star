@@ -269,7 +269,7 @@ let valid_dst_operand64 (o:operand64) (s:machine_state) : bool =
   | OMem (m, _, hi) ->
     let ptr = eval_maddr m s in
     let hm = heap_get_heaplet_map s.ms_heap in
-    valid_addr64 (eval_maddr m s) (heap_get s.ms_heap) && valid_heaplet_addr128 ptr hi hm
+    valid_addr64 (eval_maddr m s) (heap_get s.ms_heap) && valid_heaplet_addr64 ptr hi hm
   | OStack (m, _) -> valid_dst_stack64 (eval_reg_64 rRsp s) (eval_maddr m s) s.ms_stack
 
 let valid_dst_operand128 (o:operand128) (s:machine_state) : bool =
