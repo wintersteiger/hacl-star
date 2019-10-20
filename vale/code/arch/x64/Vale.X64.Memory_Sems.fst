@@ -29,7 +29,13 @@ let lemma_upd_get_heap h = I.down_up_identity (_ih h)
 
 let lemma_get_upd_heap h m = I.up_down_identity (_ih h) m
 
-let lemma_heap_get_heap h = ()
+let lemma_heap_get_heap h =
+let temp (vh:vale_heap) : Lemma (get_heaplet_map  vh 0 == vh.to_heaplet_index 0) = () in
+assume False;
+  assume (heap_get_heaplet_map (coerce h) == h.to_heaplet_index);
+  assert (get_heaplet_map h == h.to_heaplet_index);
+  assert (heap_get_heaplet_map (coerce h) == get_heaplet_map (get_vale_heap h));
+  ()
 
 let lemma_heap_upd_heap h m = ()
 

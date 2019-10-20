@@ -538,6 +538,12 @@ let valid_taint_buf64 b mem memTaint t = valid_taint_buf b mem memTaint t
 
 let valid_taint_buf128 b mem memTaint t = valid_taint_buf b mem memTaint t
 
+let valid_heaplet_buf #t b vh hi =
+  let addr = (_ih vh).addrs b in
+  let hm = heap_get_heaplet_map vh in
+  (forall (i:nat{i < DV.length (get_downview b.bsrc)}).
+    {:pattern (hm (addr + i))} hm (addr + i) = hi)
+
 let apply_taint_buf (b:b8) (mem:vale_heap) (memTaint:memtaint) (t:taint) (i:nat) : Lemma
   (requires i < DV.length (get_downview b.bsrc) /\ valid_taint_buf b mem memTaint t)
   (ensures memTaint.[(_ih mem).addrs b + i] = t) = ()
@@ -565,6 +571,14 @@ let lemma_valid_taint128 b memTaint mem i t =
     apply_taint_buf b mem memTaint t extra
   in
   Classical.forall_intro (Classical.move_requires aux)
+
+let lemma_valid_heaplet64 b vh i hi =
+assume False // TODO
+//  ()
+
+let lemma_valid_heaplet128 b vh i hi =
+assume False // TODO
+//  ()
 
 let same_memTaint (t:base_typ) (b:buffer t) (mem0 mem1:vale_heap) (memT0 memT1:memtaint) : Lemma
   (requires modifies (loc_buffer b) mem0 mem1 /\
@@ -604,6 +618,10 @@ let modifies_valid_taint ty b p h h' memTaint t =
 
 let modifies_valid_taint64 b p h h' memTaint t = modifies_valid_taint TUInt64 b p h h' memTaint t
 let modifies_valid_taint128 b p h h' memTaint t = modifies_valid_taint TUInt128 b p h h' memTaint t
+let modifies_valid_heaplet64 b p h h' hi =
+  assume False
+let modifies_valid_heaplet128 b p h h' hi =
+  assume False
 
 let valid_taint_bufs (mem:vale_heap) (memTaint:memtaint) (ps:list b8) (ts:b8 -> GTot taint) =
   forall b.{:pattern List.memP b ps} List.memP b ps ==> valid_taint_buf b mem memTaint (ts b)

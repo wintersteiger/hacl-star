@@ -14,15 +14,15 @@ let has_taint128 (o:operand128) (t:taint) : bool =
   | OMem (_, t', _) | OStack (_, t') -> t = t'
   | _ -> true
 
-val lemma_valid_buf_maddr64 (h:vale_heap) (memTaint:memTaint_t) (b:buffer64) (i:int) (t:taint) : Lemma
-  (requires valid_buffer_read h b i /\ valid_taint_buf64 b h memTaint t)
-  (ensures valid_buf_maddr64 (buffer_addr b h + 8 * i) h memTaint b i t)
-  [SMTPat (valid_buffer_read h b i); SMTPat (valid_taint_buf64 b h memTaint t)]
+val lemma_valid_buf_maddr64 (h:vale_heap) (memTaint:memTaint_t) (b:buffer64) (i:int) (t:taint) (hi:heaplet_index) : Lemma
+  (requires valid_buffer_read h b i /\ valid_taint_buf64 b h memTaint t /\ valid_heaplet_buf64 b h hi)
+  (ensures valid_buf_maddr64 (buffer_addr b h + 8 * i) h memTaint b i t hi)
+  [SMTPat (valid_buffer_read h b i); SMTPat (valid_taint_buf64 b h memTaint t); SMTPat (valid_heaplet_buf64 b h hi)]
 
-val lemma_valid_buf_maddr128 (h:vale_heap) (memTaint:memTaint_t) (b:buffer128) (i:int) (t:taint) : Lemma
-  (requires valid_buffer_read h b i /\ valid_taint_buf128 b h memTaint t)
-  (ensures valid_buf_maddr128 (buffer_addr b h + 16 * i) h memTaint b i t)
-  [SMTPat (valid_buffer_read h b i); SMTPat (valid_taint_buf128 b h memTaint t)]
+val lemma_valid_buf_maddr128 (h:vale_heap) (memTaint:memTaint_t) (b:buffer128) (i:int) (t:taint) (hi:heaplet_index) : Lemma
+  (requires valid_buffer_read h b i /\ valid_taint_buf128 b h memTaint t /\ valid_heaplet_buf128 b h hi)
+  (ensures valid_buf_maddr128 (buffer_addr b h + 16 * i) h memTaint b i t hi)
+  [SMTPat (valid_buffer_read h b i); SMTPat (valid_taint_buf128 b h memTaint t); SMTPat (valid_heaplet_buf128 b h hi)]
 
 //val lemma_valid_taint64_operand (m:maddr) (t:taint) (s:va_state) : Lemma
 //  (requires valid_operand (OMem (m, t, _)) s)

@@ -46,7 +46,7 @@ let va_opr_lemma_Mem s base offset b index t =
   let t = va_opr_code_Mem base offset t in
   M.lemma_valid_mem64 b index h;
   let OMem (m, t, _) = t in
-  assert (valid_buf_maddr64 (eval_maddr m s) h s.vs_memTaint b index t);
+  assert (valid_buf_maddr64 (eval_maddr m s) h s.vs_memTaint b index t 0); // TODO HEAPLET
   M.lemma_load_mem64 b index h
 
 let va_opr_lemma_Stack s base offset t = ()
@@ -56,7 +56,7 @@ let va_opr_lemma_Mem128 s base offset t b index =
   let t = va_opr_code_Mem128 base offset t in
   M.lemma_valid_mem128 b index h;
   let OMem (m, t, _) = t in
-  assert (valid_buf_maddr128 (eval_maddr m s) h s.vs_memTaint b index t);
+  assert (valid_buf_maddr128 (eval_maddr m s) h s.vs_memTaint b index t 0); // TODO HEAPLET
   M.lemma_load_mem128 b index h
 
 let taint_at memTaint addr = Map.sel memTaint addr

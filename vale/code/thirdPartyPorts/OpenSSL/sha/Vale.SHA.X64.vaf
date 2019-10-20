@@ -758,6 +758,9 @@ procedure sha_update_bytes_stdcall(
         buffer_writeable(ctx_b);
         buffer_readable(mem, in_b);
         buffer_readable(mem, k_b);
+        valid_heaplet_buf128(ctx_b, mem, 0);
+        valid_heaplet_buf128(in_b, mem, 0);
+        valid_heaplet_buf128(k_b, mem, 0);
         valid_taint_buf128(ctx_b, mem, memTaint, Secret);
         valid_taint_buf128(in_b, mem, memTaint, Secret);
         valid_taint_buf128(k_b, mem, memTaint, Secret);

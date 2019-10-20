@@ -12,6 +12,7 @@ unfold let (.[]) = Map.sel
 unfold let (.[]<-) = Map.upd
 
 let machine_heap = Map.t int nat8
+let t_heaplet_map = int -> int
 
 let is_machine_heap_update (mh mh':machine_heap) =
   Set.equal (Map.domain mh) (Map.domain mh') /\
@@ -78,6 +79,9 @@ let update_heap128 = make_opaque update_heap128_def
 let valid_addr (ptr:int) (mem:machine_heap) : bool =
   Map.contains mem ptr
 
+let valid_heaplet_addr (ptr:int) (index:int) (map:t_heaplet_map) : bool =
+  map ptr = index
+
 [@"opaque_to_smt"]
 let valid_addr64 (ptr:int) (mem:machine_heap) =
   valid_addr ptr mem &&
@@ -88,6 +92,17 @@ let valid_addr64 (ptr:int) (mem:machine_heap) =
   valid_addr (ptr + 5) mem &&
   valid_addr (ptr + 6) mem &&
   valid_addr (ptr + 7) mem
+
+[@"opaque_to_smt"]
+let valid_heaplet_addr64 (ptr:int) (index:int) (hm:t_heaplet_map) =
+  valid_heaplet_addr (ptr + 0) index hm &&
+  valid_heaplet_addr (ptr + 1) index hm &&
+  valid_heaplet_addr (ptr + 2) index hm &&
+  valid_heaplet_addr (ptr + 3) index hm &&
+  valid_heaplet_addr (ptr + 4) index hm &&
+  valid_heaplet_addr (ptr + 5) index hm &&
+  valid_heaplet_addr (ptr + 6) index hm &&
+  valid_heaplet_addr (ptr + 7) index hm
 
 [@"opaque_to_smt"]
 let valid_addr128 (ptr:int) (mem:machine_heap) =
@@ -107,4 +122,23 @@ let valid_addr128 (ptr:int) (mem:machine_heap) =
   valid_addr (ptr + 13) mem &&
   valid_addr (ptr + 14) mem &&
   valid_addr (ptr + 15) mem
+
+[@"opaque_to_smt"]
+let valid_heaplet_addr128 (ptr:int) (index:int) (hm:t_heaplet_map) =
+  valid_heaplet_addr (ptr + 0) index hm &&
+  valid_heaplet_addr (ptr + 1) index hm &&
+  valid_heaplet_addr (ptr + 2) index hm &&
+  valid_heaplet_addr (ptr + 3) index hm &&
+  valid_heaplet_addr (ptr + 4) index hm &&
+  valid_heaplet_addr (ptr + 5) index hm &&
+  valid_heaplet_addr (ptr + 6) index hm &&
+  valid_heaplet_addr (ptr + 7) index hm &&
+  valid_heaplet_addr (ptr + 8) index hm &&
+  valid_heaplet_addr (ptr + 9) index hm &&
+  valid_heaplet_addr (ptr + 10) index hm &&
+  valid_heaplet_addr (ptr + 11) index hm &&
+  valid_heaplet_addr (ptr + 12) index hm &&
+  valid_heaplet_addr (ptr + 13) index hm &&
+  valid_heaplet_addr (ptr + 14) index hm &&
+  valid_heaplet_addr (ptr + 15) index hm
 

@@ -62,6 +62,7 @@ procedure Load64_buffer(
     ensures
         dst == buffer64_read(b, index, mem);
 {
+assume valid_heaplet_buf64(b, mem, 0);
 }
 
 procedure Store64_buffer(
@@ -82,9 +83,11 @@ procedure Store64_buffer(
         mem == old(buffer64_write(b, index, src, mem));
         valid_taint_buf64(b, mem, memTaint, t);
 {
+assume valid_heaplet_buf64(b, mem, 0);
     low_lemma_store_mem64(b, #nat(index), old(src), old(mem));
     lemma_valid_taint64(b, old(#memTaint_t(memTaint)), old(mem), #nat(index), t);
     same_memTaint64(b, old(mem), mem, old(#memTaint_t(memTaint)), #memTaint_t(memTaint));
+assume false;
 }
 
 procedure LoadBe64_buffer(
@@ -102,6 +105,7 @@ procedure LoadBe64_buffer(
     ensures
         dst == reverse_bytes_nat64(buffer64_read(b, index, mem));
 {
+assume valid_heaplet_buf64(b, mem, 0);
 }
 
 procedure StoreBe64_buffer(
@@ -122,7 +126,9 @@ procedure StoreBe64_buffer(
         mem == old(buffer64_write(b, index, reverse_bytes_nat64(src), mem));
         valid_taint_buf64(b, mem, memTaint, t);
 {
+assume valid_heaplet_buf64(b, mem, 0);
     low_lemma_store_mem64(b, #nat(index), old(reverse_bytes_nat64(src)), old(mem));
     lemma_valid_taint64(b, old(#memTaint_t(memTaint)), old(mem), #nat(index), t);
     same_memTaint64(b, old(mem), mem, old(#memTaint_t(memTaint)), #memTaint_t(memTaint));
+assume false;
 }

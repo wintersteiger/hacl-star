@@ -10,8 +10,10 @@ noeq type vale_heap =
     mh:machine_heap ->
     mh0:machine_heap{is_machine_heap_update mh0 mh} ->
     ih0:Ghost.erased interop_heap{mh0 == down_mem (Ghost.reveal ih0)} ->
-    to_heaplet_index:(int -> int) ->
+    to_heaplet_index:t_heaplet_map ->
     vale_heap
+
+let get_heaplet_map vh = vh.to_heaplet_index
 
 [@"opaque_to_smt"]
 let _ih (vh:vale_heap) : GTot (ih:interop_heap{vh.mh == down_mem ih}) =

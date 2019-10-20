@@ -212,7 +212,7 @@ let vale_pre_hyp
   : VSig.sprop =
     fun s0 ->
       VSig.disjoint_or_eq args /\
-      VSig.readable args VS.(s0.vs_heap) /\
+      VSig.readable true args VS.(s0.vs_heap) /\
       register_args max_arity arg_reg (List.length args) args s0 /\
       stack_args max_arity (List.length args) args s0 /\
       VS.eval_reg_64 MS.rRsp s0 == SI.init_rsp s0.VS.vs_stack /\

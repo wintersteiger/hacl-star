@@ -19,8 +19,13 @@ let remove_between_reveal s start finish i = ()
 
 let lemma_sel_restrict #a s m k = ()
 
+assume val _set_restrict (#t:eqtype) (s:S.set t) (p:t -> bool) : Pure (S.set t)
+  (requires True)
+  (ensures fun r -> forall x.{:pattern (S.mem x r)} S.mem x r <==> S.mem x s /\ p x)
+
 let set_restrict #t s p =
-  FStar.FunctionalExtensionality.on_dom t (fun x ->
-      s x && p x)
+  _set_restrict s p
+//  let f x = s x && p x in
+//  FStar.FunctionalExtensionality.on_dom t f
 
 let lemma_set_restrict #t s p = ()

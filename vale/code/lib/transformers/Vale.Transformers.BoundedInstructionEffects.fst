@@ -337,6 +337,7 @@ let rec lemma_instr_apply_eval_inouts_same_read
          instr_eval_operand_explicit i (fst oprs) s2,
          snd oprs)
       | IOpIm i ->
+assume False;
         lemma_instr_eval_operand_implicit_same_read_both i s1 s2;
         (instr_eval_operand_implicit i s1,
          instr_eval_operand_implicit i s2,

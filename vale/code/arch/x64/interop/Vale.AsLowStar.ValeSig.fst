@@ -67,20 +67,22 @@ let sprop = VS.vale_state -> prop
 
 
 [@__reduce__]
-let readable_one (s:ME.vale_heap) (arg:arg) : prop =
+let readable_one (use_heaplets:bool) (s:ME.vale_heap) (arg:arg) : prop =
   match arg with
   | (|TD_Buffer src bt _, x |) ->
+    (use_heaplets ==> ME.valid_heaplet_buf (as_vale_buffer #src #bt x) s 0) /\
     ME.buffer_readable s (as_vale_buffer #src #bt x) /\
     ME.buffer_writeable (as_vale_buffer #src #bt x)
     /\ True //promote to prop
   | (|TD_ImmBuffer src bt _, x |) ->
+    (use_heaplets ==> ME.valid_heaplet_buf (as_vale_immbuffer #src #bt x) s 0) /\
     ME.buffer_readable s (as_vale_immbuffer #src #bt x) /\
     True
   | _ -> True
 
 [@__reduce__]
-let readable (args:list arg) (s:ME.vale_heap) : prop =
-    BigOps.big_and' (readable_one s) args
+let readable (use_heaplets:bool) (args:list arg) (s:ME.vale_heap) : prop =
+    BigOps.big_and' (readable_one use_heaplets s) args
 
 
 [@__reduce__]
@@ -127,7 +129,7 @@ let vale_sig_nil
        V.eval_code code va_s0 f va_s1 /\
        vale_calling_conventions va_s0 va_s1 regs_modified xmms_modified /\
        elim_nil post va_s0 va_s1 f /\
-       readable args VS.(va_s1.vs_heap) /\
+       readable false args VS.(va_s1.vs_heap) /\
        ME.modifies (mloc_modified_args args) va_s0.VS.vs_heap va_s1.VS.vs_heap))
 
 [@__reduce__]

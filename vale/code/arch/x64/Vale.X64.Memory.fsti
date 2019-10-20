@@ -290,6 +290,10 @@ type memtaint = memTaint_t
 val valid_taint_buf64 (b:buffer64) (vale_heap:vale_heap) (memTaint:memtaint) (t:taint) : GTot prop0
 val valid_taint_buf128 (b:buffer128) (vale_heap:vale_heap) (memTaint:memtaint) (t:taint) : GTot prop0
 
+val valid_heaplet_buf (#t:base_typ) (b:buffer t) (vh:vale_heap) (hi:heaplet_index) : GTot prop0
+let valid_heaplet_buf64 (b:buffer64) (vh:vale_heap) (hi:heaplet_index) = valid_heaplet_buf b vh hi
+let valid_heaplet_buf128 (b:buffer128) (vh:vale_heap) (hi:heaplet_index) = valid_heaplet_buf b vh hi
+
 val lemma_valid_taint64
     (b:buffer64)
     (memTaint:memtaint)
@@ -313,6 +317,30 @@ val lemma_valid_taint128
   (ensures (
     let ptr = buffer_addr b vale_heap + 16 * i in
     forall i'.{:pattern Map.sel memTaint i'} i' >= ptr /\ i' < ptr + 16 ==> Map.sel memTaint i' == t))
+
+val lemma_valid_heaplet64
+    (b:buffer64)
+    (vh:vale_heap)
+    (i:nat{i < buffer_length b})
+    (hi:heaplet_index)
+  : Lemma
+  (requires valid_heaplet_buf64 b vh hi /\ buffer_readable vh b)
+  (ensures (
+    let ptr = buffer_addr b vh + 8 * i in
+    let hm = get_heaplet_map vh in
+    forall i'.{:pattern hm i'} i' >= ptr /\ i' < ptr + 8 ==> hm i' == hi))
+
+val lemma_valid_heaplet128
+    (b:buffer128)
+    (vh:vale_heap)
+    (i:nat{i < buffer_length b})
+    (hi:heaplet_index)
+  : Lemma
+  (requires valid_heaplet_buf128 b vh hi /\ buffer_readable vh b)
+  (ensures (
+    let ptr = buffer_addr b vh + 16 * i in
+    let hm = get_heaplet_map vh in
+    forall i'.{:pattern hm i'} i' >= ptr /\ i' < ptr + 16 ==> hm i' == hi))
 
 val same_memTaint64
     (b:buffer64)
@@ -345,3 +373,13 @@ val modifies_valid_taint128 (b:buffer128) (p:loc) (h h':vale_heap) (memTaint:mem
   (requires modifies p h h')
   (ensures valid_taint_buf128 b h memTaint t <==> valid_taint_buf128 b h' memTaint t)
   [SMTPat (modifies p h h'); SMTPat (valid_taint_buf128 b h' memTaint t)]
+
+val modifies_valid_heaplet64 (b:buffer64) (p:loc) (h h':vale_heap) (hi:heaplet_index) : Lemma
+  (requires modifies p h h')
+  (ensures valid_heaplet_buf64 b h hi <==> valid_heaplet_buf64 b h' hi)
+  [SMTPat (modifies p h h'); SMTPat (valid_heaplet_buf64 b h' hi)]
+
+val modifies_valid_heaplet128 (b:buffer128) (p:loc) (h h':vale_heap) (hi:heaplet_index) : Lemma
+  (requires modifies p h h')
+  (ensures valid_heaplet_buf128 b h hi <==> valid_heaplet_buf128 b h' hi)
+  [SMTPat (modifies p h h'); SMTPat (valid_heaplet_buf128 b h' hi)]

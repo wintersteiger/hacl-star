@@ -221,9 +221,10 @@ let valid_src_operand64_and_taint (o:operand64) (s:machine_state) : bool =
   match o with
   | OConst n -> true
   | OReg r -> true
-  | OMem (m, t, _) ->
+  | OMem (m, t, hi) ->
     let ptr = eval_maddr m s in
-    valid_addr64 ptr (heap_get s.ms_heap) && match_n ptr 8 s.ms_memTaint t
+    let hm = heap_get_heaplet_map s.ms_heap in
+    valid_addr64 ptr (heap_get s.ms_heap) && valid_heaplet_addr64 ptr hi hm && match_n ptr 8 s.ms_memTaint t
   | OStack (m, t) ->
     let ptr = eval_maddr m s in
     valid_src_stack64 ptr s.ms_stack && match_n ptr 8 s.ms_stackTaint t
@@ -232,9 +233,10 @@ let valid_src_operand128_and_taint (o:operand128) (s:machine_state) : bool =
   match o with
   | OConst _ -> false
   | OReg i -> true // We leave it to the printer/assembler to object to invalid XMM indices
-  | OMem (m, t, _) ->
+  | OMem (m, t, hi) ->
     let ptr = eval_maddr m s in
-    valid_addr128 ptr (heap_get s.ms_heap) && match_n ptr 16 s.ms_memTaint t
+    let hm = heap_get_heaplet_map s.ms_heap in
+    valid_addr128 ptr (heap_get s.ms_heap) && valid_heaplet_addr128 ptr hi hm && match_n ptr 16 s.ms_memTaint t
   | OStack (m, t) ->
     let ptr = eval_maddr m s in
     valid_src_stack128 ptr s.ms_stack && match_n ptr 16 s.ms_stackTaint t
@@ -264,14 +266,20 @@ let valid_dst_operand64 (o:operand64) (s:machine_state) : bool =
   match o with
   | OConst n -> false
   | OReg r -> not (rRsp = r)
-  | OMem (m, _, _) -> valid_addr64 (eval_maddr m s) (heap_get s.ms_heap)
+  | OMem (m, _, hi) ->
+    let ptr = eval_maddr m s in
+    let hm = heap_get_heaplet_map s.ms_heap in
+    valid_addr64 (eval_maddr m s) (heap_get s.ms_heap) && valid_heaplet_addr128 ptr hi hm
   | OStack (m, _) -> valid_dst_stack64 (eval_reg_64 rRsp s) (eval_maddr m s) s.ms_stack
 
 let valid_dst_operand128 (o:operand128) (s:machine_state) : bool =
   match o with
   | OConst _ -> false
   | OReg i -> true // We leave it to the printer/assembler to object to invalid XMM indices
-  | OMem (m, _, _) -> valid_addr128 (eval_maddr m s) (heap_get s.ms_heap)
+  | OMem (m, _, hi) ->
+    let ptr = eval_maddr m s in
+    let hm = heap_get_heaplet_map s.ms_heap in
+    valid_addr128 (eval_maddr m s) (heap_get s.ms_heap) && valid_heaplet_addr128 ptr hi hm
   | OStack (m, _) -> valid_dst_stack128 (eval_reg_64 rRsp s) (eval_maddr m s) s.ms_stack
 
 let update_operand64_preserve_flags'' (o:operand64) (v:nat64) (s_orig s:machine_state) : machine_state =

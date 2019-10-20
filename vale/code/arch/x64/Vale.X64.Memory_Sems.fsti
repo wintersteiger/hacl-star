@@ -29,7 +29,7 @@ val lemma_get_upd_heap (h:vale_heap) (m:S.machine_heap) : Lemma
 unfold let coerce (#b #a:Type) (x:a{a == b}) : b = x
 
 val lemma_heap_get_heap (h:vale_heap_impl) : Lemma
-  (vale_heap_impl == heap_impl /\ heap_get (coerce h) == get_heap (get_vale_heap h))
+  (vale_heap_impl == heap_impl /\ heap_get (coerce h) == get_heap (get_vale_heap h) /\ heap_get_heaplet_map (coerce h) == get_heaplet_map (get_vale_heap h))
   [SMTPat (heap_get (coerce h))]
 
 val lemma_heap_upd_heap (h:vale_heap_impl) (m:machine_heap) : Lemma

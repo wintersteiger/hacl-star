@@ -19,6 +19,9 @@ val heap_of_interop (ih:interop_heap) : GTot heap_impl
 
 val heap_get_unchanged_memory (hi:heap_impl) : heap_impl
 
+let t_heaplet_map = int -> int
+val heap_get_heaplet_map (hi:heap_impl) : t_heaplet_map
+
 val heap_get_heaplet (hi:heap_impl) (idx:int) : machine_heap
 
 val heap_upd_heaplet (hi:heap_impl) (idx:int) (mh':machine_heap) : Pure heap_impl

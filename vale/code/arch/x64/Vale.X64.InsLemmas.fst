@@ -9,10 +9,10 @@ open Vale.X64.Memory_Sems
 
 friend Vale.X64.Decls
 
-let lemma_valid_buf_maddr64 h memTaint b i t =
+let lemma_valid_buf_maddr64 h memTaint b i t hi =
   ()
 
-let lemma_valid_buf_maddr128 h memTaint b i t =
+let lemma_valid_buf_maddr128 h memTaint b i t hi =
   ()
 
 //let lemma_valid_taint64_operand m t s =
@@ -27,14 +27,17 @@ let lemma_valid_buf_maddr128 h memTaint b i t =
 let lemma_valid_src_operand64_and_taint o s =
   let h = get_vale_heap s.vs_heap in
   match o with
-  | OMem (m, t, _) ->
+  | OMem (m, t, hi) ->
     let addr = eval_maddr m s in
     let aux (b:buffer64) (i:int) : Lemma
-      (requires valid_buf_maddr64 addr h s.vs_memTaint b i t)
+      (requires valid_buf_maddr64 addr h s.vs_memTaint b i t hi)
       (ensures S.valid_src_operand64_and_taint o (state_to_S s))
       =
       lemma_heap_get_heap s.vs_heap;
-      lemma_valid_taint64 b s.vs_memTaint h i t
+      lemma_valid_taint64 b s.vs_memTaint h i t;
+      lemma_valid_heaplet64 b h i hi;
+      FStar.Pervasives.reveal_opaque (`%S.valid_heaplet_addr64) S.valid_heaplet_addr64;
+      ()
       in
     Classical.forall_intro_2 (fun b i -> (fun b -> Classical.move_requires (aux b)) b i)
   | OStack (m, t) -> lemma_valid_taint_stack64 (eval_maddr m s) t s.vs_stackTaint
@@ -43,14 +46,17 @@ let lemma_valid_src_operand64_and_taint o s =
 let lemma_valid_src_operand128_and_taint o s =
   let h = get_vale_heap s.vs_heap in
   match o with
-  | OMem (m, t, _) ->
+  | OMem (m, t, hi) ->
     let addr = eval_maddr m s in
     let aux (b:buffer128) (i:int) : Lemma
-      (requires valid_buf_maddr128 addr h s.vs_memTaint b i t)
+      (requires valid_buf_maddr128 addr h s.vs_memTaint b i t hi)
       (ensures S.valid_src_operand128_and_taint o (state_to_S s))
       =
       lemma_heap_get_heap s.vs_heap;
-      lemma_valid_taint128 b s.vs_memTaint h i t
+      lemma_valid_taint128 b s.vs_memTaint h i t;
+      lemma_valid_heaplet128 b h i hi;
+      FStar.Pervasives.reveal_opaque (`%S.valid_heaplet_addr128) S.valid_heaplet_addr128;
+      ()
       in
     Classical.forall_intro_2 (fun b i -> (fun b -> Classical.move_requires (aux b)) b i)
   | OStack (m, t) -> lemma_valid_taint_stack128 (eval_maddr m s) t s.vs_stackTaint
