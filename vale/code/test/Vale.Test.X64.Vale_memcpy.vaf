@@ -28,6 +28,8 @@ procedure memcpy(inline win:bool, ghost dst:buffer64, ghost src:buffer64)
         buffer_writeable(dst);
         valid_taint_buf64(dst, mem, memTaint, Secret);
         valid_taint_buf64(src, mem, memTaint, Secret);
+        valid_heaplet_buf64(src, mem, 0);
+        valid_heaplet_buf64(dst, mem, 0);
         buffer_length(src) == 2;
         buffer_length(dst) == 2;
         win ==> rcx == buffer_addr(dst, mem);

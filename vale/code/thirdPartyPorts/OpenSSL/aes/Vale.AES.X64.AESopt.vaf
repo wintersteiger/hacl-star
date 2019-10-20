@@ -105,6 +105,7 @@ let aes_reqs_offset
   (nr alg + 1) <= buffer_length keys_b /\
   buffer_addr keys_b mem + 16 * 8 == key_ptr /\
   valid_taint_buf128 keys_b mem memTaint Secret /\
+  valid_heaplet_buf128 keys_b mem 0 /\
   s128 mem keys_b == round_keys
 
 let six_of (a:Type0) = a & a & a & a & a & a

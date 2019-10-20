@@ -28,6 +28,8 @@ procedure Copy16(inline t:taint, ghost bsrc:buffer64, ghost bdst:buffer64)
     requires
         valid_taint_buf64(bsrc, mem, memTaint, t);
         valid_taint_buf64(bdst, mem, memTaint, t);
+        valid_heaplet_buf64(bsrc, mem, 0);
+        valid_heaplet_buf64(bdst, mem, 0);
     ensures
         forall(i) 0 <= i && i < 2 ==> buffer64_read(bdst, i, mem) == buffer64_read(bsrc, i, mem);
         modifies_mem(loc_buffer(bdst), old(mem), mem);
