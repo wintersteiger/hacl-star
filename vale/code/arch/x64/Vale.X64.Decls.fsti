@@ -118,7 +118,7 @@ unfold let buffer128_read (b:M.buffer128) (i:int) (m:vale_heap) : GTot quad32 = 
 let buffer128_write (b:M.buffer128) (i:int) (v:quad32) (m:vale_heap) : GTot vale_heap =
   if FStar.StrongExcludedMiddle.strong_excluded_middle (buffer_readable m b /\ buffer_writeable b) then
     M.buffer_write b i v m else m
-unfold let modifies_mem (s:M.loc) (h1 h2:vale_heap) : GTot prop0 = M.modifies s h1 h2
+unfold let modifies_mem (s:M.loc) (h1 h2:vale_heap) : GTot prop0 = M.modifies_h s h1 h2
 unfold let loc_buffer(#t:M.base_typ) (b:M.buffer t) = M.loc_buffer #t b
 unfold let locs_disjoint = M.locs_disjoint
 unfold let loc_union = M.loc_union

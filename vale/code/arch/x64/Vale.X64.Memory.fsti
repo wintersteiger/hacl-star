@@ -38,6 +38,7 @@ val loc_buffer (#t:base_typ) (b:buffer t) : GTot loc
 val loc_disjoint (s1 s2:loc) : GTot prop0
 val loc_includes (s1 s2:loc) : GTot prop0
 val modifies (s:loc) (h1 h2:vale_heap) : GTot prop0
+let modifies_h (s:loc) (h1 h2:vale_heap) = modifies s h1 h2 /\ get_heaplet_map h1 == get_heaplet_map h2
 
 let valid_buffer_read (#t:base_typ) (h:vale_heap) (b:buffer t) (i:int) : prop0 =
   0 <= i /\ i < buffer_length b /\ buffer_readable h b
@@ -192,7 +193,7 @@ val buffer_write (#t:base_typ) (b:buffer t) (i:int) (v:base_typ_as_vale_type t) 
   (requires buffer_readable h b /\ buffer_writeable b)
   (ensures (fun h' ->
     0 <= i /\ i < buffer_length b /\ buffer_readable h b ==>
-    modifies (loc_buffer b) h h' /\
+    modifies_h (loc_buffer b) h h' /\
     buffer_readable h' b /\
     buffer_as_seq h' b == Seq.upd (buffer_as_seq h b) i v
   ))
@@ -375,11 +376,11 @@ val modifies_valid_taint128 (b:buffer128) (p:loc) (h h':vale_heap) (memTaint:mem
   [SMTPat (modifies p h h'); SMTPat (valid_taint_buf128 b h' memTaint t)]
 
 val modifies_valid_heaplet64 (b:buffer64) (p:loc) (h h':vale_heap) (hi:heaplet_index) : Lemma
-  (requires modifies p h h')
+  (requires modifies_h p h h')
   (ensures valid_heaplet_buf64 b h hi <==> valid_heaplet_buf64 b h' hi)
   [SMTPat (modifies p h h'); SMTPat (valid_heaplet_buf64 b h' hi)]
 
 val modifies_valid_heaplet128 (b:buffer128) (p:loc) (h h':vale_heap) (hi:heaplet_index) : Lemma
-  (requires modifies p h h')
+  (requires modifies_h p h h')
   (ensures valid_heaplet_buf128 b h hi <==> valid_heaplet_buf128 b h' hi)
   [SMTPat (modifies p h h'); SMTPat (valid_heaplet_buf128 b h' hi)]

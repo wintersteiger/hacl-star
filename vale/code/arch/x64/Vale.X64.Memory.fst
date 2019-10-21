@@ -86,7 +86,6 @@ let modifies s h h' =
   M.modifies s (_ih h).hs (_ih h').hs /\
   (_ih h).ptrs == (_ih h').ptrs /\
   (_ih h).addrs == (_ih h').addrs /\
-  heap_get_heaplet_map h == heap_get_heaplet_map h' /\
   HST.equal_domains (_ih h).hs (_ih h').hs
 
 let buffer_addr #t b h = IB.addrs_of_mem (_ih h) b
@@ -624,9 +623,13 @@ let modifies_valid_taint64 b p h h' memTaint t = modifies_valid_taint TUInt64 b 
 let modifies_valid_taint128 b p h h' memTaint t = modifies_valid_taint TUInt128 b p h h' memTaint t
 
 let modifies_valid_heaplet64 b p h h' hi =
+  assert (get_heaplet_map h == heap_get_heaplet_map h);
+  assert (get_heaplet_map h' == heap_get_heaplet_map h');
   ()
 
 let modifies_valid_heaplet128 b p h h' hi =
+  assert (get_heaplet_map h == heap_get_heaplet_map h);
+  assert (get_heaplet_map h' == heap_get_heaplet_map h');
   ()
 
 let valid_taint_bufs (mem:vale_heap) (memTaint:memtaint) (ps:list b8) (ts:b8 -> GTot taint) =
