@@ -27,14 +27,14 @@ let locations_of_operand64 (o:operand64) : locations & locations =
   match o with
   | OConst _ -> [], []
   | OReg r -> [], [ALocReg (Reg 0 r)]
-  | OMem (m, _, _) -> locations_of_maddr m ALocMem, [ALocMem]
+  | OMem (m, _, i) -> ALocMem :: locations_of_maddr m (ALocHeaplet i), [ALocHeaplet i]
   | OStack (m, _) -> (ALocReg (Reg 0 rRsp)) :: locations_of_maddr m ALocStack, [ALocStack]
 
 let locations_of_operand128 (o:operand128) : locations & locations =
   match o with
   | OConst _ -> [], []
   | OReg r -> [], [ALocReg (Reg 1 r)]
-  | OMem (m, _, _) -> locations_of_maddr m ALocMem, [ALocMem]
+  | OMem (m, _, i) -> ALocMem :: locations_of_maddr m (ALocHeaplet i), [ALocHeaplet i]
   | OStack (m, _) -> (ALocReg (Reg 0 rRsp)) :: locations_of_maddr m ALocStack, [ALocStack]
 
 let locations_of_explicit (t:instr_operand_explicit) (i:instr_operand_t t) : locations & locations =
