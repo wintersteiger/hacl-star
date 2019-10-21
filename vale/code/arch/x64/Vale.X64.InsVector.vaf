@@ -502,7 +502,7 @@ procedure LoadBe64_buffer128(
     lemma_valid_taint128(b, #memTaint_t(memTaint), mem, #nat(index), t);
     lemma_valid_heaplet128(b, mem, #nat(index), 0);
     reveal valid_heaplet_addr128;
-assume false;
+    reveal valid_heaplet_addr64;
 }
 
 procedure Store128_buffer(
@@ -527,7 +527,8 @@ procedure Store128_buffer(
     low_lemma_store_mem128(b, #nat(index), old(src), old(mem));
     lemma_valid_taint128(b, old(#memTaint_t(memTaint)), old(mem), #nat(index), t);
     same_memTaint128(b, old(mem), mem, old(#memTaint_t(memTaint)), #memTaint_t(memTaint));
-assume false;
+    lemma_valid_heaplet128(b, old(mem), #nat(index), 0);
+    reveal valid_heaplet_addr128;
 }
 
 procedure Store64_buffer128(
@@ -555,7 +556,9 @@ procedure Store64_buffer128(
     low_lemma_store_mem128_hi64(b, #nat(index), old(src), old(mem));
     lemma_valid_taint128(b, old(#memTaint_t(memTaint)), old(mem), #nat(index), t);
     same_memTaint128(b, old(mem), mem, old(#memTaint_t(memTaint)), #memTaint_t(memTaint));
-assume false;
+    lemma_valid_heaplet128(b, mem, #nat(index), 0);
+    reveal valid_heaplet_addr128;
+    reveal valid_heaplet_addr64;
 }
 
 procedure ZeroXmm(inout dst:xmm)

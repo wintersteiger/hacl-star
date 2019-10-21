@@ -96,23 +96,33 @@ let core_create_lemma_readable
         (let va_s = LSig.create_initial_vale_state #max_arity #arg_reg args h0 in
          VSig.readable true args VS.(va_s.vs_heap)))
   =
-    let readable_registered_one (a:arg) (s:ME.vale_heap)
+    let is_init_heaplets (vh:Vale.Arch.HeapImpl.vale_heap) =
+      (exists (ih:interop_heap).{:pattern (as_vale_mem ih)} vh == as_vale_mem ih)
+      in
+    let readable_registered_one (a:arg) (s:ME.vale_heap{is_init_heaplets s})
       : Lemma VSig.(arg_is_registered_root s a <==> readable_one true s a)
       =
-      assume False;
       match a with
         | (| TD_Buffer src bt _, x |) ->
           Vale.AsLowStar.MemoryHelpers.reveal_readable #src #bt x s;
-          Vale.AsLowStar.MemoryHelpers.buffer_writeable_reveal src bt x
+          Vale.AsLowStar.MemoryHelpers.buffer_writeable_reveal src bt x;
+          let f (_:VSig.(arg_is_registered_root s a)) : Lemma (VSig.(readable_one true s a)) =
+            Vale.AsLowStar.MemoryHelpers.lemma_init_heaplet_buf #src #bt x s
+            in
+          FStar.Classical.impl_intro f
         | (| TD_ImmBuffer src bt ig, x |) ->
           Vale.AsLowStar.MemoryHelpers.reveal_imm_readable #src #bt x s;
-          assert_norm (ME.buffer_readable s (as_vale_immbuffer #src #bt x) <==>
-                       VSig.readable_one true s (| TD_ImmBuffer src bt ig, x |))
+          let f (_:VSig.(arg_is_registered_root s a)) : Lemma (VSig.(readable_one true s a)) =
+            Vale.AsLowStar.MemoryHelpers.lemma_init_heaplet_ibuf #src #bt x s
+            in
+          FStar.Classical.impl_intro f
+//          assert_norm (ME.buffer_readable s (as_vale_immbuffer #src #bt x) <==>
+//                       VSig.readable_one true s (| TD_ImmBuffer src bt ig, x |))
         | (| TD_Base _, _ |) -> ()
     in
     let rec readable_registered_all
         (args:list arg)
-        (s:ME.vale_heap {forall x. List.memP x args ==> arg_is_registered_root s x})
+        (s:ME.vale_heap {is_init_heaplets s /\ (forall x. List.memP x args ==> arg_is_registered_root s x)})
       : Lemma VSig.(readable true args s)
       = match args with
         | [] -> ()

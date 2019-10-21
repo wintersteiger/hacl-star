@@ -176,3 +176,9 @@ let same_immbuffer_same_upviews #src #bt b h0 h1 =
     Seq.lemma_eq_intro s0 s1;
     DV.length_eq dv;
     Vale.Lib.BufferViewHelpers.lemma_uv_equal (LSig.view_of_base_typ bt) dv h0 h1
+
+let lemma_init_heaplet_buf #src #bt b vh =
+  ()
+
+let lemma_init_heaplet_ibuf #src #bt b vh =
+  ()

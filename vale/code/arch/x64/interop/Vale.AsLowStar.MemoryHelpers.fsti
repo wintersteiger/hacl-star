@@ -309,3 +309,16 @@ val same_immbuffer_same_upviews (#src #bt:base_typ) (b:ibuf_t src bt) (h0 h1:HS.
     DV.length_eq db;
     let ub = UV.mk_buffer db (LSig.view_of_base_typ bt) in
     Seq.equal (UV.as_seq h0 ub) (UV.as_seq h1 ub)))
+
+val lemma_init_heaplet_buf (#src #bt:base_typ) (b:buf_t src bt) (vh:ME.vale_heap) : Lemma
+  (requires
+    ME.buffer_readable vh (as_vale_buffer #src #bt b) /\
+    (exists (ih:interop_heap).{:pattern (as_vale_mem ih)} vh == as_vale_mem ih))
+  (ensures ME.valid_heaplet_buf (as_vale_buffer #src #bt b) vh 0)
+
+val lemma_init_heaplet_ibuf (#src #bt:base_typ) (b:ibuf_t src bt) (vh:ME.vale_heap) : Lemma
+  (requires
+    ME.buffer_readable vh (as_vale_immbuffer #src #bt b) /\
+    (exists (ih:interop_heap).{:pattern (as_vale_mem ih)} vh == as_vale_mem ih))
+  (ensures ME.valid_heaplet_buf (as_vale_immbuffer #src #bt b) vh 0)
+
