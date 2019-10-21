@@ -1,5 +1,5 @@
 module Vale.Wrapper.X64.GCMencryptOpt256
-
+(*
 open FStar.Mul
 open Vale.Stdcalls.X64.GCMencryptOpt
 open Vale.AsLowStar.MemoryHelpers
@@ -997,3 +997,4 @@ let gcm256_encrypt_opt_stdcall key iv plain_b plain_len auth_b auth_len iv_b out
     Seq.equal (seq_uint8_to_seq_nat8 (B.as_seq h2 tag_b)) tag);
 
   pop_frame()
+*)

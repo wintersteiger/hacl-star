@@ -21,6 +21,9 @@ val heap_get_unchanged_memory (hi:heap_impl) : heap_impl
 
 let t_heaplet_map = int -> int
 val heap_get_heaplet_map (hi:heap_impl) : t_heaplet_map
+val heap_set_heaplet_map (hi:heap_impl) (hm:t_heaplet_map) : Pure heap_impl
+  (requires True)
+  (ensures fun hi' -> heap_get_heaplet_map hi' == hm /\ heap_get hi' == heap_get hi)
 
 val heap_get_heaplet (hi:heap_impl) (idx:int) : machine_heap
 

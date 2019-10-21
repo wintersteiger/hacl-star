@@ -1,5 +1,5 @@
 module Vale.Stdcalls.X64.GCMdecryptOpt
-
+(*
 open FStar.HyperStack.ST
 module B = LowStar.Buffer
 module HS = FStar.HyperStack
@@ -402,3 +402,4 @@ let gcm128_decrypt_opt //: normal ((s:Ghost.erased (Seq.seq nat32)) -> lowstar_g
 [@ (CCConv "stdcall") ]
 let gcm256_decrypt_opt //: normal ((s:Ghost.erased (Seq.seq nat32)) -> lowstar_gcm256_t s)
   = as_normal_t #((s:Ghost.erased (Seq.seq nat32)) -> (iv:Ghost.erased supported_iv_LE) -> lowstar_gcm256_t s iv) (fun (s:Ghost.erased (Seq.seq nat32)) (iv:Ghost.erased supported_iv_LE) -> lowstar_gcm256 s iv)
+*)

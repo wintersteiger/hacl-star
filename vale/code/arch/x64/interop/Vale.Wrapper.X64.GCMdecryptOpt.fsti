@@ -1,5 +1,5 @@
 module Vale.Wrapper.X64.GCMdecryptOpt
-
+(*
 open Vale.X64.CPU_Features_s
 open FStar.HyperStack.ST
 module B = LowStar.Buffer
@@ -138,3 +138,4 @@ let decrypt_opt_stdcall_st (a: algorithm { a = AES_128 \/ a = AES_256 }) =
 
 inline_for_extraction
 val gcm128_decrypt_opt_stdcall: decrypt_opt_stdcall_st AES_128
+*)

@@ -52,6 +52,9 @@ type taint:eqtype =
   | Secret
 
 let heaplet_index = int
+let t_heaplet_map = int -> int
+let update_heaplet_map (hm:t_heaplet_map) (ptr:int) (len:nat) (index:int) : t_heaplet_map =
+  fun i -> if ptr <= i && i < ptr + len then index else hm i
 
 type tmaddr:eqtype = maddr & taint
 type tmhaddr:eqtype = maddr & taint & heaplet_index

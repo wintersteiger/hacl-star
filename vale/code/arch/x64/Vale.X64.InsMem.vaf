@@ -1,5 +1,6 @@
 include "Vale.X64.InsBasic.vaf"
 include{:fstar}{:open} "Vale.Def.Types_s"
+include{:fstar}{:open} "Vale.Arch.HeapImpl"
 include{:fstar}{:open} "Vale.Arch.Types"
 include{:fstar}{:open} "Vale.X64.Machine_s"
 include{:fstar}{:open} "Vale.X64.Memory"
@@ -15,6 +16,7 @@ module Vale.X64.InsMem
 #verbatim{:interface}
 open Vale.Def.Types_s
 open Vale.X64.Machine_s
+open Vale.Arch.HeapImpl
 open Vale.X64.Memory
 open Vale.X64.Stack_i
 open Vale.X64.State
@@ -135,3 +137,18 @@ procedure StoreBe64_buffer(
     lemma_valid_heaplet64(b, old(mem), #nat(index), 0);
     reveal valid_heaplet_addr64;
 }
+
+// TODO HACK: this should be ghost, not something that needs a concrete source operand
+//procedure SetHeapletMap(
+//        in src:opr64, inline len:nat, inline index:int)
+//    {:public}
+//    {:quick exportOnly}
+//    {:instruction Ins(Vale.X64.Bytes_Code_s.SetHeapletMap(src, len, index))}
+//    modifies
+//        mem;
+//    ensures
+//        modifies_heaplet_map(old(mem), mem, update_heaplet_map(get_heaplet_map(old(mem)), old(src), len, index));
+//{
+//assume false;
+//}
+

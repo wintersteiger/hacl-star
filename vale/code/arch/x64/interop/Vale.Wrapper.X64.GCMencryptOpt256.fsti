@@ -1,5 +1,5 @@
 module Vale.Wrapper.X64.GCMencryptOpt256
-
+(*
 open Vale.X64.CPU_Features_s
 open FStar.HyperStack.ST
 module B = LowStar.Buffer
@@ -59,3 +59,4 @@ let length_aux5 (b:uint8_p) : Lemma
 
 inline_for_extraction
 val gcm256_encrypt_opt_stdcall: Vale.Wrapper.X64.GCMencryptOpt.encrypt_opt_stdcall_st AES_256
+*)

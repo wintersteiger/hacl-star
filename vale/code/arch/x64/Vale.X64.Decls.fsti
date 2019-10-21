@@ -118,6 +118,8 @@ unfold let buffer128_read (b:M.buffer128) (i:int) (m:vale_heap) : GTot quad32 = 
 let buffer128_write (b:M.buffer128) (i:int) (v:quad32) (m:vale_heap) : GTot vale_heap =
   if FStar.StrongExcludedMiddle.strong_excluded_middle (buffer_readable m b /\ buffer_writeable b) then
     M.buffer_write b i v m else m
+let modifies_heaplet_map (h1 h2:vale_heap) (hm:Vale.Arch.HeapImpl.t_heaplet_map) : GTot prop0 =
+  M.modifies M.loc_none h1 h2 /\ Vale.Arch.HeapImpl.get_heaplet_map h2 == hm
 unfold let modifies_mem (s:M.loc) (h1 h2:vale_heap) : GTot prop0 = M.modifies_h s h1 h2
 unfold let loc_buffer(#t:M.base_typ) (b:M.buffer t) = M.loc_buffer #t b
 unfold let locs_disjoint = M.locs_disjoint
@@ -237,6 +239,12 @@ unfold let va_opr_code_Mem128 (o:va_operand) (offset:int) (t:taint) : va_operand
   | OReg r -> OMem (MReg (Reg 0 r) offset, t, 0) // TODO HEAPLET
   | _ -> OMem (MConst 42, t, 0)
 
+[@va_qattr]
+unfold let va_opr_code_Mem128h (hi:int) (o:va_operand) (offset:int) (t:taint) : va_operand128 =
+  match o with
+  | OReg r -> OMem (MReg (Reg 0 r) offset, t, hi)
+  | _ -> OMem (MConst 42, t, 0)
+
 val va_opr_lemma_Mem128 (s:va_state) (base:va_operand) (offset:int) (t:taint) (b:M.buffer128) (index:int) : Lemma
   (requires (
     let h = M.get_vale_heap s.vs_heap in
@@ -249,6 +257,21 @@ val va_opr_lemma_Mem128 (s:va_state) (base:va_operand) (offset:int) (t:taint) (b
   (ensures (
     let h = M.get_vale_heap s.vs_heap in
     valid_operand128 (va_opr_code_Mem128 base offset t) s /\
+    M.load_mem128 (M.buffer_addr b h + 16 * index) h == M.buffer_read b index h
+  ))
+
+val va_opr_lemma_Mem128h (s:va_state) (hi:int) (base:va_operand) (offset:int) (t:taint) (b:M.buffer128) (index:int) : Lemma
+  (requires (
+    let h = M.get_vale_heap s.vs_heap in
+    OReg? base /\
+    valid_src_addr h b index /\
+    M.valid_taint_buf128 b h s.vs_memTaint t /\
+    M.valid_heaplet_buf128 b h hi /\
+    eval_operand base s + offset == M.buffer_addr b h + 16 * index
+  ))
+  (ensures (
+    let h = M.get_vale_heap s.vs_heap in
+    valid_operand128 (va_opr_code_Mem128h hi base offset t) s /\
     M.load_mem128 (M.buffer_addr b h + 16 * index) h == M.buffer_read b index h
   ))
 
@@ -464,12 +487,27 @@ let validSrcAddrs128 (m:vale_heap) (addr:int) (b:M.buffer128) (len:int) (memTain
     M.valid_heaplet_buf128 b m 0 /\ // TODO HEAPLET
     M.valid_taint_buf128 b m memTaint t
 
+let validSrcAddrs128h (hi:heaplet_index) (m:vale_heap) (addr:int) (b:M.buffer128) (len:int) (memTaint:M.memtaint) (t:taint) =
+    buffer_readable m b /\
+    len <= buffer_length b /\
+    M.buffer_addr b m == addr /\
+    M.valid_heaplet_buf128 b m hi /\
+    M.valid_taint_buf128 b m memTaint t
+
 let validDstAddrs128 (m:vale_heap) (addr:int) (b:M.buffer128) (len:int) (memTaint:M.memtaint) (t:taint) =
     buffer_readable m b /\
     buffer_writeable b /\
     len <= buffer_length b /\
     M.buffer_addr b m == addr /\
     M.valid_heaplet_buf128 b m 0 /\ // TODO HEAPLET
+    M.valid_taint_buf128 b m memTaint t
+
+let validDstAddrs128h (hi:heaplet_index) (m:vale_heap) (addr:int) (b:M.buffer128) (len:int) (memTaint:M.memtaint) (t:taint) =
+    buffer_readable m b /\
+    buffer_writeable b /\
+    len <= buffer_length b /\
+    M.buffer_addr b m == addr /\
+    M.valid_heaplet_buf128 b m hi /\
     M.valid_taint_buf128 b m memTaint t
 
 let validSrcAddrsOffset128 (m:vale_heap) (addr:int) (b:M.buffer128) (offset len:int) (memTaint:M.memtaint) (t:taint) =

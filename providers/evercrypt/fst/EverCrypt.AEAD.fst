@@ -116,6 +116,7 @@ let create_in_chacha20_poly1305: create_in_st CHACHA20_POLY1305 = fun r dst k ->
 
 #pop-options
 
+(*
 inline_for_extraction noextract
 let create_in_aes_gcm (i: vale_impl):
   create_in_st (alg_of_vale_impl i) =
@@ -146,14 +147,18 @@ fun r dst k ->
 
 let create_in_aes128_gcm: create_in_st AES128_GCM = create_in_aes_gcm Vale_AES128
 let create_in_aes256_gcm: create_in_st AES256_GCM = create_in_aes_gcm Vale_AES256
+*)
 
 let create_in #a r dst k =
   match a with
+(*
   | AES128_GCM -> create_in_aes128_gcm r dst k
   | AES256_GCM -> create_in_aes256_gcm r dst k
+*)
   | CHACHA20_POLY1305 -> create_in_chacha20_poly1305 r dst k
   | _ -> UnsupportedAlgorithm
 
+(*
 inline_for_extraction noextract
 let aes_gcm_encrypt (i: vale_impl):
   Vale.Wrapper.X64.GCMencryptOpt.encrypt_opt_stdcall_st (vale_alg_of_vale_impl i) =
@@ -268,7 +273,7 @@ fun s iv iv_len ad ad_len plain plain_len cipher tag ->
 
 let encrypt_aes128_gcm: encrypt_st AES128_GCM = encrypt_aes_gcm Vale_AES128
 let encrypt_aes256_gcm: encrypt_st AES256_GCM = encrypt_aes_gcm Vale_AES256
-
+*)
 let encrypt #a s iv iv_len ad ad_len plain plain_len cipher tag =
   if B.is_null s then
     InvalidKey
@@ -277,9 +282,9 @@ let encrypt #a s iv iv_len ad ad_len plain plain_len cipher tag =
     let Ek i kv ek = !*s in
     match i with
     | Vale_AES128 ->
-        encrypt_aes128_gcm s iv iv_len ad ad_len plain plain_len cipher tag
+UnsupportedAlgorithm//        encrypt_aes128_gcm s iv iv_len ad ad_len plain plain_len cipher tag
     | Vale_AES256 ->
-        encrypt_aes256_gcm s iv iv_len ad ad_len plain plain_len cipher tag
+UnsupportedAlgorithm//        encrypt_aes256_gcm s iv iv_len ad ad_len plain plain_len cipher tag
     | Hacl_CHACHA20 ->
         // This condition is never satisfied in F* because of the iv_length precondition on iv.
         // We keep it here to be defensive when extracting to C
@@ -293,6 +298,7 @@ let encrypt #a s iv iv_len ad ad_len plain plain_len cipher tag =
           Success
         end
 
+(*
 inline_for_extraction noextract
 let aes_gcm_decrypt (i: vale_impl):
   Vale.Wrapper.X64.GCMdecryptOpt.decrypt_opt_stdcall_st (vale_alg_of_vale_impl i) =
@@ -416,6 +422,7 @@ fun s iv iv_len ad ad_len cipher cipher_len tag dst ->
 
 let decrypt_aes128_gcm: decrypt_st AES128_GCM = decrypt_aes_gcm Vale_AES128
 let decrypt_aes256_gcm: decrypt_st AES256_GCM = decrypt_aes_gcm Vale_AES256
+*)
 
 let decrypt #a s iv iv_len ad ad_len cipher cipher_len tag dst =
   if B.is_null s then
@@ -425,9 +432,9 @@ let decrypt #a s iv iv_len ad ad_len cipher cipher_len tag dst =
     let Ek i kv ek = !*s in
     match i with
     | Vale_AES128 ->
-        decrypt_aes128_gcm s iv iv_len ad ad_len cipher cipher_len tag dst
+UnsupportedAlgorithm//        decrypt_aes128_gcm s iv iv_len ad ad_len cipher cipher_len tag dst
     | Vale_AES256 ->
-        decrypt_aes256_gcm s iv iv_len ad ad_len cipher cipher_len tag dst
+UnsupportedAlgorithm//        decrypt_aes256_gcm s iv iv_len ad ad_len cipher cipher_len tag dst
     | Hacl_CHACHA20 ->
         // This condition is never satisfied in F* because of the iv_length precondition on iv.
         // We keep it here to be defensive when extracting to C

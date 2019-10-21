@@ -7,7 +7,8 @@ friend Vale.Arch.HeapImpl
 
 let heap_impl = vale_heap_impl
 
-let heap_get hi = hi.mh
+let heap_get hi =
+  hi.mh
 
 let heap_upd hi mh' =
   mi_heap_upd hi mh'
@@ -30,6 +31,10 @@ let heap_get_unchanged_memory hi =
 
 let heap_get_heaplet_map hi =
   hi.to_heaplet_index
+
+let heap_set_heaplet_map hi hm =
+  let ValeHeap mh mh0 ih0 _ = hi in
+  ValeHeap mh mh0 ih0 hm
 
 let heap_get_heaplet hi idx =
   let heap = hi.mh in

@@ -19,6 +19,7 @@ noeq type instruction_t (a:instr_annotation_t) =
   | Pop        : dst:operand64 -> t:taint -> instruction_t a
   | Alloc      : n:nat64 -> instruction_t a
   | Dealloc    : n:nat64 -> instruction_t a
+  | SetHeapletMap : src:operand64 -> len:nat -> index:int -> instruction_t a
 
 type ocmp:eqtype =
   | OEq: o1:operand64{not (OMem? o1 || OStack? o1)} -> o2:operand64{not (OMem? o2 || OStack? o2)} -> ocmp

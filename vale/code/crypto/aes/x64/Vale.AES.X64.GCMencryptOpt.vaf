@@ -939,7 +939,7 @@ procedure Gcm_blocks(
         validSrcAddrs128(mem,    in128_ptr,    in128_b,   len128, memTaint, Secret);
         validDstAddrs128(mem,   out128_ptr,   out128_b,   len128, memTaint, Secret);
         validDstAddrs128(mem,    inout_ptr,    inout_b,        1, memTaint, Secret);
-        validDstAddrs128(mem,  scratch_ptr,  scratch_b,        9, memTaint, Secret);
+        validDstAddrs128h(1, mem,  scratch_ptr,  scratch_b,        9, memTaint, Secret);
         validSrcAddrs128(mem,          Xip,    hkeys_b,        8, memTaint, Secret);
 
         buffer_disjoints128(iv_b, list(keys_b, scratch_b, in128x6_b, out128x6_b, hkeys_b, in128_b, out128_b, inout_b));
@@ -1081,7 +1081,7 @@ procedure Gcm_blocks(
 
     Load128_buffer(xmm1, iv_ptr, 0, Public, iv_b, 0);       // Load the j0 value (i.e., the result of calling compute_iv_BE)
 
-    Store128_buffer(rbp, xmm1, 0x00, Secret, scratch_b, 0); // Save a copy, since we'll need it at the end to encrypt the hash
+    Store128_bufferH(1, rbp, xmm1, 0x00, Secret, scratch_b, 0); // Save a copy, since we'll need it at the end to encrypt the hash
     ghost var j0 := xmm1;
     Load_one_lsb(xmm10);
 
@@ -1094,7 +1094,7 @@ procedure Gcm_blocks(
     auth_in := append(auth_in, s128(mem, out128x6_b));
 
     // Line up arguments for Gcm_blocks128 for remaining 128-bit blocks
-    Load128_buffer(icb, rbp, 0x20, Secret, scratch_b, 2);
+    Load128_bufferH(1, icb, rbp, 0x20, Secret, scratch_b, 2);
     Mov64(r8, keys_ptr);
     Load64_stack(rax, rsp, offset + 32);
     Load64_stack(rdi, rsp, offset + 40);
@@ -1150,7 +1150,7 @@ procedure Gcm_blocks(
     Ghash_register(hkeys_b, h_LE, y_inout);
     let y_final := reverse_bytes_quad32(hash);
 
-    Load128_buffer(xmm0, rbp, 0, Secret, scratch_b, 0);       // Reload j0
+    Load128_bufferH(1, xmm0, rbp, 0, Secret, scratch_b, 0);       // Reload j0
 
     // Encrypt the hash using j0 for the IV/ctr; result goes in hash 
     Gctr_register(alg, key, round_keys, keys_b); 
@@ -1250,7 +1250,7 @@ procedure Gcm_blocks_wrapped(
         validSrcAddrs128(mem,    in128_ptr,    in128_b,   len128, memTaint, Secret);
         validDstAddrs128(mem,   out128_ptr,   out128_b,   len128, memTaint, Secret);
         validDstAddrs128(mem,    inout_ptr,    inout_b,        1, memTaint, Secret);
-        validDstAddrs128(mem,  scratch_ptr,  scratch_b,        9, memTaint, Secret);
+        validDstAddrs128h(1, mem,  scratch_ptr,  scratch_b,        9, memTaint, Secret);
         validSrcAddrs128(mem,          Xip,    hkeys_b,        8, memTaint, Secret);
 
         buffer_disjoints128(iv_b, list(keys_b, scratch_b, in128x6_b, out128x6_b, hkeys_b, in128_b, out128_b, inout_b));
@@ -1687,7 +1687,7 @@ procedure gcm_blocks_stdcall(
         validSrcAddrs128(mem,    in128_ptr,    in128_b,   len128, memTaint, Secret);
         validDstAddrs128(mem,   out128_ptr,   out128_b,   len128, memTaint, Secret);
         validDstAddrs128(mem,    inout_ptr,    inout_b,        1, memTaint, Secret);
-        validDstAddrs128(mem,  scratch_ptr,  scratch_b,        9, memTaint, Secret);
+        validDstAddrs128h(1, mem,  scratch_ptr,  scratch_b,        9, memTaint, Secret);
         validSrcAddrs128(mem,          xip,    hkeys_b,        8, memTaint, Secret);
         validDstAddrs128(mem,      tag_ptr,      tag_b,        1, memTaint, Secret);
 

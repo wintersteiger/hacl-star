@@ -1,5 +1,5 @@
 module Vale.Wrapper.X64.GCMdecryptOpt256
-
+(*
 open FStar.Mul
 open Vale.Stdcalls.X64.GCMdecryptOpt
 open Vale.AsLowStar.MemoryHelpers
@@ -1000,3 +1000,4 @@ let gcm256_decrypt_opt_stdcall key iv cipher_b cipher_len auth_b auth_len iv_b o
 
   pop_frame();
   c
+*)

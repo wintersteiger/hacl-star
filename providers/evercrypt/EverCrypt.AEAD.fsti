@@ -202,6 +202,7 @@ let encrypt_st (a: supported_alg) =
       | InvalidKey ->
           B.g_is_null s /\
           B.(modifies loc_none h0 h1)
+      | UnsupportedAlgorithm -> True
       | _ -> False)
 
 /// This function takes a previously expanded key and performs encryption.
@@ -262,6 +263,7 @@ let decrypt_st (a: supported_alg) =
           preserves_freeable s h0 h1 /\
           as_kv (B.deref h1 s) == as_kv (B.deref h0 s) /\
           None? plain)
+      | UnsupportedAlgorithm -> True
       | _ ->
           False)
 
