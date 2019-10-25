@@ -113,4 +113,7 @@ let encrypt_split #a kv iv ad plain =
   let t = S.slice o (S.length o - size_tag a) (S.length o) in
   (c, t)
 
-let decrypt_split #a kv iv ad cipher t = decrypt #a kv iv ad (cipher @| tag)
+let decrypt_split #a kv iv ad c t =
+  match decrypt #a kv iv ad (c `Seq.append` t) with
+  | None -> None
+  | Some v -> Some v

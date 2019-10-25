@@ -111,26 +111,10 @@ noextract
 let felem_seq = lseq uint64 4
 
 noextract
-let felem_seq_as_nat (a: felem_seq) : Tot (n: nat {n < pow2 256})  = 
-  let open FStar.Mul in 
-  let a0 = Lib.Sequence.index a 0 in 
-  let a1 =  Lib.Sequence.index a 1 in 
-  let a2 =  Lib.Sequence.index  a 2 in 
-  let a3 =  Lib.Sequence.index a 3 in 
-  assert_norm( uint_v a0 + uint_v a1 * pow2 64 + uint_v a2 * pow2 64 * pow2 64 + uint_v a3 * pow2 64 * pow2 64 * pow2 64 < pow2 256);
-  uint_v a0 + uint_v a1 * pow2 64 + uint_v a2 * pow2 64 * pow2 64 + uint_v a3 * pow2 64 * pow2 64 * pow2 64
+let felem_seq_as_nat (a: felem_seq) : Tot (n: nat {n < pow2 256})  = Spec.P256.felem_seq_as_nat a 
 
 noextract 
-let nat_as_seq (a: nat { a < pow2 256}) : lseq uint64 4 = 
-  let a0 = a % pow2 64 in 
-  let a1 = (arithmetic_shift_right a 64) % pow2 64 in 
-  let a2 = (arithmetic_shift_right a 128) % pow2 64 in 
-  let a3 = (arithmetic_shift_right a 192) % pow2 64 in 
-  let s = Lib.Sequence.create 4 (u64 0) in 
-  let s = Lib.Sequence.upd s 0 (u64 a0) in 
-  let s = Lib.Sequence.upd s 1 (u64 a1) in 
-  let s = Lib.Sequence.upd s 2 (u64 a2) in 
-  Lib.Sequence.upd s 3 (u64 a3)
+let nat_as_seq (a: nat { a < pow2 256}) : lseq uint64 4 = Spec.P256.nat_as_seq a 
 
 #reset-options "--z3refresh --z3rlimit 200"
 
