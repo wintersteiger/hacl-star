@@ -8,10 +8,12 @@ open FStar.Mul
 type bitlen = n:nat{n == 1 \/ n == 8 \/ n == 16}
 type u1xN (n:bitlen) = fseq uint1 n
 type uint8 = u1xN 8
+let from_uint8 (u:Lib.IntTypes.pub_uint8) : uint8 =
+  createi 8 (fun i -> to_u1 #U8 #PUB (u >>. size i))
 type uint16 = u1xN 16
-let to_uint16 (u:Lib.IntTypes.pub_uint16) : uint16 =
+let from_uint16 (u:Lib.IntTypes.pub_uint16) : uint16 =
   createi 16 (fun i -> cast U1 SEC (u >>. (size i)))
-type lanes = n:nat{n == 1 \/ n == 4}
+type lanes = n:nat{n == 1 \/ n==2 \/ n == 4}
 type u1xNxL (n:bitlen) (l:lanes) = fseq (u1xN n) l
 
 let ( ^| ) (#n:bitlen) (#l:lanes) (x:u1xNxL n l) (y:u1xNxL n l) : u1xNxL n l = map2 (map2 ( ^. )) x y
@@ -28,7 +30,7 @@ type state (l: lanes) = fseq (u1xNxL 16 l) 8
 
 let rotate_row_right (#l:lanes) (x:u1xNxL 16 l) (i:nat{i < 4}) (r:nat{r < 4}) =
   if r = 0 then x else
-  let row_mask16 = to_uint16 (0x1111us <<. size i) in
+  let row_mask16 = from_uint16 (0x1111us <<. size i) in
   let row_mask = create l row_mask16 in
   let xm = x &| row_mask in
   (xm >>| (4*r)) || (xm <<| (16-(4*r)))
@@ -36,24 +38,33 @@ let rotate_row_right (#l:lanes) (x:u1xNxL 16 l) (i:nat{i < 4}) (r:nat{r < 4}) =
 let rotate_cols_right (#l:lanes) (x:u1xNxL 16 l) (r:nat{r < 4}) =
   if r = 0 then x
   else if r = 1 then
-    let mr = create l (to_uint16 0xeeeeus) in
-    let ml = create l (to_uint16 0x1111us) in
+    let mr = create l (from_uint16 0xeeeeus) in
+    let ml = create l (from_uint16 0x1111us) in
     ((x &| mr) >>| 1) || ((x &| ml) <<| 3)
   else if r = 2 then
-    let mr = create l (to_uint16 0xccccus) in
-    let ml = create l (to_uint16 0x3333us) in
+    let mr = create l (from_uint16 0xccccus) in
+    let ml = create l (from_uint16 0x3333us) in
     ((x &| mr) >>| 2) || ((x &| ml) <<| 2)
   else
-    let mr = create l (to_uint16 0x3333us) in
-    let ml = create l (to_uint16 0xccccus) in
+    let mr = create l (from_uint16 0x3333us) in
+    let ml = create l (from_uint16 0xccccus) in
     ((x &| mr) >>| 3) || ((x &| ml) <<| 1)
 
 type blocks (l: lanes) = fseq (fseq uint8 16) l
 
-let transpose (#l:lanes) (s:state l) : blocks l =
+let store_state (#l:lanes) (s:state l) : blocks l =
     createi l (fun i -> createi 16 (fun j -> createi 8 (fun k -> s.[k].[i].[j])))
 
+let load_state (#l:lanes) (s:blocks l) : state l =
+    createi 8 (fun i -> createi l (fun j -> createi 16 (fun k -> s.[j].[i].[j])))
 
+let store_state0 (#l:lanes) (s:state l) : blocks 1 =
+    createi 16 (fun j -> createi 8 (fun k -> s.[k].[0].[j]))
+
+let load_state0 (#l:lanes) (s:blocks 1) : state l =
+    createi 8 (fun i -> createi l (fun j -> if j = 0 then createi 16 (fun k -> s.[0].[k].[i]) else create 16 (u1 0)))
+
+#set-options "--z3rlimit 100"
 val subBytes: #n:bitlen -> #l: lanes -> s: fseq (u1xNxL n l) 8 -> fseq (u1xNxL n l) 8
 let subBytes #n #l (st0, (st1, (st2, (st3, (st4, (st5, (st6, st7)))))))  =
   let u0: u1xNxL n l = st7 in
@@ -148,6 +159,7 @@ let subBytes #n #l (st0, (st1, (st2, (st3, (st4, (st5, (st6, st7)))))))  =
   let t92 = t86 &| t21 in
   let t93 = t81 &| t4 in
   let t94 = t80 &| t17 in
+
   let t95 = t85 &| t8 in
   let t96 = t88 &| t39 in
   let t97 = t84 &| t14 in
@@ -211,7 +223,7 @@ assume val sbox: uint8 -> uint8
 val subBytesLemma: #l:lanes -> s: state l ->
 		   i:nat{i < 8} -> j:nat{j < l} -> k:nat{k < 16} ->
 		   Lemma (let r = subBytes #16 #l s in
-			  let t = transpose #l s in
+			  let t = store_state #l s in
 			  let r' = sbox t.[j].[k] in
 			  r.[i].[j].[k] == r'.[i])
 let subBytesLemma #l s i j k = admit()
@@ -247,3 +259,121 @@ let shift_rows #l s =
 	 (rotate_row_right #l u 1 1) ||
 	 (rotate_row_right #l u 2 2) ||
 	 (rotate_row_right #l u 3 3)) s
+
+val xor_state_key1: #l:lanes -> state l -> state l -> state l
+let xor_state_key1 #l s1 s2 = map2 (^|) s1 s2
+
+val aes_enc: #l:lanes -> state l -> state l -> state l
+let aes_enc #l st key =
+    let st = subBytes st in
+    let st = shift_rows st in
+    let st = mix_columns st in
+    xor_state_key1 st key
+
+val aes_enc_last: #l:lanes -> state l -> state l -> state l
+let aes_enc_last #l st key =
+    let st = subBytes st in
+    let st = shift_rows st in
+    xor_state_key1 st key
+
+let rcon_seq : fseq uint8 11 =
+  (from_uint8 0x8duy,(
+   from_uint8 0x01uy,(
+   from_uint8 0x02uy,(
+   from_uint8 0x04uy,(
+   from_uint8 0x08uy,(
+   from_uint8 0x10uy,(
+   from_uint8 0x20uy,(
+   from_uint8 0x40uy,(
+   from_uint8 0x80uy,(
+   from_uint8 0x1buy,(
+   from_uint8 0x36uy)))))))))))
+
+val aes_keygen_assisti: #l:lanes -> rcon:uint8 -> i:nat{i < 8} -> u1xNxL 16 l -> u1xNxL 16 l
+let aes_keygen_assisti #l rcon i u =
+  let row_mask16 = from_uint16 0xf000us in
+  let row_mask = create l row_mask16 in
+  let u3 = u &| row_mask in
+  let n = u3 >>| 12 in
+  let n = ((n >>| 1) || (n <<| 3)) &| (row_mask >>| 12) in
+  let ri = create l (create 16 rcon.[i]) in
+  let n = n ^| ri in
+  let n = n <<| 12 in
+  n ^| (u3 >>| 4)
+
+val aes_keygen_assist: #l:lanes -> rcon:uint8 -> state l -> state l
+let aes_keygen_assist #l rcon prev =
+  mapi (aes_keygen_assisti rcon) prev
+
+
+val aes_keygen_assist0: #l:lanes -> rcon:uint8 -> state l -> state l
+let aes_keygen_assist0 #l rcon prev =
+  let next = aes_keygen_assist rcon prev in
+  map (fun ni ->
+    let row_mask16 = from_uint16 0xf000us in
+    let row_mask = create l row_mask16 in
+    let n3 = ni &| row_mask in
+    let n32 = n3 ^| (n3 >>| 4) in
+    let n3210 = n32 ^| (n32 >>| 8) in
+    n3210) next
+
+val aes_keygen_assist1: #l:lanes -> state l -> state l
+let aes_keygen_assist1 #l prev =
+  let next = aes_keygen_assist (from_uint8 0uy) prev in
+  map (fun ni ->
+    let row_mask16 = from_uint16 0x0f00us in
+    let row_mask = create l row_mask16 in
+    let n3 = ni &| row_mask in
+    let n32 = n3 ^| (n3 <<| 4) in
+    let n3210 = n32 ^| (n32 >>| 8) in
+    n3210) next
+
+val key_expand1: #l:lanes -> u1xNxL 16 l -> u1xNxL 16 l -> u1xNxL 16 l
+let key_expand1 #l p n =
+    let mask1 = create l (from_uint16 0x0fffus) in
+    let mask2 = create l (from_uint16 0x00ffus) in
+    let mask3 = create l (from_uint16 0x000fus) in
+    let p = p ^| ((p &| mask1) <<| 4) ^| ((p &| mask2) <<| 8) ^| ((p &| mask3) <<| 12) in
+    n ^| p
+
+val key_expansion_step: #l:lanes -> state l -> state l -> state l
+let key_expansion_step #l prev next =
+  map2 key_expand1 prev next
+
+val load_key1: #l:lanes -> blocks 1 -> state l
+let load_key1 #l k =
+  let st : state l = load_state0 k in
+  map (fun x -> create l x.[0]) st
+
+let keys l nr = fseq (state l) nr
+let enc_rounds #l #nr (st:state l) (k:keys l nr) =
+  Lib.LoopCombinators.repeati nr
+    (fun i st -> aes_enc st k.[i]) st
+
+let block_cipher #l (#nr:nat{nr > 1 /\ nr < max_fseq_len}) (st:state l) (k:keys l (nr+1)) =
+    let st = xor_state_key1 st k.[0] in
+    let st = enc_rounds #l #(nr - 1) st (sub k 1 (nr - 1)) in
+    aes_enc_last st k.[nr]
+
+let key_expansion128 #l (k:blocks 1) : keys l 11 =
+  let k1 = load_key1 k in
+  let kx = create 11 k1 in
+  Lib.LoopCombinators.repeati 10 (fun i kx ->
+    let n = aes_keygen_assist0 rcon_seq.[i+1] kx.[i] in
+    kx.[i+1] <- key_expansion_step n kx.[i]) kx
+
+let key_expansion256 #l (k:blocks 2) : keys l 15 =
+  let k0 = load_key1 #l (sub k 0 1) in
+  let k1 = load_key1 #l (sub k 1 1) in
+  let kx = create 11 k0 in
+  let kx = kx.[1] <- k1 in
+  Lib.LoopCombinators.repeati 6 (fun i kx ->
+    let p0 = kx.[2*i] in
+    let p1 = kx.[2*i+1] in
+    let n0 = aes_keygen_assist0 rcon_seq.[i+1] p1 in
+    let n0 = key_expansion_step p0 n0 in
+    let n1 = aes_keygen_assist1 n0 in
+    let n1 = key_expansion_step p1 n1 in
+    let kx = kx.[2*i] <- n0 in
+    let kx = kx.[2*i+1] <- n1 in
+    kx) kx
