@@ -8,7 +8,7 @@
       1,
       [ "@query" ],
       0,
-      "bad1291c8a93b2dfea8238032ccf855e"
+      "ec5a451e8443d4c5a88d797335226c1b"
     ],
     [
       "Spec.Agile.AEAD.cipher_alg_of_supported_alg",
@@ -26,7 +26,7 @@
         "typing_Spec.Agile.AEAD.is_supported_alg"
       ],
       0,
-      "85d377389ab410a88656c1c94c444434"
+      "b2c85afedffa9b20ad67a59aefaaf578"
     ],
     [
       "Spec.Agile.AEAD.key_length",
@@ -57,7 +57,7 @@
         "typing_Spec.GaloisField.__proj__GF__item__t"
       ],
       0,
-      "edea01ce6803e42943a57fb4f5632ea3"
+      "9484ecbfcfb96c063604c0a8e55fb733"
     ],
     [
       "Spec.Agile.AEAD.tag_length",
@@ -76,7 +76,7 @@
         "fuel_guarded_inversion_Spec.Agile.AEAD.alg"
       ],
       0,
-      "ceb56403ead379b266a2ded54ed0cfde"
+      "814619d64d09062d1731ba3916b34c0c"
     ],
     [
       "Spec.Agile.AEAD.size_block",
@@ -95,7 +95,7 @@
         "fuel_guarded_inversion_Spec.Agile.AEAD.alg"
       ],
       0,
-      "8bfd338c51c02e4a61cecc275ed9bfb1"
+      "0f53905924a3a194cf5f5fa8dd26c8e5"
     ],
     [
       "Spec.Agile.AEAD.iv_length",
@@ -120,7 +120,7 @@
         "typing_Spec.Agile.AEAD.is_supported_alg"
       ],
       0,
-      "2561c0ada364b322ad7c91aa0b214f46"
+      "cac74860140337e69c4a5ba18c0d5a04"
     ],
     [
       "Spec.Agile.AEAD.padlen",
@@ -158,7 +158,7 @@
         "typing_Spec.AES.gf8", "typing_Spec.GaloisField.__proj__GF__item__t"
       ],
       0,
-      "45f010feb0eaa31ac50e2d7d5bba9345"
+      "cd0a2213230c26264c42a4e298bcbd2e"
     ],
     [
       "Spec.Agile.AEAD.max_length",
@@ -191,7 +191,7 @@
         "typing_Spec.Poly1305.size_key"
       ],
       0,
-      "1d5195f329b87742b4da588124cadf27"
+      "35c8417730975cb4a2f7a23053a53d58"
     ],
     [
       "Spec.Agile.AEAD.lbytes",
@@ -200,7 +200,7 @@
       1,
       [ "@query" ],
       0,
-      "30c123894a5c2f7b0100491914e0f937"
+      "4b922b4708914f4080d85b395e88b88c"
     ],
     [
       "Spec.Agile.AEAD.vale_alg_of_alg",
@@ -209,7 +209,7 @@
       0,
       [ "@query", "assumption_Spec.Agile.AEAD.alg__uu___haseq" ],
       0,
-      "9764144f2b90d42078d65beb84d26d5c"
+      "7fc844c0be9a0ad70c920ad9500804be"
     ],
     [
       "Spec.Agile.AEAD.vale_alg_of_alg",
@@ -227,7 +227,7 @@
         "refinement_interpretation_Tm_refine_5171614844d45d48a27a076e659221d2"
       ],
       0,
-      "b6a448ff0d5c890d96202ace7eda54f2"
+      "0d2ee390b3a90d602d33dc4764aed1ef"
     ],
     [
       "Spec.Agile.AEAD.gcm_encrypt_tag_length",
@@ -339,7 +339,7 @@
         "typing_tok_Lib.IntTypes.SEC@tok", "typing_tok_Lib.IntTypes.U8@tok"
       ],
       0,
-      "551536c8f9f5bd1fbd2c5cd368a2ea5b"
+      "03b7354d176bfc93a60283e6454c4aa9"
     ],
     [
       "Spec.Agile.AEAD.gcm_encrypt_cipher_length",
@@ -427,7 +427,7 @@
         "typing_tok_Lib.IntTypes.SEC@tok", "typing_tok_Lib.IntTypes.U8@tok"
       ],
       0,
-      "44ebc478b26e9a6027ed8c2ddd36ca66"
+      "50087ba04a915408132b7692c6d94a03"
     ],
     [
       "Spec.Agile.AEAD.encrypt",
@@ -517,7 +517,6 @@
         "equation_Spec.Agile.Cipher.key_length",
         "equation_Spec.Chacha20.size_block",
         "equation_Spec.Chacha20.size_key",
-        "equation_Spec.Chacha20Poly1305.size_block",
         "equation_Spec.Chacha20Poly1305.size_key",
         "equation_Spec.Chacha20Poly1305.size_nonce",
         "equation_Spec.GaloisField.felem", "equation_Spec.GaloisField.gf",
@@ -652,7 +651,7 @@
         "typing_tok_Lib.IntTypes.SEC@tok", "typing_tok_Lib.IntTypes.U8@tok"
       ],
       0,
-      "13a4aae0a55ebfbc54ebd54e3c8f8389"
+      "500c3ea2eed6d761c58bab7956715d1b"
     ],
     [
       "Spec.Agile.AEAD.decrypt",
@@ -797,7 +796,7 @@
         "typing_tok_Lib.IntTypes.U64@tok", "typing_tok_Lib.IntTypes.U8@tok"
       ],
       0,
-      "f808d3eeb9b76c01a3cb29eb9ef000ff"
+      "9c8c13f55f8480774bc6c718df0e512a"
     ],
     [
       "Spec.Agile.AEAD.correctness",
@@ -817,7 +816,7 @@
         "typing_Spec.Agile.AEAD.encrypt"
       ],
       0,
-      "5e0b8cbeb78e5660c1df1950788c9ae4"
+      "888f224e703ef8dc6c439dc10787aa14"
     ]
   ]
 ]

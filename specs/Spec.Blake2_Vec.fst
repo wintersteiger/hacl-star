@@ -73,15 +73,21 @@ inline_for_extraction
 let create_row (#a:alg) x0 x1 x2 x3 : row a =
   createL [x0;x1;x2;x3]
 
+let word_index (a:alg) (len:size_nat) =
+  i:size_t{v i * size_word a + size_word a <= len}
 inline_for_extraction
-unfold let row2 (a:alg) = lseq (row a) 2
+let gather_row (#a:alg) (#len:size_nat) (m:lbytes len) (i0 i1 i2 i3:word_index a len) : row a =
+  let nb = size_word a in
+  let u0 = uint_from_bytes_le #(wt a) #SEC (sub m (v i0*nb) nb) in
+  let u1 = uint_from_bytes_le #(wt a) #SEC (sub m (v i1*nb) nb) in
+  let u2 = uint_from_bytes_le #(wt a) #SEC (sub m (v i2*nb) nb) in
+  let u3 = uint_from_bytes_le #(wt a) #SEC (sub m (v i3*nb) nb) in
+  create_row u0 u1 u2 u3
+
+
 
 inline_for_extraction
-unfold let vector (a:alg) = lseq (row a) 4
-
-inline_for_extraction
-let zero_vector (a:alg) : vector a = create 4 (zero_row a)
-
+unfold let state (a:alg) = lseq (row a) 4
 
 inline_for_extraction
 type pub_word_t (a:alg) = uint_t (wt a) PUB
@@ -102,7 +108,9 @@ inline_for_extraction
 let nat_to_limb (a:alg) (x:nat{x <= max_limb a}) : xl:limb_t a{uint_v xl == x} =
   match (wt a) with
   | U32 -> u64 x
-  | U64 -> admit(); u128 x
+  | U64 -> let h = u64 (x / pow2 64) in
+	  let l = u64 (x % pow2 64) in
+	  (to_u128 h <<. 64ul) +! to_u128 l
 
 inline_for_extraction
 let word_to_limb (a:alg) (x:word_t a{uint_v x <= max_limb a}) : xl:limb_t a{uint_v xl == uint_v x} =
@@ -211,23 +219,10 @@ let sigmaTable:lseq sigma_elt_t size_sigmaTable =
 
 
 (* Algorithms types *)
-type vector_ws (a:alg) = lseq (word_t a) size_block_w
-type block_ws (a:alg) = lseq (word_t a) size_block_w
 type block_s (a:alg) = lseq uint8 (size_block a)
-type hash_ws (a:alg) = lseq (word_t a) size_hash_w
 type idx_t = n:size_nat{n < 16}
 
 let row_idx = n:nat {n < 4}
-
-inline_for_extraction
-let gather_row (#a:alg) (m:block_s a) (i0 i1 i2 i3:sigma_elt_t) : row a =
-  let nb = size_word a in
-  let u0 = uint_from_bytes_le #(wt a) #SEC (sub m (v i0*nb) nb) in
-  let u1 = uint_from_bytes_le #(wt a) #SEC (sub m (v i1*nb) nb) in
-  let u2 = uint_from_bytes_le #(wt a) #SEC (sub m (v i2*nb) nb) in
-  let u3 = uint_from_bytes_le #(wt a) #SEC (sub m (v i3*nb) nb) in
-  create_row u0 u1 u2 u3
-
 
 inline_for_extraction
 let ( ^| ) (#a:alg) (r1:row a) (r2:row a) : row a =
@@ -239,7 +234,7 @@ let ( +| ) (#a:alg) (r1:row a) (r2:row a) : row a =
 
 inline_for_extraction
 let ( >>>| ) (#a:alg) (r1:row a) (r:rotval (wt a)) : row a =
-  map #(word_t a) ( fun x -> x >>>. r) r1
+  map #(word_t a) (rotate_right_i r) r1
 
 inline_for_extraction
 let rotr (#a:alg) (r1:row a) (r:row_idx) : row a =
@@ -247,23 +242,23 @@ let rotr (#a:alg) (r1:row a) (r:row_idx) : row a =
 
 
 (* Functions *)
-let g1 (a:alg) (wv:vector a) (i:row_idx) (j:row_idx) (r:rotval (wt a)) : Tot (vector a) =
+let g1 (a:alg) (wv:state a) (i:row_idx) (j:row_idx) (r:rotval (wt a)) : Tot (state a) =
   wv.[i] <- (wv.[i] ^| wv.[j]) >>>| r
 
-let g2 (a:alg) (wv:vector a) (i:row_idx) (j:row_idx) (x:row a) : Tot (vector a) =
+let g2 (a:alg) (wv:state a) (i:row_idx) (j:row_idx) (x:row a) : Tot (state a) =
   wv.[i] <- (wv.[i] +| wv.[j] +| x)
 
 
 val blake2_mixing:
     a:alg
-  -> ws:vector a
+  -> ws:state a
   -> row_idx
   -> row_idx
   -> row_idx
   -> row_idx
   -> row a
   -> row a ->
-  Tot (vector a)
+  Tot (state a)
 
 let blake2_mixing al wv a b c d x y =
   let rt = rTable al in
@@ -277,47 +272,51 @@ let blake2_mixing al wv a b c d x y =
   let wv = g1 al wv b c rt.[3] in
   wv
 
-let diag (#a:alg) (wv:vector a) : vector a =
+let diag (#a:alg) (wv:state a) : state a =
   let wv = wv.[1] <- rotr wv.[1] 1 in
   let wv = wv.[2] <- rotr wv.[2] 2 in
   let wv = wv.[3] <- rotr wv.[3] 3 in
   wv
 
-let undiag (#a:alg) (wv:vector a) : vector a =
+let undiag (#a:alg) (wv:state a) : state a =
   let wv = wv.[1] <- rotr wv.[1] 3 in
   let wv = wv.[2] <- rotr wv.[2] 2 in
   let wv = wv.[3] <- rotr wv.[3] 1 in
   wv
 
-val blake2_round:
-    a:alg
-  -> m:block_s a
-  -> i:size_nat
-  -> wv:vector a
-  -> vector a
-
-let blake2_round a m i wv =
-  let start = (i%10) * 16 in
+val gather_state: a:alg -> m:block_s a -> start:nat{start <= 144} -> state a
+let gather_state a m start =
   let x = gather_row m sigmaTable.[start] sigmaTable.[start+2] sigmaTable.[start+4] sigmaTable.[start+6]  in
   let y = gather_row m sigmaTable.[start+1] sigmaTable.[start+3] sigmaTable.[start+5] sigmaTable.[start+7]  in
   let z = gather_row m sigmaTable.[start+8] sigmaTable.[start+10] sigmaTable.[start+12] sigmaTable.[start+14]  in
   let w = gather_row m sigmaTable.[start+9] sigmaTable.[start+11] sigmaTable.[start+13] sigmaTable.[start+15]  in
-  let wv = blake2_mixing a wv 0 1 2 3 x y in
+  createL [x;y;z;w]
+
+val blake2_round:
+    a:alg
+  -> m:block_s a
+  -> i:size_nat
+  -> wv:state a
+  -> state a
+
+let blake2_round a m i wv =
+  let start = (i%10) * 16 in
+  let m_s = gather_state a m start in
+  let wv = blake2_mixing a wv 0 1 2 3 m_s.[0] m_s.[1] in
   let wv = diag wv in
-  let wv = blake2_mixing a wv 0 1 2 3 z w in
+  let wv = blake2_mixing a wv 0 1 2 3 m_s.[2] m_s.[3] in
   undiag wv
 
 
 val blake2_compress1:
     a:alg
-  -> iv:row2 a
-  -> s:row2 a
+  -> s_iv:state a
   -> offset:limb_t a
   -> flag:bool ->
-  Tot (vector a)
+  Tot (state a)
 
-let blake2_compress1 a iv s offset flag =
-  let wv : vector a = s @| iv in
+let blake2_compress1 a s_iv offset flag =
+  let wv : state a = s_iv in
   let low_offset = limb_to_word a offset in
   let high_offset = limb_to_word a (shift_right #(limb_inttype a) offset (size (bits (wt a)))) in
   let m_12 = low_offset in
@@ -331,17 +330,17 @@ let blake2_compress1 a iv s offset flag =
 
 val blake2_compress2:
     a:alg
-  -> wv:vector a
+  -> wv:state a
   -> m:block_s a ->
-  Tot (vector a)
+  Tot (state a)
 
 let blake2_compress2 a wv m = repeati (rounds a) (blake2_round a m) wv
 
 val blake2_compress3:
     a:alg
-  -> wv:vector a
-  -> s:row2 a ->
-  Tot (row2 a)
+  -> wv:state a
+  -> s_iv:state a ->
+  Tot (state a)
 
 let blake2_compress3 a wv s =
   let s = s.[0] <- s.[0] ^| wv.[0] ^| wv.[2] in
@@ -350,57 +349,53 @@ let blake2_compress3 a wv s =
 
 val blake2_compress:
     a:alg
-  -> iv:row2 a
-  -> s:row2 a
+  -> s_iv:state a
   -> m:block_s a
   -> offset:limb_t a
   -> flag:bool ->
-  Tot (row2 a)
+  Tot (state a)
 
-let blake2_compress a iv s m offset flag =
-  let wv = blake2_compress1 a iv s offset flag in
+let blake2_compress a s_iv m offset flag =
+  let wv = blake2_compress1 a s_iv offset flag in
   let wv = blake2_compress2 a wv m in
-  let s = blake2_compress3 a wv s in
-  s
+  let s_iv = blake2_compress3 a wv s_iv in
+  s_iv
 
 
 val blake2_update_block:
     a:alg
-  -> iv:row2 a
   -> flag:bool
   -> totlen:nat{totlen <= max_limb a}
   -> d:block_s a
-  -> s:row2 a ->
-  Tot (row2 a)
+  -> s_iv:state a ->
+  Tot (state a)
 
-let blake2_update_block a iv flag totlen d s =
+let blake2_update_block a flag totlen d s =
   let offset = nat_to_limb a totlen in
-  blake2_compress a iv s d offset flag
+  blake2_compress a s d offset flag
 
 val blake2_update1:
     a:alg
-  -> iv:row2 a
   -> prev:nat
   -> m:bytes
   -> i:nat{i < length m / size_block a /\ prev + length m <= max_limb a}
-  -> s:row2 a ->
-  Tot (row2 a)
+  -> s:state a ->
+  Tot (state a)
 
 let get_blocki (a:alg) (m:bytes) (i:nat{i < length m / size_block a}) : block_s a =
   Seq.slice m (i * size_block a) ((i+1) * size_block a)
 
-let blake2_update1 a iv prev m i s =
+let blake2_update1 a prev m i s =
   let totlen = prev + (i+1) * size_block a in
   let d = get_blocki a m i in
-  blake2_update_block a iv false totlen d s
+  blake2_update_block a false totlen d s
 
 val blake2_update_last:
     a:alg
-  -> iv:row2 a
   -> prev:nat
   -> m:bytes{prev + length m <= max_limb a}
-  -> s:row2 a ->
-  Tot (row2 a)
+  -> s:state a ->
+  Tot (state a)
 
 let get_last (a:alg) (m:bytes) : block_s a =
   let rem = length m % size_block a in
@@ -409,32 +404,31 @@ let get_last (a:alg) (m:bytes) : block_s a =
   let last_block = update_sub last_block 0 rem last in
   last_block
 
-let blake2_update_last a iv prev m s =
+let blake2_update_last a prev m s =
   let totlen = prev + length m in
-  blake2_update_block a iv true totlen (get_last a m) s
+  blake2_update_block a true totlen (get_last a m) s
 
 val blake2_update_blocks:
     a:alg
-  -> iv:row2 a
   -> prev:nat
   -> m:bytes{prev + length m <= max_limb a}
-  -> s:row2 a ->
-  Tot (row2 a)
+  -> s:state a ->
+  Tot (state a)
 
-let blake2_update_blocks a iv prev m s =
+let blake2_update_blocks a prev m s =
   let nb = length m / size_block a in
   let rem = length m % size_block a in
   let nb = if rem = 0 && nb > 0 then nb - 1 else nb in
   let rem = if rem = 0 && nb > 0 then size_block a else rem in
-  let s = repeati nb (blake2_update1 a iv prev m) s in
-  blake2_update_last a iv prev m s
+  let s = repeati nb (blake2_update1 a prev m) s in
+  blake2_update_last a prev m s
 
 
 val blake2_init_hash:
     a:alg
   -> kk:size_nat{kk <= max_key a}
   -> nn:size_nat{1 <= nn /\ nn <= max_output a} ->
-  Tot (row2 a & row2 a)
+  Tot (state a)
 
 let blake2_init_hash a kk nn =
   let iv0 = load_row #a (map secret (sub (ivTable a) 0 4)) in
@@ -442,30 +436,28 @@ let blake2_init_hash a kk nn =
   let s0' = (nat_to_word a 0x01010000) ^. ((nat_to_word a kk) <<. (size 8)) ^. (nat_to_word a nn) in
   let m = create_row s0' (zero a) (zero a) (zero a) in
   let iv0' = iv0 ^| m in
-  let iv = createL [iv0;iv1] in
-  let s = createL [iv0';iv1] in
-  (iv,s)
-
+  let s_iv = createL [iv0';iv1;iv0;iv1] in
+  s_iv
 
 val blake2_init:
     a:alg
   -> kk:size_nat{kk <= max_key a}
   -> k:lbytes kk
   -> nn:size_nat{1 <= nn /\ nn <= max_output a} ->
-  Tot (row2 a & row2 a)
+  Tot (state a)
 
 let blake2_init a kk k nn =
   let key_block = create (size_block a) (u8 0) in
-  let iv,s = blake2_init_hash a kk nn in
-  if kk = 0 then iv,s
+  let s = blake2_init_hash a kk nn in
+  if kk = 0 then s
   else begin
     let key_block = update_sub key_block 0 kk k in
-    iv,blake2_update1 a iv 0 key_block 0 s end
+    blake2_update1 a 0 key_block 0 s end
 
 
 val blake2_finish:
     a:alg
-  -> s:row2 a
+  -> s:state a
   -> nn:size_nat{1 <= nn /\ nn <= max_output a} ->
   Tot (lbytes nn)
 
@@ -484,8 +476,8 @@ val blake2:
 let blake2 a d kk k nn =
   let kn = if kk = 0 then 0 else 1 in
   let prev_multi = kn * (size_block a) in
-  let iv,s = blake2_init a kk k nn in
-  let s = blake2_update_blocks a iv prev_multi d s in
+  let s = blake2_init a kk k nn in
+  let s = blake2_update_blocks a prev_multi d s in
   blake2_finish a s nn
 
 val blake2s:

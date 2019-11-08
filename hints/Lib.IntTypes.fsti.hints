@@ -1,5 +1,5 @@
 [
-  "§ëšó%e\u007fœvp4ëŽ›ù°",
+  "f§Êh\u007f–A£ß\u001eŸ#äãœy",
   [
     [
       "Lib.IntTypes.numbytes",
@@ -1110,6 +1110,102 @@
       "dc503b420593b261cfb1f7e8673b8a42"
     ],
     [
+      "Lib.IntTypes.shift_right_i",
+      1,
+      0,
+      1,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "refinement_interpretation_Tm_refine_33026181614126bf2f989b87912ad69b"
+      ],
+      0,
+      "0c1be09746f143a7deb6d3c56ecb06be"
+    ],
+    [
+      "Lib.IntTypes.shift_right_i",
+      2,
+      0,
+      1,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "refinement_interpretation_Tm_refine_33026181614126bf2f989b87912ad69b"
+      ],
+      0,
+      "9021e10ad4318f6dc467e562f8a737b0"
+    ],
+    [
+      "Lib.IntTypes.shift_left_i",
+      1,
+      0,
+      1,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "refinement_interpretation_Tm_refine_33026181614126bf2f989b87912ad69b"
+      ],
+      0,
+      "c20df85d310ee38b9b509b4725fd494c"
+    ],
+    [
+      "Lib.IntTypes.shift_left_i",
+      2,
+      0,
+      1,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "refinement_interpretation_Tm_refine_33026181614126bf2f989b87912ad69b"
+      ],
+      0,
+      "2853b77cbc052c69a7425411d767b098"
+    ],
+    [
+      "Lib.IntTypes.rotate_right_i",
+      1,
+      0,
+      1,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "refinement_interpretation_Tm_refine_fe1f2b0fb92318a15c076125042e53a3"
+      ],
+      0,
+      "17cbc9dad7b0106185a7e52697254f3a"
+    ],
+    [
+      "Lib.IntTypes.rotate_right_i",
+      2,
+      0,
+      1,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "refinement_interpretation_Tm_refine_fe1f2b0fb92318a15c076125042e53a3"
+      ],
+      0,
+      "10d3502158f2ce54111b9a7c6ce7e6d2"
+    ],
+    [
+      "Lib.IntTypes.rotate_left_i",
+      1,
+      0,
+      1,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "refinement_interpretation_Tm_refine_fe1f2b0fb92318a15c076125042e53a3"
+      ],
+      0,
+      "79c724001074e0249dc6bf5bb1368986"
+    ],
+    [
+      "Lib.IntTypes.rotate_left_i",
+      2,
+      0,
+      1,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "refinement_interpretation_Tm_refine_fe1f2b0fb92318a15c076125042e53a3"
+      ],
+      0,
+      "a6443cb2c9299a1159c3de1918029214"
+    ],
+    [
       "Lib.IntTypes.mod_mask",
       1,
       1,
@@ -1128,7 +1224,7 @@
         "typing_tok_Lib.IntTypes.U32@tok"
       ],
       0,
-      "d883f543a29fb8ab30044c7a72a590da"
+      "7a4fcee20a6f727ee9295a8f7d1751ad"
     ],
     [
       "Lib.IntTypes.mod_mask",
@@ -1167,7 +1263,7 @@
         "typing_tok_Lib.IntTypes.U32@tok"
       ],
       0,
-      "694fae59b2da90df4b65591fb29d3e46"
+      "5aad6c1d80a152fa8b569fa908356ded"
     ],
     [
       "Lib.IntTypes.mod_mask_lemma",
@@ -1196,7 +1292,7 @@
         "typing_tok_Lib.IntTypes.PUB@tok", "typing_tok_Lib.IntTypes.U32@tok"
       ],
       0,
-      "5c6928ae0cb5179b8dc704ac6fe26b5f"
+      "3622dcec23ea4f7b937fa26b91635136"
     ],
     [
       "Lib.IntTypes.div",
@@ -1205,7 +1301,7 @@
       1,
       [ "@query", "assumption_Lib.IntTypes.inttype__uu___haseq" ],
       0,
-      "2023cfc364fee0a390de8376a64ce96a"
+      "8a42bece13ef0c5c1460ea17ddd16049"
     ],
     [
       "Lib.IntTypes.div_lemma",
@@ -1217,7 +1313,7 @@
         "refinement_interpretation_Tm_refine_e450d0eda8ec6ce5c9eff42d01f0e81a"
       ],
       0,
-      "17364b378c1b7a7b2b52ca09feb07e17"
+      "3a528fc1b30f6a8dee36973609c76341"
     ],
     [
       "Lib.IntTypes.mod",
@@ -1226,7 +1322,7 @@
       1,
       [ "@query", "assumption_Lib.IntTypes.inttype__uu___haseq" ],
       0,
-      "220ca64852e9b065bc90c3f4af3a8fa0"
+      "5f74ad7256d876e6b383bd83a32da439"
     ],
     [
       "Lib.IntTypes.mod_lemma",
@@ -1272,7 +1368,7 @@
         "typing_tok_Lib.IntTypes.PUB@tok"
       ],
       0,
-      "888465117705b0040cdacd8508233bcb"
+      "87b58d24301547f03aad70f08634e26f"
     ]
   ]
 ]
