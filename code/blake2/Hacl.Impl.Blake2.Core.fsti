@@ -48,10 +48,10 @@ inline_for_extraction
 val row_v: #a:Spec.alg -> #m:m_spec -> h:mem -> row_p a m -> GTot (Spec.row a)
 
 noextract
-val row_v_lemma: #a:Spec.alg -> #m:m_spec -> h0:mem -> h1:mem -> r:row_p a m ->
-  Lemma (ensures (as_seq h0 r == as_seq h1 r ==>
-		  row_v h0 r == row_v h1 r))
-	[SMTPat (row_v h0 r); SMTPat (row_v h1 r)]
+val row_v_lemma: #a:Spec.alg -> #m:m_spec -> h0:mem -> h1:mem -> r1:row_p a m -> r2:row_p a m ->
+  Lemma (ensures (as_seq h0 r1 == as_seq h1 r2 ==>
+		  row_v h0 r1 == row_v h1 r2))
+	[SMTPat (row_v h0 r1); SMTPat (row_v h1 r2)]
 
 inline_for_extraction
 unfold let state_p (a:Spec.alg) (m:m_spec) =
@@ -82,10 +82,10 @@ inline_for_extraction noextract
 val state_v: #a:Spec.alg -> #m:m_spec -> mem -> state_p a m -> GTot (Spec.state a)
 
 noextract
-val state_v_eq_lemma: #a:Spec.alg -> #m:m_spec -> h0:mem -> h1:mem -> st:state_p a m ->
-  Lemma (requires (as_seq h0 st == as_seq h1 st))
-	(ensures (state_v h0 st == state_v h1 st))
-	[SMTPat (state_v #a #m h0 st); SMTPat (state_v #a #m h1 st)]
+val state_v_eq_lemma: #a:Spec.alg -> #m:m_spec -> h0:mem -> h1:mem -> st1:state_p a m -> st2:state_p a m ->
+  Lemma (requires (as_seq h0 st1 == as_seq h1 st2))
+	(ensures (state_v h0 st1 == state_v h1 st2))
+	[SMTPat (state_v #a #m h0 st1); SMTPat (state_v #a #m h1 st2)]
 
 noextract
 val state_v_rowi_lemma: #a:Spec.alg -> #m:m_spec -> h:mem -> st:state_p a m -> i:index_t ->
@@ -108,8 +108,9 @@ val modifies_one_row: a:Spec.alg -> m:m_spec -> h0:mem -> h1:mem -> st:state_p a
 noextract
 val modifies_row_state: a:Spec.alg -> m:m_spec -> h0:mem -> h1:mem -> st:state_p a m -> i:index_t ->
   Lemma (requires (live h0 st /\ modifies (loc (g_rowi st i)) h0 h1))
-	(ensures (state_v h1 st == Lib.Sequence.((state_v h0 st).[v i] <- row_v h1 (g_rowi st i))))
-	[SMTPat (modifies (loc (g_rowi st i)) h0 h1)]
+	(ensures (modifies (loc st) h0 h1 /\
+		  state_v h1 st == Lib.Sequence.((state_v h0 st).[v i] <- row_v h1 (g_rowi st i))))
+	[SMTPat (modifies (loc (g_rowi #a #m st i)) h0 h1)]
 
 
 inline_for_extraction
@@ -190,4 +191,13 @@ val alloc_state: a:Spec.alg -> m:m_spec ->
 	  (requires (fun h -> True))
 	  (ensures (fun h0 r h1 -> stack_allocated r h0 h1 (Lib.Sequence.create (4 * v (row_len a m)) (zero_element a m)) /\
 				live h1 r))
+
+
+
+inline_for_extraction
+val copy_state: #a:Spec.alg -> #m:m_spec -> st2:state_p a m -> st1:state_p a m ->
+	  ST unit
+	  (requires (fun h0 -> live h0 st1 /\ live h0 st2 /\ disjoint st1 st2))
+	  (ensures (fun h0 r h1 -> modifies (loc st2) h0 h1 /\
+			        state_v h1 st2 == state_v h0 st1))
 

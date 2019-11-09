@@ -160,16 +160,19 @@ let g2 #al #m wv a b x =
   Lib.Sequence.eq_intro (state_v  h1 wv) (Spec.g2 al (state_v h0 wv) (v a) (v b) (row_v h0 x))
 
 inline_for_extraction noextract
-val blake2_mixing : #al:Spec.alg -> #m:m_spec -> wv:state_p al m -> a:index_t -> b:index_t -> c:index_t -> d:index_t -> x:row_p al m -> y:row_p al m ->
+val blake2_mixing : #al:Spec.alg -> #m:m_spec -> wv:state_p al m -> x:row_p al m -> y:row_p al m ->
   Stack unit
-    (requires (fun h -> a<>b /\ a<>c /\ a <> d /\ b <> c /\ b <> d /\ c <> d /\
-		     live h wv /\ live h x /\ live h y /\ disjoint wv x /\ disjoint wv y))
+    (requires (fun h -> live h wv /\ live h x /\ live h y /\ disjoint wv x /\ disjoint wv y))
     (ensures  (fun h0 _ h1 -> modifies (loc wv) h0 h1
-                         /\ state_v h1 wv == Spec.blake2_mixing al (state_v h0 wv) (v a) (v b) (v c) (v d) (row_v h0 x) (row_v h0 y)))
+                         /\ state_v h1 wv == Spec.blake2_mixing al (state_v h0 wv) (row_v h0 x) (row_v h0 y)))
 
-let blake2_mixing #al #m wv a b c d x y =
+let blake2_mixing #al #m wv x y =
   let h0 = ST.get() in
   push_frame ();
+  let a = 0ul in
+  let b = 1ul in
+  let c = 2ul in
+  let d = 3ul in
   let r0 = get_r al (size 0) in
   let r1 = get_r al (size 1) in
   let r2 = get_r al (size 2) in
@@ -188,7 +191,7 @@ let blake2_mixing #al #m wv a b c d x y =
   pop_frame ();
   let h3 = ST.get() in
   assert(modifies (loc wv) h0 h3);
-  Lib.Sequence.eq_intro (state_v h2 wv) (Spec.blake2_mixing al (state_v h1 wv) (v a) (v b) (v c) (v d) (row_v h1 x) (row_v h1 y))
+  Lib.Sequence.eq_intro (state_v h2 wv) (Spec.blake2_mixing al (state_v h1 wv) (row_v h1 x) (row_v h1 y))
 #pop-options
 
 inline_for_extraction noextract
@@ -224,12 +227,12 @@ let undiag #a #m wv =
 
 
 inline_for_extraction
-val gather_state: #a:Spec.alg -> #ms:m_spec -> st:state_p a ms -> m:lbuffer uint8 (size_block a) -> start:size_t{v start < 144} -> ST unit
+val gather_state: #a:Spec.alg -> #ms:m_spec -> st:state_p a ms -> m:lbuffer uint8 (size_block a) -> start:size_t{v start <= 144} -> ST unit
 		  (requires (fun h -> live h st /\ live h m /\ disjoint st m))
 		  (ensures (fun h0 _ h1 -> modifies (loc st) h0 h1 /\
 					state_v h1 st == Spec.gather_state a (as_seq h0 m) (v start)))
 
-#push-options "--z3rlimit 200 --max_fuel 0 --max_ifuel 0"
+#push-options "--z3rlimit 100"
 let gather_state #a #ms st m start =
   let h0 = ST.get() in
   let r0 = rowi st 0ul in
@@ -253,25 +256,16 @@ let gather_state #a #ms st m start =
   let s14 = get_sigma (start +. 14ul) in
   let s15 = get_sigma (start +. 15ul) in
   let h1 = ST.get() in
-  assert (h0 == h1);
-  assert (disjoint r0 m);
-  assert (disjoint r1 m);
-  assert (disjoint r2 m);
-  assert (disjoint r3 m);
-  assert (live h1 r0);
-  assert (live h1 r1);
-  assert (live h1 r2);
-  assert (live h1 r3);
   gather_row r0 m s0 s2 s4 s6;
-  gather_row r1 m s1 s3 s5 s7;
-  gather_row r2 m s8 s10 s12 s14;
-  gather_row r3 m s9 s11 s13 s15;
   let h2 = ST.get() in
-  admit();
-  assert(modifies (loc st) h1 h2);
-  admit()
-
-
+  gather_row r1 m s1 s3 s5 s7;
+  let h3 = ST.get() in
+  gather_row r2 m s8 s10 s12 s14;
+  let h4 = ST.get() in
+  gather_row r3 m s9 s11 s13 s15;
+  let h5 = ST.get() in
+  assert(modifies (loc st) h0 h5);
+  Lib.Sequence.eq_intro (state_v h5 st) (Spec.gather_state a (as_seq h0 m) (v start))
 
 inline_for_extraction noextract
 val blake2_round : #al:Spec.alg -> #ms:m_spec -> wv:state_p al ms ->  m:lbuffer uint8 (size_block al) -> i:size_t ->
@@ -284,80 +278,62 @@ let blake2_round #al #ms wv m i =
   push_frame();
   let start_idx = (i %. size 10) *. size 16 in
   assert (v start_idx == (v i % 10) * 16);
-  let m_st = alloc_state al m in
-  gather_state st m start;
-  blake2_mixing st 0ul 1ul 2ul 3ul (rowi m_st 0ul) (rowi m_st 1ul);
-  diag  st;
-  blake2_mixing st 0ul 1ul 2ul 3ul (rowi m_st 2ul) (rowi m_st 3ul);
-  undiag st;
+  assert (v start_idx <= 144);
+  let m_st = alloc_state al ms in
+  gather_state m_st m start_idx;
+  let x = rowi m_st 0ul in
+  let y = rowi m_st 1ul in
+  let z = rowi m_st 2ul in
+  let w = rowi m_st 3ul in
+  let h1 = ST.get() in
+  assert (disjoint wv m_st);
+  assert (disjoint m_st wv);
+  assert (disjoint x wv);
+  assert (disjoint wv x);
+  assert (disjoint y wv);
+  assert (disjoint wv y);
+  assert (disjoint z wv);
+  assert (disjoint wv z);
+  assert (disjoint w wv);
+  assert (disjoint wv w);
+  blake2_mixing wv x y;
+  diag  wv;
+  blake2_mixing wv z w;
+  undiag wv;
   pop_frame ()
-
-
-inline_for_extraction noextract
-val blake2_round2 : al:Spec.alg -> wv:vector_wp al -> m:block_wp al -> i:size_t{v i <= Spec.rounds al - 1} ->
-  Stack unit
-    (requires (fun h -> live h wv /\ live h m
-                  /\ disjoint wv m))
-    (ensures  (fun h0 _ h1 -> modifies1 wv h0 h1
-                         /\ h1.[|wv|] == Spec.blake2_round2 al h0.[|wv|] h0.[|m|] (v i)))
-
-let blake2_round2 al wv m i =
- let start_idx = (i %. size 10) *. size 16 in
-  assert (v start_idx == (v i % 10) * 16);
-  let s0 = get_sigma_sub start_idx (size 8) in
-  let s1 = get_sigma_sub start_idx (size 9) in
-  let s2 = get_sigma_sub start_idx (size 10) in
-  let s3 = get_sigma_sub start_idx (size 11) in
-  let s4 = get_sigma_sub start_idx (size 12) in
-  let s5 = get_sigma_sub start_idx (size 13) in
-  let s6 = get_sigma_sub start_idx (size 14) in
-  let s7 = get_sigma_sub start_idx (size 15) in
-  blake2_mixing al wv (size 0) (size 5) (size 10) (size 15) m.(s0) m.(s1);
-  blake2_mixing al wv (size 1) (size 6) (size 11) (size 12) m.(s2) m.(s3);
-  blake2_mixing al wv (size 2) (size 7) (size  8) (size 13) m.(s4) m.(s5);
-  blake2_mixing al wv (size 3) (size 4) (size  9) (size 14) m.(s6) m.(s7)
-
-
-inline_for_extraction noextract
-val blake2_round: al:Spec.alg -> wv:vector_wp al -> m:block_wp al -> i:size_t{v i <= Spec.rounds al - 1} ->
-  Stack unit
-    (requires (fun h -> live h wv /\ live h m
-                   /\ disjoint wv m))
-    (ensures  (fun h0 _ h1 -> modifies1 wv h0 h1
-                         /\ h1.[|wv|] == Spec.blake2_round al h0.[|m|] (v i) h0.[|wv|]))
-
-let blake2_round al wv m i =
-  blake2_round1 al wv m i;
-  blake2_round2 al wv m i
-
 
 inline_for_extraction noextract
 val blake2_compress1:
-    al:Spec.alg
-  -> wv: vector_wp al
-  -> s: hash_wp al
-  -> m: block_wp al
+    #al:Spec.alg
+  -> #m:m_spec
+  -> wv: state_p al m
+  -> s_iv: state_p al m
   -> offset: Spec.limb_t al
   -> flag: bool ->
   Stack unit
-    (requires (fun h -> live h s /\ live h m /\ live h wv
-                     /\ disjoint wv s /\ disjoint wv m))
-    (ensures  (fun h0 _ h1 -> modifies1 wv h0 h1
-                         /\ h1.[|wv|] == Spec.blake2_compress1 al h0.[|wv|] h0.[|s|] h0.[|m|] offset flag))
+    (requires (fun h -> live h wv /\ live h s_iv /\ disjoint wv s_iv))
+    (ensures  (fun h0 _ h1 -> modifies (loc wv) h0 h1
+                         /\ state_v h1 wv == Spec.blake2_compress1 al (state_v h0 s_iv) offset flag))
 
-let blake2_compress1 al wv s m offset flag =
-  update_sub wv (size 0) (size 8) s;
-  set_iv_sub al wv;
+let blake2_compress1 #al #m wv s_iv offset flag =
+  let h0 = ST.get() in
+  push_frame();
+  let mask = alloc_row al m in
   [@inline_let]
-  let low_offset = Spec.limb_to_word al offset in
+  let wv_12 = Spec.limb_to_word al offset in
   [@inline_let]
-  let high_offset = Spec.limb_to_word al (offset >>. (size (bits (Spec.wt al)))) in
-  let wv_12 = logxor wv.(size 12) low_offset in
-  let wv_13 = logxor wv.(size 13) high_offset in
-  let wv_14 = logxor wv.(size 14) (ones (Spec.wt al) SEC) in
-  wv.(size 12) <- wv_12;
-  wv.(size 13) <- wv_13;
- (if flag then wv.(size 14) <- wv_14)
+  let wv_13 = Spec.limb_to_word al (offset >>. (size (bits (Spec.wt al)))) in
+  let wv_14 = if flag then ones (Spec.wt al) SEC else (Spec.zero al) in
+  let wv_15 = Spec.zero al in
+  create_row mask wv_12 wv_13 wv_14 wv_15;
+  copy_state wv s_iv;
+  let wv3 = rowi wv 3ul in
+  xor_row wv3 mask;
+  pop_frame();
+  let h1 = ST.get() in
+  assert(modifies (loc wv) h0 h1);
+  Lib.Sequence.eq_intro (state_v h1 wv) (Spec.blake2_compress1 al (state_v h0 s_iv) offset flag);
+  admit()
 
 
 inline_for_extraction noextract

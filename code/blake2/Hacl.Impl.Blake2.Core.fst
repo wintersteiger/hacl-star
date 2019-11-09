@@ -27,7 +27,8 @@ let row_v #a #m h r =
   | Spec.Blake2B,M256 -> vec_v (Lib.Sequence.index (as_seq h r) 0)
   | _ -> as_seq h r
 
-let row_v_lemma #a #m h0 h1 r = ()
+let row_v_lemma #a #m h0 h1 r1 r2 = ()
+
 
 #push-options "--z3rlimit 50"
 let g_rowi_disjoint #a #m st idx1 idx2 =
@@ -68,7 +69,21 @@ let state_v (#a:Spec.alg) (#m:m_spec) (h:mem) (st:state_p a m) : GTot (Spec.stat
   create4 r0 r1 r2 r3
 
 
-let state_v_eq_lemma #a #m h0 h1 st = ()
+let state_v_eq_lemma #a #m h0 h1 st1 st2 =
+  assert (v (0ul *. row_len a m) == 0);
+  LowStar.Monotonic.Buffer.as_seq_gsub #_ #(LowStar.Buffer.trivial_preorder (element_t a m)) #(LowStar.Buffer.trivial_preorder (element_t a m)) h0 st1 0ul (row_len a m)
+  (LowStar.Buffer.trivial_preorder (element_t a m));
+  assert (as_seq h0 (g_rowi st1 0ul) == Seq.slice (as_seq h0 st1) 0 (v (row_len a m)));
+  assert (as_seq h0 (g_rowi st1 1ul) == Seq.slice (as_seq h0 st1) (v (1ul *. row_len a m)) (v (2ul *. row_len a m)));
+  assert (as_seq h0 (g_rowi st1 2ul) == Seq.slice (as_seq h0 st1) (v (2ul *. row_len a m)) (v (3ul *. row_len a m)));
+  assert (as_seq h0 (g_rowi st1 3ul) == Seq.slice (as_seq h0 st1) (v (3ul *. row_len a m)) (v (4ul *. row_len a m)));
+  Lib.Sequence.eq_intro (as_seq h0 (g_rowi st1 0ul)) (as_seq h1 (g_rowi st2 0ul));
+  Lib.Sequence.eq_intro (as_seq h0 (g_rowi st1 1ul)) (as_seq h1 (g_rowi st2 1ul));
+  Lib.Sequence.eq_intro (as_seq h0 (g_rowi st1 2ul)) (as_seq h1 (g_rowi st2 2ul));
+  Lib.Sequence.eq_intro (as_seq h0 (g_rowi st1 3ul)) (as_seq h1 (g_rowi st2 3ul));
+  row_v_lemma h0 h1 (g_rowi st1 0ul) (g_rowi st2 0ul);
+  Lib.Sequence.eq_intro (state_v h0 st1) (state_v h1 st2)
+
 
 let state_v_rowi_lemma #a #m h st i = ()
 
@@ -227,4 +242,10 @@ let gather_row #a #ms r m i0 i1 i2 i3 =
   assert (u0 == Lib.ByteSequence.uint_from_bytes_le (as_seq h0 b0));
   create_row r u0 u1 u2 u3
 #pop-options
+
+let alloc_state a m =
+  create (4ul *. row_len a m) (zero_element a m)
+
+let copy_state #a #m st2 st1 =
+  copy #_ #_ #(4ul *. row_len a m) st2 st1
 

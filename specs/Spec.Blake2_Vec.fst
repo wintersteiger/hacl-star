@@ -253,15 +253,15 @@ let g2 (a:alg) (wv:state a) (i:row_idx) (j:row_idx) (x:row a) : Tot (state a) =
 val blake2_mixing:
     a:alg
   -> ws:state a
-  -> row_idx
-  -> row_idx
-  -> row_idx
-  -> row_idx
   -> row a
   -> row a ->
   Tot (state a)
 
-let blake2_mixing al wv a b c d x y =
+let blake2_mixing al wv x y =
+  let a = 0 in
+  let b = 1 in
+  let c = 2 in
+  let d = 3 in
   let rt = rTable al in
   let wv = g2 al wv a b x in
   let wv = g1 al wv d a rt.[0] in
@@ -291,7 +291,9 @@ let gather_state a m start =
   let y = gather_row m sigmaTable.[start+1] sigmaTable.[start+3] sigmaTable.[start+5] sigmaTable.[start+7]  in
   let z = gather_row m sigmaTable.[start+8] sigmaTable.[start+10] sigmaTable.[start+12] sigmaTable.[start+14]  in
   let w = gather_row m sigmaTable.[start+9] sigmaTable.[start+11] sigmaTable.[start+13] sigmaTable.[start+15]  in
-  createL [x;y;z;w]
+  let l = [x;y;z;w] in
+  assert_norm (List.Tot.length l == 4);
+  createL l
 
 val blake2_round:
     a:alg
@@ -303,9 +305,9 @@ val blake2_round:
 let blake2_round a m i wv =
   let start = (i%10) * 16 in
   let m_s = gather_state a m start in
-  let wv = blake2_mixing a wv 0 1 2 3 m_s.[0] m_s.[1] in
+  let wv = blake2_mixing a wv m_s.[0] m_s.[1] in
   let wv = diag wv in
-  let wv = blake2_mixing a wv 0 1 2 3 m_s.[2] m_s.[3] in
+  let wv = blake2_mixing a wv m_s.[2] m_s.[3] in
   undiag wv
 
 
