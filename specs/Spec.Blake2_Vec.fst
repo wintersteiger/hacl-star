@@ -184,6 +184,7 @@ let ivTable (a:alg) : lseq (pub_word_t a) 8 =
 type sigma_elt_t = n:size_t{size_v n < 16}
 type list_sigma_t = l:list sigma_elt_t{List.Tot.length l == 160}
 
+[@"opaque_to_smt"]
 let list_sigma: list_sigma_t =
   [@inline_let]
   let l : list sigma_elt_t = [

@@ -21,12 +21,6 @@ open Hacl.Impl.Blake2.Core
 
 
 
-inline_for_extraction
-let size_block (a:Spec.alg): x:size_t = size (Spec.size_block a)
-
-inline_for_extraction
-type block_p (a:Spec.alg) = lbuffer uint8 (size_block a)
-
 inline_for_extraction noextract
 let rounds_t (a:Spec.alg): size_t = size (Spec.rounds a)
 
@@ -89,7 +83,7 @@ val get_sigma:
   s: size_t{v s < 160} ->
   Stack Spec.sigma_elt_t
     (requires (fun h -> True))
-    (ensures  (fun h0 z h1 -> h0 == h1 /\ z == (Seq.index Spec.sigmaTable (v s))))
+    (ensures  (fun h0 z h1 -> h0 == h1 /\ z == Lib.Sequence.(Spec.sigmaTable.[v s])))
 
 let get_sigma s =
   recall_contents sigmaTable Spec.sigmaTable;
@@ -113,7 +107,7 @@ val get_r:
   -> s: size_t{v s < 4} ->
   Stack (rotval (Spec.wt a))
     (requires (fun h -> True))
-    (ensures  (fun h0 z h1 -> h0 == h1 /\ v z == v (Seq.index (Spec.rTable a) (v s))))
+    (ensures  (fun h0 z h1 -> h0 == h1 /\ z == Lib.Sequence.((Spec.rTable a).[v s])))
 
 let get_r a s =
   recall_contents #(rotval (Spec.wt Spec.Blake2S)) #4ul rTable_S (Spec.rTable Spec.Blake2S);
@@ -138,10 +132,14 @@ val g1: #al:Spec.alg -> #m:m_spec -> wv:state_p al m -> a:index_t -> b:index_t -
                          /\ (state_v h1 wv) == Spec.g1 al (state_v h0 wv) (v a) (v b) r))
 
 let g1 #al #m wv a b r =
+  let h0 = ST.get() in
   let wv_a = rowi wv a in
   let wv_b = rowi wv b in
   xor_row wv_a wv_b;
-  ror_row wv_a r
+  ror_row wv_a r;
+  let h2 = ST.get() in
+  Lib.Sequence.eq_intro (state_v h2 wv) (Spec.g1 al (state_v h0 wv) (v a) (v b) r)
+
 
 
 #push-options "--z3rlimit 100 --max_fuel 1 --max_ifuel 1"
@@ -157,9 +155,9 @@ let g2 #al #m wv a b x =
   let wv_a = rowi wv a in
   let wv_b = rowi wv b in
   add_row wv_a wv_b;
+  add_row wv_a x;
   let h1 = ST.get() in
-  g_rowi_disjoint_other wv a x;
-  add_row wv_a x
+  Lib.Sequence.eq_intro (state_v  h1 wv) (Spec.g2 al (state_v h0 wv) (v a) (v b) (row_v h0 x))
 
 inline_for_extraction noextract
 val blake2_mixing : #al:Spec.alg -> #m:m_spec -> wv:state_p al m -> a:index_t -> b:index_t -> c:index_t -> d:index_t -> x:row_p al m -> y:row_p al m ->
@@ -190,10 +188,6 @@ let blake2_mixing #al #m wv a b c d x y =
   pop_frame ();
   let h3 = ST.get() in
   assert(modifies (loc wv) h0 h3);
-  assert(row_v h1 x == row_v h0 x);
-  assert(row_v h1 y == row_v h0 y);
-  assert(state_v h0 wv == state_v h1 wv);
-  assert(state_v h2 wv == state_v h3 wv);
   Lib.Sequence.eq_intro (state_v h2 wv) (Spec.blake2_mixing al (state_v h1 wv) (v a) (v b) (v c) (v d) (row_v h1 x) (row_v h1 y))
 #pop-options
 
@@ -260,43 +254,43 @@ let gather_state #a #ms st m start =
   let s15 = get_sigma (start +. 15ul) in
   let h1 = ST.get() in
   assert (h0 == h1);
-  g_rowi_disjoint_other st 0ul m;
+  assert (disjoint r0 m);
+  assert (disjoint r1 m);
+  assert (disjoint r2 m);
+  assert (disjoint r3 m);
+  assert (live h1 r0);
+  assert (live h1 r1);
+  assert (live h1 r2);
+  assert (live h1 r3);
   gather_row r0 m s0 s2 s4 s6;
-  g_rowi_disjoint_other st 1ul m;
   gather_row r1 m s1 s3 s5 s7;
-  g_rowi_disjoint_other st 2ul m;
   gather_row r2 m s8 s10 s12 s14;
-  g_rowi_disjoint_other st 3ul m;
   gather_row r3 m s9 s11 s13 s15;
   let h2 = ST.get() in
+  admit();
   assert(modifies (loc st) h1 h2);
-   admit()
+  admit()
 
 
 
 inline_for_extraction noextract
-val blake2_round1 : al:Spec.alg -> wv:vector_wp al -> m:block_wp al -> i:size_t{v i <= Spec.rounds al - 1} ->
+val blake2_round : #al:Spec.alg -> #ms:m_spec -> wv:state_p al ms ->  m:lbuffer uint8 (size_block al) -> i:size_t ->
   Stack unit
-    (requires (fun h -> live h wv /\ live h m
-                  /\ disjoint wv m))
-    (ensures  (fun h0 _ h1 -> modifies1 wv h0 h1
-                         /\ h1.[|wv|] == Spec.blake2_round1 al h0.[|wv|] h0.[|m|] (v i)))
+    (requires (fun h -> live h wv /\ live h m /\ disjoint wv m))
+    (ensures  (fun h0 _ h1 -> modifies (loc wv) h0 h1
+                         /\ state_v h1 wv == Spec.blake2_round al (as_seq h0 m) (v i) (state_v h0 wv)))
 
-let blake2_round1 al wv m i =
+let blake2_round #al #ms wv m i =
+  push_frame();
   let start_idx = (i %. size 10) *. size 16 in
   assert (v start_idx == (v i % 10) * 16);
-  let s0 = get_sigma_sub start_idx (size 0) in
-  let s1 = get_sigma_sub start_idx (size 1) in
-  let s2 = get_sigma_sub start_idx (size 2) in
-  let s3 = get_sigma_sub start_idx (size 3) in
-  let s4 = get_sigma_sub start_idx (size 4) in
-  let s5 = get_sigma_sub start_idx (size 5) in
-  let s6 = get_sigma_sub start_idx (size 6) in
-  let s7 = get_sigma_sub start_idx (size 7) in
-  blake2_mixing al wv (size 0) (size 4) (size 8) (size 12) m.(s0) m.(s1);
-  blake2_mixing al wv (size 1) (size 5) (size 9) (size 13) m.(s2) m.(s3);
-  blake2_mixing al wv (size 2) (size 6) (size 10) (size 14) m.(s4) m.(s5);
-  blake2_mixing al wv (size 3) (size 7) (size 11) (size 15) m.(s6) m.(s7)
+  let m_st = alloc_state al m in
+  gather_state st m start;
+  blake2_mixing st 0ul 1ul 2ul 3ul (rowi m_st 0ul) (rowi m_st 1ul);
+  diag  st;
+  blake2_mixing st 0ul 1ul 2ul 3ul (rowi m_st 2ul) (rowi m_st 3ul);
+  undiag st;
+  pop_frame ()
 
 
 inline_for_extraction noextract

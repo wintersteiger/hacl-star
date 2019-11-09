@@ -20,14 +20,6 @@ let zero_element (a:Spec.alg) (m:m_spec) : element_t a m =
   | _ -> Spec.zero a
 
 inline_for_extraction
-let row_len (a:Spec.alg) (m:m_spec) : size_t =
-  match a,m with
-  | Spec.Blake2S,M128 -> 1ul
-  | Spec.Blake2S,M256 -> 1ul
-  | Spec.Blake2B,M256 -> 1ul
-  | _ -> 4ul
-
-inline_for_extraction
 let row_v #a #m h r =
   match a,m with
   | Spec.Blake2S,M128 -> vec_v (Lib.Sequence.index (as_seq h r) 0)
@@ -61,7 +53,7 @@ let g_rowi_unchanged #a #m h0 h1 st i =
   LowStar.Monotonic.Buffer.as_seq_gsub #_ #(LowStar.Buffer.trivial_preorder (element_t a m)) #(LowStar.Buffer.trivial_preorder (element_t a m)) h1 st (i *. row_len a m) (row_len a m)
   (LowStar.Buffer.trivial_preorder (element_t a m))
 
-let g_rowi_disjoint_other #a #m #b #len st i x =
+let g_rowi_disjoint_other #a #m #b st i x =
   assert (v (i *. row_len a m) + v (row_len a m) <= length st);
     LowStar.Monotonic.Buffer.loc_includes_gsub_buffer_r'  #_ #(LowStar.Buffer.trivial_preorder (element_t a m)) #(LowStar.Buffer.trivial_preorder (element_t a m)) st (i *. row_len a m) (row_len a m)
   (LowStar.Buffer.trivial_preorder (element_t a m))
@@ -75,15 +67,24 @@ let state_v (#a:Spec.alg) (#m:m_spec) (h:mem) (st:state_p a m) : GTot (Spec.stat
   let r3 = row_v h (g_rowi st 3ul) in
   create4 r0 r1 r2 r3
 
-let state_v_lemma #a #m h0 h1 st = ()
 
+let state_v_eq_lemma #a #m h0 h1 st = ()
+
+let state_v_rowi_lemma #a #m h st i = ()
+
+let state_v_live_rowi_lemma #a #m h st i = ()
 
 #push-options "--z3rlimit 50"
-let modifies_row a m h0 h1 st i =
-    assert (live h0 (g_rowi st 0ul));
-    assert (live h0 (g_rowi st 1ul));
-    assert (live h0 (g_rowi st 2ul));
-    assert (live h0 (g_rowi st 3ul));
+let modifies_one_row a m h0 h1 st i j =
+    let ri = g_rowi st i in
+    let rj = g_rowi st j in
+    assert (live h0 ri);
+    assert (live h0 rj);
+    assert (modifies (loc ri) h0 h1);
+    assert (disjoint rj ri);
+    assert (as_seq h1 rj == as_seq h0 rj)
+
+let modifies_row_state a m h0 h1 st i =
     Lib.Sequence.(eq_intro (state_v h1 st) ((state_v h0 st).[v i] <- row_v h1 (g_rowi st i)))
 #pop-options
 
@@ -204,7 +205,7 @@ let load_row #a #m r ws = create_row r ws.(0ul) ws.(1ul) ws.(2ul) ws.(3ul)
 
 #push-options "--z3rlimit 100"
 inline_for_extraction
-let gather_row #a #ms #len r m i0 i1 i2 i3 =
+let gather_row #a #ms r m i0 i1 i2 i3 =
   let h0 = ST.get() in
   let nb = size (Spec.size_word a) in
   let b0 = sub m (i0 *. nb) nb in
@@ -227,4 +228,3 @@ let gather_row #a #ms #len r m i0 i1 i2 i3 =
   create_row r u0 u1 u2 u3
 #pop-options
 
-  
