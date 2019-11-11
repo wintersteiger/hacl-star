@@ -218,11 +218,22 @@ let create_row #a #m r w0 w1 w2 w3 =
 inline_for_extraction
 let load_row #a #m r ws = create_row r ws.(0ul) ws.(1ul) ws.(2ul) ws.(3ul)
 
+inline_for_extraction
+let store_row #a #m b r =
+  match a,m with
+  | Spec.Blake2S,M256
+  | Spec.Blake2S,M128 ->
+    vec_store_le #U32 #4 b r.(0ul)
+  | Spec.Blake2B,M256 ->
+    vec_store_le #U64 #4 b r.(0ul)
+  | _ ->
+    uints_to_bytes_le #(Spec.wt a) 4ul b r
+
 #push-options "--z3rlimit 100"
 inline_for_extraction
 let gather_row #a #ms r m i0 i1 i2 i3 =
   let h0 = ST.get() in
-  let nb = size (Spec.size_word a) in
+  let nb = size (numbytes (Spec.wt a)) in
   let b0 = sub m (i0 *. nb) nb in
   let b1 = sub m (i1 *. nb) nb in
   let b2 = sub m (i2 *. nb) nb in

@@ -346,8 +346,8 @@ val blake2_compress3:
   Tot (state a)
 
 let blake2_compress3 a wv s =
-  let s = s.[0] <- s.[0] ^| wv.[0] ^| wv.[2] in
-  let s = s.[1] <- s.[1] ^| wv.[1] ^| wv.[3] in
+  let s = s.[0] <- (s.[0] ^| wv.[0]) ^| wv.[2] in
+  let s = s.[1] <- (s.[1] ^| wv.[1]) ^| wv.[3] in
   s
 
 val blake2_compress:
@@ -418,11 +418,15 @@ val blake2_update_blocks:
   -> s:state a ->
   Tot (state a)
 
+let split a len =
+  let nb = len / size_block a in
+  let rem = len % size_block a in
+  let nb' = if rem = 0 && nb > 0 then nb - 1 else nb in
+  let rem' = if rem = 0 && nb > 0 then size_block a else rem in
+  (nb',rem')
+
 let blake2_update_blocks a prev m s =
-  let nb = length m / size_block a in
-  let rem = length m % size_block a in
-  let nb = if rem = 0 && nb > 0 then nb - 1 else nb in
-  let rem = if rem = 0 && nb > 0 then size_block a else rem in
+  let (nb,rem) = split a (length m) in
   let s = repeati nb (blake2_update1 a prev m) s in
   blake2_update_last a prev m s
 
@@ -434,12 +438,20 @@ val blake2_init_hash:
   Tot (state a)
 
 let blake2_init_hash a kk nn =
-  let iv0 = load_row #a (map secret (sub (ivTable a) 0 4)) in
-  let iv1 = load_row #a (map secret (sub (ivTable a) 4 4)) in
+  let iv0 = secret (ivTable a).[0] in
+  let iv1 = secret (ivTable a).[1] in
+  let iv2 = secret (ivTable a).[2] in
+  let iv3 = secret (ivTable a).[3] in
+  let iv4 = secret (ivTable a).[4] in
+  let iv5 = secret (ivTable a).[5] in
+  let iv6 = secret (ivTable a).[6] in
+  let iv7 = secret (ivTable a).[7] in
+  let r0 = create_row #a iv0 iv1 iv2 iv3 in
+  let r1 = create_row #a iv4 iv5 iv6 iv7 in
   let s0' = (nat_to_word a 0x01010000) ^. ((nat_to_word a kk) <<. (size 8)) ^. (nat_to_word a nn) in
-  let m = create_row s0' (zero a) (zero a) (zero a) in
-  let iv0' = iv0 ^| m in
-  let s_iv = createL [iv0';iv1;iv0;iv1] in
+  let iv0' = iv0 ^. s0' in
+  let r0' = create_row #a iv0' iv1 iv2 iv3 in
+  let s_iv = createL [r0';r1;r0;r1] in
   s_iv
 
 val blake2_init:

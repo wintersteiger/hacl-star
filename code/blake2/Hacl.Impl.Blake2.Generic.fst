@@ -232,7 +232,7 @@ val gather_state: #a:Spec.alg -> #ms:m_spec -> st:state_p a ms -> m:lbuffer uint
 		  (ensures (fun h0 _ h1 -> modifies (loc st) h0 h1 /\
 					state_v h1 st == Spec.gather_state a (as_seq h0 m) (v start)))
 
-#push-options "--z3rlimit 100"
+#push-options "--z3rlimit 150"
 let gather_state #a #ms st m start =
   let h0 = ST.get() in
   let r0 = rowi st 0ul in
@@ -332,302 +332,316 @@ let blake2_compress1 #al #m wv s_iv offset flag =
   pop_frame();
   let h1 = ST.get() in
   assert(modifies (loc wv) h0 h1);
-  Lib.Sequence.eq_intro (state_v h1 wv) (Spec.blake2_compress1 al (state_v h0 s_iv) offset flag);
-  admit()
-
+  Lib.Sequence.eq_intro (state_v h1 wv) (Spec.blake2_compress1 al (state_v h0 s_iv) offset flag)
 
 inline_for_extraction noextract
 val blake2_compress2 :
-  al:Spec.alg
-  -> wv: vector_wp al
-  -> m: block_wp al ->
+  #al:Spec.alg
+  -> #ms:m_spec
+  -> wv: state_p al ms
+  -> m: block_p al ->
   Stack unit
     (requires (fun h -> live h wv /\ live h m /\ disjoint wv m))
     (ensures  (fun h0 _ h1 -> modifies1 wv h0 h1
-                         /\ h1.[|wv|] == Spec.blake2_compress2 al h0.[|wv|] h0.[|m|]))
+                         /\ state_v h1 wv == Spec.blake2_compress2 al (state_v h0 wv) (as_seq h0 m)))
 
-let blake2_compress2 al wv m =
+let blake2_compress2 #al #ms wv m =
   let h0 = ST.get () in
   [@inline_let]
+  let a_spec = Spec.state al in
+  [@inline_let]
+  let refl h = state_v h wv in
+  [@inline_let]
+  let footprint = Ghost.hide(loc wv) in
+  [@inline_let]
   let spec h = Spec.blake2_round al h.[|m|] in
-  loop1 h0 (rounds_t al) wv spec
+  loop_refl h0 (rounds_t al) a_spec refl footprint spec
   (fun i ->
-    Loops.unfold_repeati (Spec.rounds al) (spec h0) h0.[|wv|] (v i);
-    blake2_round al wv m i)
-
-
-inline_for_extraction noextract
-val blake2_compress3_inner :
-  al:Spec.alg
-  -> wv: vector_wp al
-  -> i: size_t{v i < 8}
-  -> s: hash_wp al ->
-  Stack unit
-    (requires (fun h -> live h s /\ live h wv
-                   /\ disjoint s wv /\ disjoint wv s))
-    (ensures  (fun h0 _ h1 -> modifies1 s h0 h1
-                         /\ h1.[|s|] == Spec.blake2_compress3_inner al h0.[|wv|] (v i) h0.[|s|]))
-
-let blake2_compress3_inner al wv i s =
-  let i_plus_8 = i +. (size 8) in
-  let hi_xor_wvi = s.(i) ^. wv.(i) in
-  let hi = logxor hi_xor_wvi wv.(i_plus_8) in
-  s.(i) <- hi
+    Loops.unfold_repeati (Spec.rounds al) (spec h0) (state_v h0 wv) (v i);
+    blake2_round wv m i)
 
 
 inline_for_extraction noextract
 val blake2_compress3 :
-  al:Spec.alg
-  -> wv: vector_wp al
-  -> s: hash_wp al ->
+  #al:Spec.alg
+  -> #ms:m_spec
+  -> s_iv:state_p al ms
+  -> wv:state_p al ms ->
   Stack unit
-    (requires (fun h -> live h s /\ live h wv
-                     /\ disjoint wv s /\ disjoint s wv))
-    (ensures  (fun h0 _ h1 -> modifies1 s h0 h1
-                         /\ h1.[|s|] == Spec.blake2_compress3 al h0.[|wv|] h0.[|s|]))
+    (requires (fun h -> live h s_iv /\ live h wv /\ disjoint s_iv wv))
+    (ensures  (fun h0 _ h1 -> modifies (loc s_iv) h0 h1
+                         /\ state_v h1 s_iv == Spec.blake2_compress3 al (state_v h0 wv) (state_v h0 s_iv)))
 
-let blake2_compress3 al wv s =
-  [@inline_let]
-  let spec h = Spec.blake2_compress3_inner al h.[|wv|] in
-  let h0 = ST.get () in
-  loop1 h0 (size 8) s
-    (fun h -> spec h)
-    (fun i ->
-      Loops.unfold_repeati 8 (spec h0) (as_seq h0 s) (v i);
-      blake2_compress3_inner al wv i s)
+let blake2_compress3 #al #ms s_iv wv =
+  let h0 = ST.get() in
+  let s0 = rowi s_iv 0ul in
+  let s1 = rowi s_iv 1ul in
+  let r0 = rowi wv 0ul in
+  let r1 = rowi wv 1ul in
+  let r2 = rowi wv 2ul in
+  let r3 = rowi wv 3ul in
+  assert (disjoint s0 wv);
+  assert (disjoint wv s0);
+  assert (disjoint s1 wv);
+  assert (disjoint wv s1);
+  assert (disjoint r0 s0);
+  assert (disjoint r2 s0);
+  assert (disjoint r1 s1);
+  assert (disjoint r3 s1);
+  xor_row s0 r0;
+  let h1 = ST.get() in
+  xor_row s0 r2;
+  let h2 = ST.get() in
+  xor_row s1 r1;
+  let h3 = ST.get() in
+  xor_row s1 r3;
+  let h4 = ST.get() in
+  assert (modifies (loc s_iv) h0 h4);
+  let open Lib.Sequence in
+  assert (row_v h0 r0 == (state_v h0 wv).[0]);
+  assert (row_v h1 r2 == (state_v h0 wv).[2]);
+  assert (row_v h4 s0 == Spec.(((state_v h0 s_iv).[0] ^| (state_v h0 wv).[0]) ^| (state_v h0 wv).[2]));
+  assert (row_v h4 s1 == Spec.(((state_v h0 s_iv).[1] ^| (state_v h0 wv).[1]) ^| (state_v h0 wv).[3]));
+  eq_intro (state_v h2 s_iv) ((state_v h0 s_iv).[0] <- row_v h4 s0);
+  eq_intro (state_v h4 s_iv) ((state_v h2 s_iv).[1] <- row_v h4 s1);
+  eq_intro (state_v h4 s_iv) (Spec.blake2_compress3 al (state_v h0 wv) (state_v h0 s_iv))
+
 
 
 inline_for_extraction noextract
-let compress_t (al:Spec.alg) =
-    s: hash_wp al
-  -> m: block_wp al
+let compress_t (al:Spec.alg) (ms:m_spec) =
+    s: state_p al ms
+  -> m: block_p al
   -> offset: Spec.limb_t al
   -> flag: bool ->
   Stack unit
-    (requires (fun h -> live h s /\ live h m
-                     /\ disjoint s m /\ disjoint m s))
-    (ensures  (fun h0 _ h1 -> modifies1 s h0 h1
-                         /\ h1.[|s|] == Spec.blake2_compress al h0.[|s|] h0.[|m|] offset flag))
+    (requires (fun h -> live h s /\ live h m /\ disjoint s m))
+    (ensures  (fun h0 _ h1 -> modifies (loc s) h0 h1
+                         /\ state_v h1 s == Spec.blake2_compress al (state_v h0 s) h0.[|m|] offset flag))
 
 
 inline_for_extraction noextract
-val blake2_compress: al:Spec.alg -> compress_t al
+val blake2_compress: #al:Spec.alg -> #ms:m_spec -> compress_t al ms
 
-
-let blake2_compress al s m offset flag =
+let blake2_compress #al #ms s m offset flag =
   let h0 = ST.get () in
   [@inline_let]
-  let spec _ h1 = live h1 s /\ h1.[|s|] == Spec.blake2_compress al h0.[|s|] h0.[|m|] offset flag in
-  salloc1 h0 (size 16) (Spec.nat_to_word al 0) (Ghost.hide (loc s)) spec
+  let spec _ h1 = live h1 s /\ state_v h1 s == Spec.blake2_compress al (state_v h0 s) h0.[|m|] offset flag in
+  salloc1 h0 (4ul *. row_len al ms) (zero_element al ms) (Ghost.hide (loc s)) spec
   (fun wv ->
-    blake2_compress1 al wv s m offset flag;
-    blake2_compress2 al wv m;
-    blake2_compress3 al wv s)
+    blake2_compress1 wv s offset flag;
+    blake2_compress2 wv m;
+    blake2_compress3 s wv)
 
 
 inline_for_extraction noextract
-let blake2_update_block_t
-    (al:Spec.alg) =
-    hash: hash_wp al
+let blake2_update_block_t (al:Spec.alg) (ms:m_spec) =
+    hash: state_p al ms
   -> flag: bool
   -> totlen: Spec.limb_t al{v totlen <= Spec.max_limb al}
   -> d: block_p al ->
   Stack unit
     (requires (fun h -> live h hash /\ live h d /\ disjoint hash d))
-    (ensures  (fun h0 _ h1 -> modifies1 hash h0 h1
-                         /\ h1.[|hash|] == Spec.blake2_update_block al flag (v totlen) h0.[|d|] h0.[|hash|]))
+    (ensures  (fun h0 _ h1 -> modifies (loc hash) h0 h1
+                         /\ state_v h1 hash == Spec.blake2_update_block al flag (v totlen) h0.[|d|] (state_v h0 hash)))
 
 
 inline_for_extraction noextract
-val blake2_update_block: (al:Spec.alg) -> blake2_compress: compress_t al -> blake2_update_block_t al
+val blake2_update_block: #al:Spec.alg -> #ms:m_spec -> blake2_update_block_t al ms
 
-let blake2_update_block al blake2_compress hash flag totlen d =
-  let h0 = ST.get () in
-  [@inline_let]
-  let spec _ h1 = live h1 hash /\ h1.[|hash|] == Spec.blake2_update_block al flag (v totlen) h0.[|d|] h0.[|hash|] in
-  salloc1 h0 (size 16) (Spec.nat_to_word al 0) (Ghost.hide (loc hash)) spec
-  (fun block_w ->
-     uints_from_bytes_le block_w d;
-     let offset = totlen in
-     blake2_compress hash block_w offset flag)
+let blake2_update_block #al #ms hash flag totlen d =
+    blake2_compress hash d totlen flag
+
+inline_for_extraction noextract
+let blake2_update1_t (al:Spec.alg) (ms:m_spec) =
+   #len:size_t
+  -> hash: state_p al ms
+  -> prev: Spec.limb_t al{v prev + v len <= Spec.max_limb al}
+  -> d: lbuffer uint8 len
+  -> i: size_t{v i < length d / Spec.size_block al} ->
+  Stack unit
+    (requires (fun h -> live h hash /\ live h d /\ disjoint hash d))
+    (ensures  (fun h0 _ h1 -> modifies (loc hash) h0 h1
+                         /\ state_v h1 hash == Spec.blake2_update1 al (v prev) h0.[|d|] (v i) (state_v h0 hash)))
+
+inline_for_extraction noextract
+val blake2_update1: #al:Spec.alg -> #ms:m_spec -> blake2_update_block: blake2_update_block_t al ms -> blake2_update1_t al ms
+
+let blake2_update1 #al #ms blake2_update_block #len hash prev d i =
+  let totlen = prev +. size_to_limb al ((i+!1ul) *! size_block al) in
+  assert (v totlen == v prev + (v i + 1) * Spec.size_block al);
+  let b = sub d (i *. size_block al) (size_block al) in
+  let h = ST.get() in
+  assert (as_seq h b == Spec.get_blocki al (as_seq h d) (v i));
+  blake2_update_block hash false totlen b
+
+inline_for_extraction noextract
+let blake2_update_last_t (al:Spec.alg) (ms:m_spec) =
+   #len:size_t
+  -> hash: state_p al ms
+  -> prev: Spec.limb_t al{v prev + v len <= Spec.max_limb al}
+  -> d: lbuffer uint8 len ->
+  Stack unit
+    (requires (fun h -> live h hash /\ live h d /\ disjoint hash d))
+    (ensures  (fun h0 _ h1 -> modifies (loc hash) h0 h1
+                         /\ state_v h1 hash == Spec.blake2_update_last al (v prev) h0.[|d|] (state_v h0 hash)))
 
 
+inline_for_extraction noextract
+val blake2_update_last: #al:Spec.alg -> #ms:m_spec -> blake2_update_block: blake2_update_block_t al ms -> blake2_update_last_t al ms
+
+let blake2_update_last #al #ms blake2_update_block #len hash prev d =
+  let h0 = ST.get() in
+  push_frame ();
+  let rem = len %. size_block al in
+  let last = sub d (len -! rem) rem in
+  let h1 = ST.get() in
+  let last_block = create (size_block al) (u8 0) in
+  update_sub last_block 0ul rem last;
+  let h2 = ST.get() in
+  as_seq_gsub h1 d (len -! rem) rem;
+  assert (as_seq h1 last == Seq.sub (as_seq h1 d) (v len - v rem) (v rem));
+  assert (as_seq h1 last == Seq.slice (as_seq h0 d) (v len - v rem) (v len));
+  assert (as_seq h2 last_block == Spec.get_last al (as_seq h0 d));
+  let totlen = prev +. (size_to_limb al len) in
+  blake2_update_block hash true totlen last_block;
+  let h3 = ST.get() in
+  assert (v totlen == v prev + v len);
+  assert (state_v h3 hash == Spec.blake2_update_block al true (v totlen) (as_seq h2 last_block) (state_v h0 hash));
+  pop_frame()
 
 inline_for_extraction noextract
 val blake2_init_hash:
-    al:Spec.alg
-  -> hash: hash_wp al
+    #al:Spec.alg
+  -> #ms:m_spec
+  -> hash: state_p al ms
   -> kk: size_t{v kk <= Spec.max_key al}
   -> nn: size_t{1 <= v nn /\ v nn <= Spec.max_output al} ->
   Stack unit
      (requires (fun h -> live h hash))
-     (ensures  (fun h0 _ h1 -> modifies1 hash h0 h1
-                          /\ h1.[|hash|] == Spec.blake2_init_hash al (v kk) (v nn)))
+     (ensures  (fun h0 _ h1 -> modifies (loc hash) h0 h1
+                          /\ state_v h1 hash == Spec.blake2_init_hash al (v kk) (v nn)))
 
-let blake2_init_hash al hash kk nn =
-  set_iv al hash;
-  let s0 = hash.(size 0) in
+let blake2_init_hash #al #ms hash kk nn =
+  let h0 = ST.get() in
+  let r0 = rowi hash 0ul in
+  let r1 = rowi hash 1ul in
+  let r2 = rowi hash 2ul in
+  let r3 = rowi hash 3ul in
+  let iv0 = get_iv al 0ul in
+  let iv1 = get_iv al 1ul in
+  let iv2 = get_iv al 2ul in
+  let iv3 = get_iv al 3ul in
+  let iv4 = get_iv al 4ul in
+  let iv5 = get_iv al 5ul in
+  let iv6 = get_iv al 6ul in
+  let iv7 = get_iv al 7ul in
+  create_row #al #ms r2 iv0 iv1 iv2 iv3;
+  create_row #al #ms r3 iv4 iv5 iv6 iv7;
   let kk_shift_8 = shift_left (size_to_word al kk) (size 8) in
-  let s0' = s0 ^. (Spec.nat_to_word al 0x01010000) ^. kk_shift_8 ^. (size_to_word al nn) in
-  hash.(size 0) <- s0'
+  let iv0' = iv0 ^. (Spec.nat_to_word al 0x01010000) ^. kk_shift_8 ^. (size_to_word al nn) in
+  create_row #al #ms r0 iv0' iv1 iv2 iv3;
+  create_row #al #ms r1 iv4 iv5 iv6 iv7;
+  let h1 = ST.get() in
+  assert(modifies (loc hash) h0 h1);
+  Lib.Sequence.eq_intro (state_v h1 hash) (Spec.blake2_init_hash al (v kk) (v nn))
 
 
 inline_for_extraction noextract
-let blake2_init_branching_t
-    (al:Spec.alg) =
-    hash: hash_wp al
-  -> key_block: lbuffer uint8 (size_block al)
+let blake2_init_t  (al:Spec.alg) (ms:m_spec) =
+    hash: state_p al ms
   -> kk: size_t{v kk <= Spec.max_key al}
   -> k: lbuffer uint8 kk
   -> nn: size_t{1 <= v nn /\ v nn <= Spec.max_output al} ->
   Stack unit
-    (requires (fun h -> live h hash /\ live h k /\ live h key_block
-                   /\ disjoint hash k /\ disjoint hash key_block /\ disjoint key_block k))
-    (ensures  (fun h0 _ h1 -> modifies2 hash key_block h0 h1
-                    /\ (if (v kk) = 0 then h1.[|hash|] == h0.[|hash|] else
-                       let key_block1: Spec.block_s al = Seq.update_sub h0.[|key_block|] 0 (v kk) h0.[|k|] in
-                       h1.[|hash|] == Spec.blake2_update_block al false (Spec.size_block al) key_block1 h0.[|hash|])))
+    (requires (fun h -> live h hash /\ live h k /\ disjoint hash k))
+    (ensures  (fun h0 _ h1 -> modifies (loc hash) h0 h1 /\
+			   state_v h1 hash == Spec.blake2_init al (v kk) h0.[|k|] (v nn)))
 
 
 inline_for_extraction noextract
-val blake2_init_branching: al:Spec.alg -> blake2_update_block_t al -> blake2_init_branching_t al
+val blake2_init: #al:Spec.alg -> #ms:m_spec -> blake2_update_block_t al ms -> blake2_init_t al ms
 
-let blake2_init_branching al blake2_update_block hash key_block kk k nn =
-  let h0 = ST.get () in
-  if kk <>. (size 0) then
-  begin
-    update_sub key_block (size 0) kk k;
-    assert(v (secret (size_block al)) <= Spec.max_limb al);
-    let totlenw = size_to_word al (size_block al) in
-    [@inline_let]
-    let totlen = Spec.word_to_limb al totlenw in
-    blake2_update_block hash false totlen key_block
-  end
-
-
-inline_for_extraction noextract
-let blake2_init_t
-    (al:Spec.alg) =
-    hash: hash_wp al
-  -> kk: size_t{v kk <= Spec.max_key al}
-  -> k: lbuffer uint8 kk
-  -> nn: size_t{1 <= v nn /\ v nn <= Spec.max_output al} ->
-  Stack unit
-    (requires (fun h -> live h hash
-                   /\ live h k
-                   /\ disjoint hash k /\ disjoint k hash))
-    (ensures  (fun h0 _ h1 -> modifies1 hash h0 h1
-                         /\ h1.[|hash|] == Spec.blake2_init al (v kk) h0.[|k|] (v nn)))
-
-inline_for_extraction noextract
-val blake2_init: al:Spec.alg -> blake2_update_block_t al -> blake2_init_t al
-
-let blake2_init al blake2_update_block hash kk k nn =
+let blake2_init #al #ms blake2_update_block hash kk k nn =
   let h0 = ST.get () in
   salloc1 h0 (size_block al) (u8 0) (Ghost.hide (loc hash))
-  (fun _ h1 -> live h1 hash /\ h1.[|hash|] == Spec.blake2_init al (v kk) h0.[|k|] (v nn))
+  (fun _ h1 -> live h1 hash /\ state_v h1 hash == Spec.blake2_init al (v kk) h0.[|k|] (v nn))
   (fun key_block ->
-    blake2_init_hash al hash kk nn;
-    blake2_init_branching al blake2_update_block hash key_block kk k nn)
-
+    blake2_init_hash hash kk nn;
+    if kk =. 0ul then ()
+    else (
+       update_sub key_block (size 0) kk k;
+       blake2_update1 blake2_update_block hash (size_to_limb al 0ul) key_block 0ul))
 
 #push-options "--z3rlimit 100 --max_fuel 0 --max_ifuel 0"
 let _ : squash (inversion Spec.alg) = allow_inversion Spec.alg
 
+inline_for_extraction
+val split_blocks: al:Spec.alg -> len:size_t -> r:(size_t & size_t){
+					  let (x,y) = r in
+					  let (sx,sy) = Spec.split al (v len) in
+					  sx == v x /\
+					  sy == v y}
+
+let split_blocks al len =
+  let nb = len /. size_block al in
+  let rem = len %. size_block al in
+  if rem =. 0ul && nb >. 0ul then
+     let nb' = nb -! 1ul in
+     let rem' = size_block al in
+     (nb',rem')
+  else (nb,rem)
 
 inline_for_extraction noextract
-val blake2_update_block_multi_step:
-    al:Spec.alg
-  -> blake2_update_block:blake2_update_block_t al
-  -> hash: hash_wp al
-  -> prev: Spec.limb_t al
-  -> n: size_t{v prev + v n * (Spec.size_block al) <= Spec.max_limb al /\ v n * (Spec.size_block al) <= max_size_t}
-  -> i: size_t{v i < v n}
-  -> blocks: lbuffer uint8 (n *! size_block al){v n * (Spec.size_block al) = length blocks} ->
+val blake2_update_blocks:
+    #al:Spec.alg
+  -> #ms:m_spec
+  -> #len:size_t
+  -> blake2_update_block:blake2_update_block_t al ms
+  -> hash: state_p al ms
+  -> prev: Spec.limb_t al{v prev + v len <= Spec.max_limb al}
+  -> blocks: lbuffer uint8 len ->
   Stack unit
     (requires (fun h -> live h hash /\ live h blocks /\ disjoint hash blocks))
-    (ensures  (fun h0 _ h1 -> modifies1 hash h0 h1 /\
-                           max_size_t <= Spec.max_limb al /\
-                           h1.[|hash|] == Spec.blake2_update_block_multi_step al (v prev) (v n) h0.[|blocks|] (v i) h0.[|hash|]))
+    (ensures  (fun h0 _ h1 -> modifies (loc hash) h0 h1 /\
+			   state_v h1 hash ==
+			   Spec.blake2_update_blocks al (v prev) h0.[|blocks|] (state_v h0 hash)))
 
-let blake2_update_block_multi_step al blake2_update_block hash prev n i blocks =
-  let curlen:size_t = (i +! 1ul) *! (size_block al) in
-  let curlen:Spec.limb_t al = size_to_limb al curlen in
-  let totlen:Spec.limb_t al = prev +! curlen in
-  let block:block_p al = sub blocks (i *! (size_block al)) (size_block al) in
-  blake2_update_block hash false totlen block
-
-#pop-options
-
-
-inline_for_extraction noextract
-let blake2_update_block_multi_t
-    (al:Spec.alg) =
-    hash: hash_wp al
-  -> prev: Spec.limb_t al
-  -> n: size_t{v prev + v n * (Spec.size_block al) <= Spec.max_limb al /\ v n * (Spec.size_block al) <= max_size_t}
-  -> blocks: lbuffer uint8 (n *! (size_block al)) ->
-  Stack unit
-    (requires (fun h -> live h hash /\ live h blocks /\ disjoint hash blocks))
-    (ensures  (fun h0 _ h1 -> modifies1 hash h0 h1
-                        /\ h1.[|hash|] == Spec.blake2_update_block_multi al (v prev) (v n) h0.[|blocks|] h0.[|hash|]))
-
-inline_for_extraction noextract
-val blake2_update_block_multi: al:Spec.alg -> blake2_update_block_t al -> blake2_update_block_multi_t al
-
-let blake2_update_block_multi al blake2_update_block hash prev n blocks =
+let blake2_update_blocks #al #ms #len blake2_update_block hash prev blocks =
+  let (nb,rem) = split_blocks al len in
   let h0 = ST.get () in
   [@inline_let]
-  let spec h = Spec.blake2_update_block_multi_step al (v prev) (v n) h0.[|blocks|] in
-  loop1 h0 n hash spec
+  let a_spec = Spec.state al in
+  [@inline_let]
+  let refl h = state_v h hash in
+  [@inline_let]
+  let footprint = Ghost.hide(loc hash) in
+  [@inline_let]
+  let spec h = Spec.blake2_update1 al (v prev) h.[|blocks|] in
+  loop_refl h0 nb a_spec refl footprint spec
   (fun i ->
-    Loops.unfold_repeati (v n) (spec h0) h0.[|hash|] (v i);
-    blake2_update_block_multi_step al blake2_update_block hash prev n i blocks)
+    Loops.unfold_repeati (v nb) (spec h0) (state_v h0 hash) (v i);
+    blake2_update1 #al #ms blake2_update_block #len hash prev blocks i);
+  blake2_update_last #al #ms blake2_update_block #len hash prev blocks
 
 
 inline_for_extraction noextract
-let blake2_update_last_t
-    (al:Spec.alg) =
-    hash: hash_wp al
-  -> prev: Spec.limb_t al
-  -> rem: size_t{v rem <= Spec.size_block al /\ v prev + v rem <= Spec.max_limb al}
-  -> last: lbuffer uint8 rem ->
-  Stack unit
-    (requires (fun h -> live h hash /\ live h last /\ disjoint hash last))
-    (ensures  (fun h0 _ h1 -> modifies1 hash h0 h1
-                         /\ h1.[|hash|] == Spec.blake2_update_last al (v prev) (v rem) h0.[|last|] h0.[|hash|]))
-
-inline_for_extraction noextract
-val blake2_update_last: al:Spec.alg -> blake2_update_block_t al -> blake2_update_last_t al
-
-let blake2_update_last al blake2_update_block hash prev rem last =
-  let h0 = ST.get () in
-  salloc1 h0 (size_block al) (u8 0) (Ghost.hide (loc hash))
-  (fun _ h1 -> live h1 hash /\ h1.[|hash|] == Spec.blake2_update_last al (v prev) (v rem) h0.[|last|] h0.[|hash|])
-  (fun last_block ->
-    update_sub last_block (size 0) rem last;
-    let totlen: Spec.limb_t al = prev +! (size_to_limb al rem) in
-    blake2_update_block hash true totlen last_block)
-
-
-inline_for_extraction noextract
-let blake2_finish_t
-    (al:Spec.alg) =
+let blake2_finish_t (al:Spec.alg) (ms:m_spec) =
     nn: size_t{1 <= v nn /\ v nn <= Spec.max_output al}
   -> output: lbuffer uint8 nn
-  -> hash: hash_wp al ->
+  -> hash: state_p al ms ->
   Stack unit
     (requires (fun h -> live h hash /\ live h output /\ disjoint output hash))
-    (ensures  (fun h0 _ h1 -> modifies1 output h0 h1
-                         /\ h1.[|output|] == Spec.blake2_finish al h0.[|hash|] (v nn)))
+    (ensures  (fun h0 _ h1 -> modifies (loc output) h0 h1
+                         /\ h1.[|output|] == Spec.blake2_finish al (state_v h0 hash) (v nn)))
 
 inline_for_extraction noextract
-val blake2_finish:al:Spec.alg -> blake2_finish_t al
+val blake2_finish:#al:Spec.alg -> #ms:m_spec -> blake2_finish_t al ms
 
-let blake2_finish al nn output hash =
+let blake2_finish #al #ms nn output hash =
   let h0 = ST.get () in
   salloc1 h0 (size (Spec.max_output al)) (u8 0) (Ghost.hide (loc output))
-  (fun _ h1 -> live h1 output /\ h1.[|output|] == Spec.blake2_finish al h0.[|hash|] (v nn))
+  (fun _ h1 -> live h1 output /\ h1.[|output|] == Spec.blake2_finish al (state_v h0 hash) (v nn))
   (fun full ->
     uints_to_bytes_le (size 8) full hash;
     let final = sub full (size 0) nn in
