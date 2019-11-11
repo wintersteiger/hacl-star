@@ -640,87 +640,19 @@ val blake2_finish:#al:Spec.alg -> #ms:m_spec -> blake2_finish_t al ms
 
 let blake2_finish #al #ms nn output hash =
   let h0 = ST.get () in
-  salloc1 h0 (size (Spec.max_output al)) (u8 0) (Ghost.hide (loc output))
+  salloc1 h0 (2ul *. (size_row al)) (u8 0) (Ghost.hide (loc output))
   (fun _ h1 -> live h1 output /\ h1.[|output|] == Spec.blake2_finish al (state_v h0 hash) (v nn))
   (fun full ->
-    uints_to_bytes_le (size 8) full hash;
+    store_row #al #ms (sub full 0ul (size_row al)) (rowi hash 0ul);
+    store_row #al #ms (sub full (size_row al) (size_row al)) (rowi hash 1ul);
+    let h1 = ST.get() in
+    Lib.Sequence.eq_intro (as_seq h1 full) (Lib.Sequence.(as_seq h1 (gsub full 0ul (size_row al)) @| as_seq h1 (gsub full (size_row al) (size_row al))));
     let final = sub full (size 0) nn in
     copy output final)
 
 
-
 inline_for_extraction noextract
-val compute_prev_multi:
-    al:Spec.alg
-  -> kn:size_t{v kn == 0 \/ v kn == 1} ->
-  Tot (r:Spec.limb_t al{v r = (v kn) * Spec.size_block al})
-
-let compute_prev_multi al kn =
-  size_to_limb al (kn *! (size_block al))
-
-
-inline_for_extraction noextract
-val compute_prev_last:
-    al:Spec.alg
-  -> prev_multi:Spec.limb_t al{v prev_multi == 0 \/ v prev_multi == Spec.size_block al}
-  -> n: size_t{v prev_multi + (v n) * (Spec.size_block al) <= max_size_t}
-  -> rem: size_t ->
-  Tot (r:Spec.limb_t al)
-
-let compute_prev_last al prev_multi n rem =
-  prev_multi +! (size_to_limb al (n *! (size_block al)))
-
-
-val lemma_prev_last:
-    al:Spec.alg
-  -> prev_multi:Spec.limb_t al{v prev_multi == 0 \/ v prev_multi == Spec.size_block al}
-  -> n: size_t{v prev_multi + (v n) * (Spec.size_block al) <= max_size_t}
-  -> rem: size_t ->
-  Lemma (ensures(
-    let r = compute_prev_last al prev_multi n rem in
-    v r = v prev_multi + (v n) * Spec.size_block al /\ v r + v rem <= Spec.max_limb al))
-  [SMTPat (compute_prev_last al prev_multi n rem)]
-
-let lemma_prev_last al prev_multi n rem = ()
-
-
-#reset-options "--z3rlimit 500 --max_fuel 0 --max_ifuel 0"
-let _ : squash (inversion Spec.alg) = allow_inversion Spec.alg
-
-
-noextract
-val lemma_spec_blake2:
-    h0:mem
-  -> al:Spec.alg
-  -> nn:size_t{1 <= v nn /\ v nn <= Spec.max_output al}
-  -> output: lbuffer uint8 nn
-  -> ll: size_t
-  -> d: lbuffer uint8 ll
-  -> kk: size_t{v kk <= Spec.max_key al /\ (if v kk = 0 then v ll <= max_size_t else v ll + Spec.size_block al <= max_size_t)}
-  -> k: lbuffer uint8 kk ->
-  Lemma (
-    let n0 = ll /. (size_block al) in
-    let rem0 = ll %. (size_block al) in
-    let kn = if kk =. 0ul then 0ul else 1ul in
-    let n = if n0 <>. 0ul && rem0 =. 0ul then n0 -! 1ul else n0 in
-    let rem = if n0 <>. 0ul && rem0 =. 0ul then size_block al else rem0 in
-    let prev_multi: Spec.limb_t al = compute_prev_multi al kn in
-    let prev_last: Spec.limb_t al = compute_prev_last al prev_multi n rem in
-    let blocks = gsub d 0ul (n *! (size_block al)) in
-    let last = gsub d (n *! (size_block al)) rem in
-    let spec_blocks = Seq.slice #uint8 #(v ll) h0.[|d|] 0 (v n * Spec.size_block al) in
-    let spec_last = Seq.slice #uint8 #(v ll) h0.[|d|] (v n * Spec.size_block al) (v ll) in
-    let hash1 = Spec.blake2_init al (v kk) h0.[|k|] (v nn) in
-    let hash2 = Spec.blake2_update_block_multi al (v prev_multi) (v n) h0.[|blocks|] hash1 in
-    let hash3 = Spec.blake2_update_last al (v prev_last) (v rem) h0.[|last|] hash2 in
-    let spec_output = Spec.blake2_finish al hash3 (v nn) in
-    spec_output == Spec.blake2 al h0.[|d|] (v kk) h0.[|k|] (v nn))
-
-let lemma_spec_blake2 h0 al nn output ll d kk k = ()
-
-
-inline_for_extraction noextract
-let blake2_t (al:Spec.alg) =
+let blake2_t (al:Spec.alg) (ms:m_spec) =
     nn:size_t{1 <= v nn /\ v nn <= Spec.max_output al}
   -> output: lbuffer uint8 nn
   -> ll: size_t
@@ -734,29 +666,25 @@ let blake2_t (al:Spec.alg) =
                          /\ h1.[|output|] == Spec.blake2 al h0.[|d|] (v kk) h0.[|k|] (v nn)))
 
 
-inline_for_extraction noextract
-val blake2: al:Spec.alg ->
-  blake2_init_t al -> blake2_update_block_multi_t al -> blake2_update_last_t al -> blake2_finish_t al -> blake2_t al
+inline_for_extraction
+val compute_prev0: al:Spec.alg -> kk:size_t{v kk <= Spec.max_key al} ->
+		   prev:Spec.limb_t al{v prev == Spec.compute_prev0 al (v kk) /\
+				       v prev <= Spec.size_block al}
+let compute_prev0 al kk =
+  if kk =. 0ul then size_to_limb al 0ul else size_to_limb al (size_block al)
 
-let blake2 al blake2_init blake2_update_block_multi blake2_update_last blake2_finish nn output ll d kk k =
-  let h00 = ST.get () in
-  let n0 = ll /. (size_block al) in
-  let rem0 = ll %. (size_block al) in
-  let kn = if kk =. 0ul then 0ul else 1ul in
-  let n = if n0 <>. 0ul && rem0 =. 0ul then n0 -! 1ul else n0 in
-  let rem = if n0 <>. 0ul && rem0 =. 0ul then size_block al else rem0 in
-  let h01 = ST.get () in
-  let blocks = sub d 0ul (n *! (size_block al)) in
-  let last = sub d (n *! (size_block al)) rem in
-  let prev_multi: Spec.limb_t al = compute_prev_multi al kn in
-  let prev_last: Spec.limb_t al = compute_prev_last al prev_multi n rem in
-  let h01 = ST.get () in
-  salloc1 h01 (size 8) (Spec.nat_to_word al 0) (Ghost.hide (loc output))
-  (fun _ h1 -> live h1 output /\ h1.[|output|] == Spec.blake2 al h01.[|d|] (v kk) h01.[|k|] (v nn))
-  (fun hash ->
-    blake2_init hash kk k nn;
-    blake2_update_block_multi hash prev_multi n blocks;
-    blake2_update_last hash prev_last rem last;
-    blake2_finish nn output hash;
-    lemma_spec_blake2 h01 al nn output ll d kk k
-  )
+inline_for_extraction noextract
+val blake2: #al:Spec.alg -> #ms:m_spec -> blake2_update_block_t al ms -> blake2_t al ms
+
+#push-options "--z3rlimit 80"
+let blake2 #al #ms blake2_update_block nn output ll d kk k =
+  push_frame();
+  let h = alloc_state al ms in
+  let prev0 = compute_prev0 al kk in
+  assert (v prev0 + v ll <= max_size_t);
+  assert (max_size_t <= Spec.max_limb al);
+  blake2_init #al #ms blake2_update_block h kk k nn;
+  blake2_update_blocks #al #ms #ll blake2_update_block h prev0 d;
+  blake2_finish #al #ms nn output h;
+  pop_frame()
+#pop-options

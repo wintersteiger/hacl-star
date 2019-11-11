@@ -68,7 +68,7 @@ let state_v (#a:Spec.alg) (#m:m_spec) (h:mem) (st:state_p a m) : GTot (Spec.stat
   let r3 = row_v h (g_rowi st 3ul) in
   create4 r0 r1 r2 r3
 
-
+#push-options "--z3rlimit 100"
 let state_v_eq_lemma #a #m h0 h1 st1 st2 =
   assert (v (0ul *. row_len a m) == 0);
   LowStar.Monotonic.Buffer.as_seq_gsub #_ #(LowStar.Buffer.trivial_preorder (element_t a m)) #(LowStar.Buffer.trivial_preorder (element_t a m)) h0 st1 0ul (row_len a m)
@@ -83,7 +83,7 @@ let state_v_eq_lemma #a #m h0 h1 st1 st2 =
   Lib.Sequence.eq_intro (as_seq h0 (g_rowi st1 3ul)) (as_seq h1 (g_rowi st2 3ul));
   row_v_lemma h0 h1 (g_rowi st1 0ul) (g_rowi st2 0ul);
   Lib.Sequence.eq_intro (state_v h0 st1) (state_v h1 st2)
-
+#pop-options
 
 let state_v_rowi_lemma #a #m h st i = ()
 

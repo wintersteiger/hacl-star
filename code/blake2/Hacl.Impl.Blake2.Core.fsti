@@ -171,7 +171,9 @@ val load_row: #a:Spec.alg -> #m:m_spec -> r1:row_p a m -> ws:lbuffer (word_t a) 
 
 
 inline_for_extraction
-val store_row: #a:Spec.alg -> #m:m_spec -> b:lbuffer uint8 (4ul *. size (Spec.size_word a)) -> r:row_p a m ->
+let size_row al = 4ul *. size (Spec.size_word al)
+inline_for_extraction
+val store_row: #a:Spec.alg -> #m:m_spec -> b:lbuffer uint8 (size_row a) -> r:row_p a m ->
 	  ST unit
 	  (requires (fun h -> live h r /\ live h b /\ disjoint r b))
 	  (ensures (fun h0 _ h1 -> modifies (loc b) h0 h1 /\

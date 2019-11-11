@@ -488,11 +488,15 @@ val blake2:
   -> nn:size_nat{1 <= nn /\ nn <= max_output a} ->
   Tot (lbytes nn)
 
-let blake2 a d kk k nn =
+let compute_prev0 a kk =
   let kn = if kk = 0 then 0 else 1 in
-  let prev_multi = kn * (size_block a) in
+  let prev0 = kn * (size_block a) in
+  prev0
+
+let blake2 a d kk k nn =
+  let prev0 = compute_prev0 a kk in
   let s = blake2_init a kk k nn in
-  let s = blake2_update_blocks a prev_multi d s in
+  let s = blake2_update_blocks a prev0 d s in
   blake2_finish a s nn
 
 val blake2s:

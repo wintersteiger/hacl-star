@@ -163,6 +163,10 @@ let loop h0 n a_spec refl footprint spec impl =
   let inv h i = loop_inv h0 n a_spec refl footprint spec i h in
   Lib.Loops.for (size 0) n inv impl
 
+let loop_refl h0 n a_spec refl footprint spec impl =
+  let inv h i = loop_refl_inv h0 n a_spec refl footprint spec i h in
+  Lib.Loops.for (size 0) n inv impl
+
 let loop1 #b #blen h0 n acc spec impl =
   let inv h i = loop1_inv h0 n b blen acc spec i h in
   Lib.Loops.for (size 0) n inv impl

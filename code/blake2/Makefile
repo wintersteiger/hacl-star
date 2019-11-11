@@ -14,8 +14,8 @@ export CFLAGS
 
 # CUSTOMIZE HERE: how to produce binary objects
 # An archive with all the compiled code in this directory.
-BLAKE2B_BUNDLE=-bundle Hacl.Blake2b=Hacl.Impl.Blake2,Hacl.Test.Blake2b
-BLAKE2S_BUNDLE=-bundle Hacl.Blake2s=Hacl.Impl.Blake2,Hacl.Test.Blake2s
+BLAKE2B_BUNDLE=-bundle Hacl.Blake2b=Hacl.Impl.Blake2 -bundle Hacl.Blake2b_256=Hacl.Impl.Core,Hacl.Impl.Generic,Hacl.Impl.Blake2b_256 -bundle Hacl.Blake2b_32=Hacl.Impl.Core,Hacl.Impl.Generic,Hacl.Impl.Blake2b_32
+BLAKE2S_BUNDLE=-bundle Hacl.Blake2s=Hacl.Impl.Blake2 -bundle Hacl.Blake2s_128=Hacl.Impl.Core,Hacl.Impl.Generic,Hacl.Impl.Blake2s_128 -bundle Hacl.Blake2s_32=Hacl.Impl.Core,Hacl.Impl.Generic,Hacl.Impl.Blake2s_32
 
 dist/Makefile.basic: $(filter-out %/prims.krml,$(ALL_KRML_FILES))
 	$(KRML) $^  $(BASE_FLAGS) $(BLAKE2S_BUNDLE) $(BLAKE2B_BUNDLE) \
