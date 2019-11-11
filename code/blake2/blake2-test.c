@@ -46,6 +46,46 @@ Hacl_Blake2b_blake2b(
   uint8_t *k
 );
 
+extern void
+Hacl_Blake2s_32_blake2s(
+  uint32_t nn,
+  uint8_t *output,
+  uint32_t ll,
+  uint8_t *d,
+  uint32_t kk,
+  uint8_t *k
+);
+
+extern void
+Hacl_Blake2b_32_blake2b(
+  uint32_t nn,
+  uint8_t *output,
+  uint32_t ll,
+  uint8_t *d,
+  uint32_t kk,
+  uint8_t *k
+);
+
+void
+Hacl_Blake2s_128_blake2s(
+  uint32_t nn,
+  uint8_t *output,
+  uint32_t ll,
+  uint8_t *d,
+  uint32_t kk,
+  uint8_t *k
+);
+
+void
+Hacl_Blake2b_256_blake2b(
+  uint32_t nn,
+  uint8_t *output,
+  uint32_t ll,
+  uint8_t *d,
+  uint32_t kk,
+  uint8_t *k
+);
+
 
 uint32_t blake2b_test1_size_plaintext = (uint32_t)44U;
 
@@ -310,6 +350,7 @@ int main()
   uint8_t comp_s[64] = {0};
   uint8_t comp_b[64] = {0};
   bool ok = true;
+  printf("testing blake2s scalar:\n");
   Hacl_Blake2s_blake2s(32,comp_s,blake2s_test1_size_plaintext,blake2s_test1_plaintext,blake2s_test1_size_key,blake2s_test1_key);
   printf("computed:");
   for (int i = 0; i < 32; i++)
@@ -369,7 +410,73 @@ int main()
   if (ok) printf("Success!\n");
   else printf("FAILED!\n");
 
+
+  printf("testing blake2b scalar:\n");
   Hacl_Blake2b_blake2b(64,comp_b,blake2b_test1_size_plaintext,blake2b_test1_plaintext,blake2b_test1_size_key,blake2b_test1_key);
+  printf("computed:");
+  for (int i = 0; i < 64; i++)
+    printf("%02x",comp_b[i]);
+  printf("\n");
+  printf("expected:");
+  for (int i = 0; i < 64; i++)
+    printf("%02x",blake2b_test1_expected[i]);
+  printf("\n");
+  ok = true;
+  for (int i = 0; i < 64; i++)
+    ok = ok & (blake2b_test1_expected[i] == comp_b[i]);
+  if (ok) printf("Success!\n");
+  else printf("FAILED!\n");
+
+  printf("testing blake2s vec-32:\n");
+  Hacl_Blake2s_32_blake2s(32,comp_s,blake2s_test4_size_plaintext,blake2s_test4_plaintext,blake2s_test4_size_key,blake2s_test4_key);
+  printf("computed:");
+  for (int i = 0; i < 32; i++)
+    printf("%02x",comp_s[i]);
+  printf("\n");
+  printf("expected:");
+  for (int i = 0; i < 32; i++)
+    printf("%02x",blake2s_test4_expected[i]);
+  printf("\n");
+  ok = true;
+  for (int i = 0; i < 32; i++)
+    ok = ok & (blake2s_test4_expected[i] == comp_s[i]);
+  if (ok) printf("Success!\n");
+  else printf("FAILED!\n");
+
+  printf("testing blake2s vec-128:\n");
+  Hacl_Blake2s_128_blake2s(32,comp_s,blake2s_test4_size_plaintext,blake2s_test4_plaintext,blake2s_test4_size_key,blake2s_test4_key);
+  printf("computed:");
+  for (int i = 0; i < 32; i++)
+    printf("%02x",comp_s[i]);
+  printf("\n");
+  printf("expected:");
+  for (int i = 0; i < 32; i++)
+    printf("%02x",blake2s_test4_expected[i]);
+  printf("\n");
+  ok = true;
+  for (int i = 0; i < 32; i++)
+    ok = ok & (blake2s_test4_expected[i] == comp_s[i]);
+  if (ok) printf("Success!\n");
+  else printf("FAILED!\n");
+
+  printf("testing blake2b vec-32:\n");
+  Hacl_Blake2b_32_blake2b(64,comp_b,blake2b_test1_size_plaintext,blake2b_test1_plaintext,blake2b_test1_size_key,blake2b_test1_key);
+  printf("computed:");
+  for (int i = 0; i < 64; i++)
+    printf("%02x",comp_b[i]);
+  printf("\n");
+  printf("expected:");
+  for (int i = 0; i < 64; i++)
+    printf("%02x",blake2b_test1_expected[i]);
+  printf("\n");
+  ok = true;
+  for (int i = 0; i < 64; i++)
+    ok = ok & (blake2b_test1_expected[i] == comp_b[i]);
+  if (ok) printf("Success!\n");
+  else printf("FAILED!\n");
+
+  printf("testing blake2b vec-256:\n");
+  Hacl_Blake2b_256_blake2b(64,comp_b,blake2b_test1_size_plaintext,blake2b_test1_plaintext,blake2b_test1_size_key,blake2b_test1_key);
   printf("computed:");
   for (int i = 0; i < 64; i++)
     printf("%02x",comp_b[i]);
@@ -386,14 +493,13 @@ int main()
 
   uint64_t len = SIZE;
   uint8_t plain[SIZE];
+  cycles a,b;
+  clock_t t1,t2;
   memset(plain,'P',SIZE);
 
   for (int j = 0; j < ROUNDS; j++) {
     Hacl_Blake2s_blake2s(32,plain,SIZE,plain,0,NULL);
   }
-
-  cycles a,b;
-  clock_t t1,t2;
   t1 = clock();
   a = cpucycles_begin();
   for (int j = 0; j < ROUNDS; j++) {
@@ -401,11 +507,103 @@ int main()
   }
   b = cpucycles_end();
   t2 = clock();
-  double diff = (double)(t2 - t1)/CLOCKS_PER_SEC;
+  double cdiff1 = b - a;
+  double tdiff1 = (double)(t2 - t1)/CLOCKS_PER_SEC;
+
+  for (int j = 0; j < ROUNDS; j++) {
+    Hacl_Blake2b_blake2b(64,plain,SIZE,plain,0,NULL);
+  }
+  t1 = clock();
+  a = cpucycles_begin();
+  for (int j = 0; j < ROUNDS; j++) {
+    Hacl_Blake2b_blake2b(64,plain,SIZE,plain,0,NULL);
+  }
+  b = cpucycles_end();
+  t2 = clock();
+  double cdiff2 = b - a;
+  double tdiff2 = (double)(t2 - t1)/CLOCKS_PER_SEC;
+
+  for (int j = 0; j < ROUNDS; j++) {
+    Hacl_Blake2s_32_blake2s(32,plain,SIZE,plain,0,NULL);
+  }
+  t1 = clock();
+  a = cpucycles_begin();
+  for (int j = 0; j < ROUNDS; j++) {
+    Hacl_Blake2s_32_blake2s(32,plain,SIZE,plain,0,NULL);
+  }
+  b = cpucycles_end();
+  t2 = clock();
+  double cdiff3 = b - a;
+  double tdiff3 = (double)(t2 - t1)/CLOCKS_PER_SEC;
+
+  for (int j = 0; j < ROUNDS; j++) {
+    Hacl_Blake2b_32_blake2b(64,plain,SIZE,plain,0,NULL);
+  }
+  t1 = clock();
+  a = cpucycles_begin();
+  for (int j = 0; j < ROUNDS; j++) {
+    Hacl_Blake2b_32_blake2b(64,plain,SIZE,plain,0,NULL);
+  }
+  b = cpucycles_end();
+  t2 = clock();
+  double cdiff4 = b - a;
+  double tdiff4 = (double)(t2 - t1)/CLOCKS_PER_SEC;
+
+  for (int j = 0; j < ROUNDS; j++) {
+    Hacl_Blake2s_128_blake2s(32,plain,SIZE,plain,0,NULL);
+  }
+  t1 = clock();
+  a = cpucycles_begin();
+  for (int j = 0; j < ROUNDS; j++) {
+    Hacl_Blake2s_128_blake2s(32,plain,SIZE,plain,0,NULL);
+  }
+  b = cpucycles_end();
+  t2 = clock();
+  double cdiff5 = b - a;
+  double tdiff5 = (double)(t2 - t1)/CLOCKS_PER_SEC;
+
+  for (int j = 0; j < ROUNDS; j++) {
+    Hacl_Blake2b_256_blake2b(64,plain,SIZE,plain,0,NULL);
+  }
+  t1 = clock();
+  a = cpucycles_begin();
+  for (int j = 0; j < ROUNDS; j++) {
+    Hacl_Blake2b_256_blake2b(64,plain,SIZE,plain,0,NULL);
+  }
+  b = cpucycles_end();
+  t2 = clock();
+  double cdiff6 = b - a;
+  double tdiff6 = (double)(t2 - t1)/CLOCKS_PER_SEC;
 
   uint64_t count = ROUNDS * SIZE;
-  printf("cycles for %" PRIu64 " bytes: %" PRIu64 " (%.2fcycles/byte)\n",count,(uint64_t)(b-a),(double)(b-a)/count);
-  printf("time for %" PRIu64 " bytes: %" PRIu64 " (%.2fus/byte)\n",count,(uint64_t)(t2-t1),(double)(t2-t1)/count);
-  printf("bw %8.2f MB/s\n",(double)count/(diff * 1000000.0));
+  printf("Blake2S (32-bit):\n");
+  printf("cycles for %" PRIu64 " bytes: %" PRIu64 " (%.2fcycles/byte)\n",count,(uint64_t)cdiff1,(double)cdiff1/count);
+  printf("time for %" PRIu64 " bytes: %" PRIu64 " (%.2fus/byte)\n",count,(uint64_t)tdiff1,(double)tdiff1/count);
+  printf("bw %8.2f MB/s\n",(double)count/(tdiff1 * 1000000.0));
+
+  printf("Blake2B (64-bit):\n");
+  printf("cycles for %" PRIu64 " bytes: %" PRIu64 " (%.2fcycles/byte)\n",count,(uint64_t)cdiff2,(double)cdiff2/count);
+  printf("time for %" PRIu64 " bytes: %" PRIu64 " (%.2fus/byte)\n",count,(uint64_t)tdiff2,(double)tdiff2/count);
+  printf("bw %8.2f MB/s\n",(double)count/(tdiff2 * 1000000.0));
+
+  printf("Blake2S (Vec 32-bit):\n");
+  printf("cycles for %" PRIu64 " bytes: %" PRIu64 " (%.2fcycles/byte)\n",count,(uint64_t)cdiff3,(double)cdiff3/count);
+  printf("time for %" PRIu64 " bytes: %" PRIu64 " (%.2fus/byte)\n",count,(uint64_t)tdiff3,(double)tdiff3/count);
+  printf("bw %8.2f MB/s\n",(double)count/(tdiff3 * 1000000.0));
+
+  printf("Blake2B (Vec 64-bit):\n");
+  printf("cycles for %" PRIu64 " bytes: %" PRIu64 " (%.2fcycles/byte)\n",count,(uint64_t)cdiff4,(double)cdiff4/count);
+  printf("time for %" PRIu64 " bytes: %" PRIu64 " (%.2fus/byte)\n",count,(uint64_t)tdiff4,(double)tdiff4/count);
+  printf("bw %8.2f MB/s\n",(double)count/(tdiff4 * 1000000.0));
+
+  printf("Blake2S (Vec 128-bit):\n");
+  printf("cycles for %" PRIu64 " bytes: %" PRIu64 " (%.2fcycles/byte)\n",count,(uint64_t)cdiff5,(double)cdiff5/count);
+  printf("time for %" PRIu64 " bytes: %" PRIu64 " (%.2fus/byte)\n",count,(uint64_t)tdiff5,(double)tdiff5/count);
+  printf("bw %8.2f MB/s\n",(double)count/(tdiff5 * 1000000.0));
+
+  printf("Blake2B (Vec 256-bit):\n");
+  printf("cycles for %" PRIu64 " bytes: %" PRIu64 " (%.2fcycles/byte)\n",count,(uint64_t)cdiff6,(double)cdiff6/count);
+  printf("time for %" PRIu64 " bytes: %" PRIu64 " (%.2fus/byte)\n",count,(uint64_t)tdiff6,(double)tdiff6/count);
+  printf("bw %8.2f MB/s\n",(double)count/(tdiff6 * 1000000.0));
 }
 

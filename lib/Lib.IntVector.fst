@@ -217,6 +217,7 @@ let vec_rotate_right (#t:v_inttype) (#w:width) (x:vec_t t w) (y:rotval t) =
   match t,w with
   | U32,4 -> vec128_rotate_right32 x y
   | U32,8 -> vec256_rotate_right32 x y
+  | U64,4 -> vec256_rotate_right64 x y
   | _,_ ->  vec_or (vec_shift_left x (size (bits t) -. y)) (vec_shift_right x y)
 
 let vec_rotate_right_lemma (#t:v_inttype) (#w:width) (x:vec_t t w) (y:rotval t) = ()

@@ -181,7 +181,11 @@ val store_row: #a:Spec.alg -> #m:m_spec -> b:lbuffer uint8 (size_row a) -> r:row
 
 
 inline_for_extraction
-let size_block (a:Spec.alg): x:size_t = size (Spec.size_block a)
+let size_block (a:Spec.alg) : x:size_t{v x = 16 * Spec.size_word a} =
+  match a with
+  | Spec.Blake2_Vec.Blake2S -> 64ul
+  | Spec.Blake2_Vec.Blake2B -> 128ul
+
 
 inline_for_extraction
 type block_p (a:Spec.alg) = lbuffer uint8 (size_block a)
