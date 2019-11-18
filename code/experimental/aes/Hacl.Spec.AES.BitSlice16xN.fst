@@ -355,25 +355,32 @@ let block_cipher #l (#nr:nat{nr > 1 /\ nr < max_fseq_len}) (st:state l) (k:keys 
     let st = enc_rounds #l #(nr - 1) st (sub k 1 (nr - 1)) in
     aes_enc_last st k.[nr]
 
-let key_expansion128 #l (k:blocks 1) : keys l 11 =
+let aes128_key_expansion #l (k:blocks 1) : keys l 11 =
   let k1 = load_key1 k in
   let kx = create 11 k1 in
   Lib.LoopCombinators.repeati 10 (fun i kx ->
     let n = aes_keygen_assist0 rcon_seq.[i+1] kx.[i] in
     kx.[i+1] <- key_expansion_step n kx.[i]) kx
 
-let key_expansion256 #l (k:blocks 2) : keys l 15 =
+let aes256_key_expansion #l (k:blocks 2) : keys l 15 =
   let k0 = load_key1 #l (sub k 0 1) in
   let k1 = load_key1 #l (sub k 1 1) in
-  let kx = create 11 k0 in
+  let kx = create 15 k0 in
   let kx = kx.[1] <- k1 in
-  Lib.LoopCombinators.repeati 6 (fun i kx ->
+  let kx =
+    Lib.LoopCombinators.repeati 6 (fun i kx ->
     let p0 = kx.[2*i] in
     let p1 = kx.[2*i+1] in
     let n0 = aes_keygen_assist0 rcon_seq.[i+1] p1 in
     let n0 = key_expansion_step p0 n0 in
     let n1 = aes_keygen_assist1 n0 in
     let n1 = key_expansion_step p1 n1 in
-    let kx = kx.[2*i] <- n0 in
-    let kx = kx.[2*i+1] <- n1 in
-    kx) kx
+    let kx = kx.[2*i+2] <- n0 in
+    let kx = kx.[2*i+3] <- n1 in
+    kx) kx in
+  let p0 = kx.[12] in
+  let p1 = kx.[13] in
+  let n0 = aes_keygen_assist0 rcon_seq.[7] p1 in
+  let n0 = key_expansion_step p0 n0 in
+  kx.[14] <- n0
+
