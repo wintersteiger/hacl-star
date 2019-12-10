@@ -17,7 +17,11 @@
         "typing_Spec.Poly1305.size_key"
       ],
       0,
+<<<<<<< HEAD
       "67a3d0a175755e978e0c3ea8a947d85e"
+=======
+      "9b04ae2e8e262e072a74eabc8edcfca4"
+>>>>>>> _dev
     ],
     [
       "Spec.Chacha20Poly1305.size_nonce",
@@ -34,7 +38,7 @@
         "typing_Spec.Poly1305.size_key"
       ],
       0,
-      "e10d9257988cbef862488135d28181c0"
+      "941f4180794a895ef715deab93884c92"
     ],
     [
       "Spec.Chacha20Poly1305.size_block",
@@ -48,7 +52,11 @@
         "equation_Lib.IntTypes.unsigned", "projection_inverse_BoxInt_proj_0"
       ],
       0,
+<<<<<<< HEAD
       "f6ed33bde6c5822a8af9569774be7725"
+=======
+      "7f8b5bdee99f19e3390e6da92d4ce56d"
+>>>>>>> _dev
     ],
     [
       "Spec.Chacha20Poly1305.size_tag",
@@ -62,7 +70,11 @@
         "equation_Lib.IntTypes.unsigned", "projection_inverse_BoxInt_proj_0"
       ],
       0,
+<<<<<<< HEAD
       "7e7b0ceabe0447dcda70bd0c7a524b7c"
+=======
+      "ed09be1840fad791dede8abbdb34d5ec"
+>>>>>>> _dev
     ],
     [
       "Spec.Chacha20Poly1305.poly1305_padded",
@@ -101,7 +113,11 @@
         "typing_Spec.Poly1305.size_key", "typing_tok_Lib.IntTypes.U8@tok"
       ],
       0,
+<<<<<<< HEAD
       "9d7f15e285d1536132b9e0c1952dcf6d"
+=======
+      "019575fad0f5f8e94a74212f63cfcd7b"
+>>>>>>> _dev
     ],
     [
       "Spec.Chacha20Poly1305.poly1305_do",
@@ -114,7 +130,11 @@
         "projection_inverse_BoxBool_proj_0"
       ],
       0,
+<<<<<<< HEAD
       "67eaa2245bd5fe3dc4be7db180def7cc"
+=======
+      "aad8fcb371b2ab6012ea95f0c84c2979"
+>>>>>>> _dev
     ],
     [
       "Spec.Chacha20Poly1305.poly1305_do",
@@ -122,47 +142,16 @@
       0,
       1,
       [
-        "@MaxFuel_assumption", "@MaxIFuel_assumption",
-        "@fuel_correspondence_Prims.pow2.fuel_instrumented", "@query",
-        "constructor_distinct_Lib.IntTypes.S16",
-        "constructor_distinct_Lib.IntTypes.S32",
-        "constructor_distinct_Lib.IntTypes.S8",
-        "constructor_distinct_Lib.IntTypes.U32",
-        "constructor_distinct_Lib.IntTypes.U64",
-        "constructor_distinct_Lib.IntTypes.U8",
-        "equality_tok_Lib.IntTypes.U32@tok",
-        "equality_tok_Lib.IntTypes.U64@tok",
-        "equality_tok_Lib.IntTypes.U8@tok", "equation_Lib.IntTypes.bits",
-        "equation_Lib.IntTypes.maxint", "equation_Lib.IntTypes.minint",
-        "equation_Lib.IntTypes.numbytes", "equation_Lib.IntTypes.range",
-        "equation_Lib.IntTypes.unsigned", "equation_Lib.Sequence.lseq",
-        "equation_Lib.Sequence.to_seq", "equation_Prims.nat",
-        "equation_Prims.pos", "equation_Spec.Chacha20.size_block",
-        "equation_Spec.Poly1305.felem",
-        "equation_Spec.Poly1305.poly1305_init",
-        "equation_Spec.Poly1305.size_block",
-        "equation_Spec.Poly1305.size_key", "equation_Spec.Poly1305.to_felem",
-        "equation_Spec.Poly1305.zero", "int_typing",
-        "lemma_FStar.UInt.pow2_values", "primitive_Prims.op_Subtraction",
-        "projection_inverse_BoxBool_proj_0",
-        "projection_inverse_BoxInt_proj_0",
-        "projection_inverse_FStar.Pervasives.Native.Mktuple2__1",
-        "refinement_interpretation_Tm_refine_0ec011aea9f93256a3547ad9f0c667f1",
-        "refinement_interpretation_Tm_refine_542f9d4f129664613f2483a6c88bc7c2",
-        "refinement_interpretation_Tm_refine_664a813e6a90f3536afc48c63cd8d467",
-        "refinement_interpretation_Tm_refine_7469e637a8c96cb70cd78854c6904f1b",
-        "refinement_interpretation_Tm_refine_774ba3f728d91ead8ef40be66c9802e5",
-        "refinement_interpretation_Tm_refine_a640fa09e9eea22f04c9c5817eefca06",
-        "refinement_interpretation_Tm_refine_b12f59f8689aaa6953e23191769065fc",
-        "refinement_interpretation_Tm_refine_b7719c67bb7139339e9c9deba4a289e3",
-        "refinement_interpretation_Tm_refine_c9f20b3764865671401c7b06a55e3e6a",
-        "refinement_interpretation_Tm_refine_d8d83307254a8900dd20598654272e42",
-        "refinement_interpretation_Tm_refine_e57fbe3a13ac300a63eb7747434e89b8",
-        "typing_Prims.pow2", "typing_Spec.Chacha20.size_block",
-        "typing_Spec.Poly1305.size_block", "typing_Spec.Poly1305.size_key"
+        "@query", "constructor_distinct_Lib.IntTypes.U8",
+        "equality_tok_Lib.IntTypes.U8@tok", "equation_Lib.IntTypes.unsigned",
+        "projection_inverse_BoxBool_proj_0"
       ],
       0,
+<<<<<<< HEAD
       "7b7a248a8a32cd83f079deb0a268230e"
+=======
+      "e7a9efa3fc43fbf22d79425fd232eca4"
+>>>>>>> _dev
     ],
     [
       "Spec.Chacha20Poly1305.poly1305_do",
@@ -196,7 +185,11 @@
         "typing_Spec.Poly1305.size_key"
       ],
       0,
+<<<<<<< HEAD
       "bd25095f7e572e098218824b482d9f3a"
+=======
+      "c6c98add598fbe711894f262ba44fbe0"
+>>>>>>> _dev
     ],
     [
       "Spec.Chacha20Poly1305.aead_encrypt",
@@ -204,20 +197,16 @@
       0,
       1,
       [
-        "@MaxIFuel_assumption", "@query",
-        "constructor_distinct_Lib.IntTypes.U32",
-        "constructor_distinct_Lib.IntTypes.U8",
+        "@query", "constructor_distinct_Lib.IntTypes.U8",
         "equality_tok_Lib.IntTypes.U8@tok", "equation_Lib.IntTypes.unsigned",
-        "equation_Prims.nat", "equation_Spec.Chacha20.blocklen",
-        "equation_Spec.Chacha20Poly1305.size_block",
-        "equation_Spec.Poly1305.size_block", "primitive_Prims.op_Addition",
-        "projection_inverse_BoxBool_proj_0",
-        "projection_inverse_BoxInt_proj_0",
-        "refinement_interpretation_Tm_refine_34e2140a936f51900202dcb14ed48d28",
-        "refinement_interpretation_Tm_refine_542f9d4f129664613f2483a6c88bc7c2"
+        "projection_inverse_BoxBool_proj_0"
       ],
       0,
+<<<<<<< HEAD
       "7e44d73c98fe69f17149aea3f19553f0"
+=======
+      "6f0db86f0d3291a58938ce411e270010"
+>>>>>>> _dev
     ],
     [
       "Spec.Chacha20Poly1305.aead_encrypt",
@@ -225,15 +214,16 @@
       0,
       1,
       [
-        "@query", "constructor_distinct_Lib.IntTypes.U32",
-        "constructor_distinct_Lib.IntTypes.U8",
+        "@query", "constructor_distinct_Lib.IntTypes.U8",
         "equality_tok_Lib.IntTypes.U8@tok", "equation_Lib.IntTypes.unsigned",
-        "equation_Spec.Chacha20.blocklen",
-        "projection_inverse_BoxBool_proj_0",
-        "projection_inverse_BoxInt_proj_0"
+        "projection_inverse_BoxBool_proj_0"
       ],
       0,
+<<<<<<< HEAD
       "b724c7f4024e48ea7a1e8629c17b98cd"
+=======
+      "ebbecb385da4b71827eae0de326c4e77"
+>>>>>>> _dev
     ],
     [
       "Spec.Chacha20Poly1305.aead_encrypt",
@@ -279,7 +269,11 @@
         "typing_Spec.Poly1305.size_key", "typing_tok_Lib.IntTypes.U64@tok"
       ],
       0,
+<<<<<<< HEAD
       "6591d76c1de49f97421b992c08ee812b"
+=======
+      "69aaaef41e4dedd66b56ca8a92f33100"
+>>>>>>> _dev
     ],
     [
       "Spec.Chacha20Poly1305.aead_decrypt",
@@ -295,7 +289,11 @@
         "refinement_interpretation_Tm_refine_c5579466c1fcb6457bba4b009a86e2ac"
       ],
       0,
+<<<<<<< HEAD
       "8f4fdafdb928378270ea29f071223745"
+=======
+      "511ad91a419c73bdbb167f56362477c3"
+>>>>>>> _dev
     ],
     [
       "Spec.Chacha20Poly1305.aead_decrypt",
@@ -303,13 +301,16 @@
       0,
       1,
       [
-        "@query", "constructor_distinct_Lib.IntTypes.U32",
-        "constructor_distinct_Lib.IntTypes.U8",
+        "@query", "constructor_distinct_Lib.IntTypes.U8",
         "equality_tok_Lib.IntTypes.U8@tok", "equation_Lib.IntTypes.unsigned",
         "projection_inverse_BoxBool_proj_0"
       ],
       0,
+<<<<<<< HEAD
       "4de86bbfe6670242303e155fdb228331"
+=======
+      "957803b508cd0c22b152bbf947d3ad83"
+>>>>>>> _dev
     ],
     [
       "Spec.Chacha20Poly1305.aead_decrypt",
@@ -351,7 +352,7 @@
         "typing_tok_Lib.IntTypes.U8@tok"
       ],
       0,
-      "25dc8b303cb6cc8c8d45414b4782dd3e"
+      "b301bca96090b079b478630786f1adb4"
     ]
   ]
 ]

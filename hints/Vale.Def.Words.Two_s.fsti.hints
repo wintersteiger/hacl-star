@@ -4,16 +4,15 @@
     [
       "Vale.Def.Words.Two_s.nat_to_two_unfold",
       1,
-      2,
       1,
+      0,
       [
         "@MaxIFuel_assumption", "@query", "equation_Prims.nat",
-        "int_inversion", "primitive_Prims.op_Multiply",
         "projection_inverse_BoxInt_proj_0",
         "refinement_interpretation_Tm_refine_542f9d4f129664613f2483a6c88bc7c2"
       ],
       0,
-      "25973c1808f0f0b5f04a8027146b6bf4"
+      "04ffaafd47dfe1e1c0bfe9526b0e69ee"
     ],
     [
       "Vale.Def.Words.Two_s.nat_to_two_unfold",
@@ -26,28 +25,27 @@
         "@fuel_irrelevance_Prims.pow2.fuel_instrumented", "@query",
         "equation_Prims.nat", "equation_Prims.pos",
         "equation_with_fuel_Prims.pow2.fuel_instrumented", "int_inversion",
-        "primitive_Prims.op_Multiply", "primitive_Prims.op_Subtraction",
-        "projection_inverse_BoxInt_proj_0",
+        "int_typing", "primitive_Prims.op_Multiply",
+        "primitive_Prims.op_Subtraction", "projection_inverse_BoxInt_proj_0",
         "refinement_interpretation_Tm_refine_542f9d4f129664613f2483a6c88bc7c2",
         "refinement_interpretation_Tm_refine_774ba3f728d91ead8ef40be66c9802e5",
-        "typing_Prims.pow2"
+        "token_correspondence_Prims.pow2.fuel_instrumented"
       ],
       0,
-      "589210eedd707ef149ae792c5286d3e9"
+      "95a3dfdff55d76354ba159b2cd3f12f1"
     ],
     [
       "Vale.Def.Words.Two_s.nat_to_two",
       1,
-      2,
       1,
+      0,
       [
         "@MaxIFuel_assumption", "@query", "equation_Prims.nat",
-        "int_inversion", "primitive_Prims.op_Multiply",
         "projection_inverse_BoxInt_proj_0",
         "refinement_interpretation_Tm_refine_542f9d4f129664613f2483a6c88bc7c2"
       ],
       0,
-      "f8254f1e3210576fbeb027f1addefe27"
+      "7863547046339fc34bf386a776f7ebc8"
     ],
     [
       "Vale.Def.Words.Two_s.nat_to_two",
@@ -56,7 +54,7 @@
       0,
       [ "@query" ],
       0,
-      "168e56771218ae949e460ac4d19f765c"
+      "fcb20da8c99e3f54a756b5d9f1977720"
     ],
     [
       "Vale.Def.Words.Two_s.two_to_nat_unfold",
@@ -65,7 +63,7 @@
       0,
       [ "@query" ],
       0,
-      "26fadd17fe35b0085736726763ef25f6"
+      "127f827905ccf46ca13843ba14fc5666"
     ],
     [
       "Vale.Def.Words.Two_s.two_to_nat_unfold",
@@ -85,7 +83,7 @@
         "typing_Prims.pow2"
       ],
       0,
-      "8b7579122ea858791e96335e5497b435"
+      "213c3fc17cdadadd376f723b9cc00364"
     ],
     [
       "Vale.Def.Words.Two_s.two_to_nat",
@@ -94,21 +92,20 @@
       0,
       [ "@query" ],
       0,
-      "5f16d029072c0f2d9ca6f9023805ac7c"
+      "e9274e5dbca6fc703811da80fa1e34e8"
     ],
     [
       "Vale.Def.Words.Two_s.two_to_nat",
       2,
-      2,
       1,
+      0,
       [
         "@MaxIFuel_assumption", "@query", "equation_Prims.nat",
-        "int_inversion", "primitive_Prims.op_Multiply",
         "projection_inverse_BoxInt_proj_0",
         "refinement_interpretation_Tm_refine_542f9d4f129664613f2483a6c88bc7c2"
       ],
       0,
-      "133d311b70744f0165c11ea1d3a3bf76"
+      "a06d5bb3dcc58aa06ed607bed8fd0844"
     ],
     [
       "Vale.Def.Words.Two_s.two_select",
@@ -123,7 +120,7 @@
         "refinement_interpretation_Tm_refine_c1424615841f28cac7fc34e92b7ff33c"
       ],
       0,
-      "47230a321ccaab2d108c3db77b47e9e2"
+      "73f05ee591b1045d7221889447740cda"
     ],
     [
       "Vale.Def.Words.Two_s.two_insert",
@@ -138,7 +135,7 @@
         "refinement_interpretation_Tm_refine_c1424615841f28cac7fc34e92b7ff33c"
       ],
       0,
-      "0b63b339c3563707a51b988414503609"
+      "bf282a8060be82f2d074a75450e56235"
     ]
   ]
 ]

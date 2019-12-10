@@ -102,9 +102,9 @@ all:
 	tools/blast-staticconfig.sh $(EVERCRYPT_CONFIG)
 	$(MAKE) all-staged
 
-all-unstaged: compile-compact compile-compact-msvc compile-compact-gcc \
-  compile-evercrypt-external-headers compile-compact-c89 compile-ccf \
-  compile-portable compile-mozilla
+all-unstaged: compile-gcc-compatible compile-msvc-compatible compile-gcc64-only \
+  compile-evercrypt-external-headers compile-c89-compatible compile-ccf \
+  compile-portable-gcc-compatible compile-mozilla
 
 # Automatic staging.
 %-staged: .last_vale_version
@@ -138,10 +138,13 @@ test-ml: $(subst .,_,$(patsubst %.fst,test-ml-%,$(notdir $(wildcard specs/tests/
 test-benchmark: all-unstaged
 	$(MAKE) -C tests/benchmark all
 
+mozilla-ci: mozilla-ci-staged
+mozilla-ci-unstaged: compile-mozilla test-c
+
 # Not reusing the -staged automatic target so as to export NOSHORTLOG
 ci:
 	tools/blast-staticconfig.sh wasm
-	EVERCRYPT_CONFIG=wasm $(MAKE) wasm-staged
+	EVERCRYPT_CONFIG=wasm NOSHORTLOG=1 $(MAKE) wasm-staged
 	tools/blast-staticconfig.sh
 	NOSHORTLOG=1 $(MAKE) vale-fst
 	FSTAR_DEPEND_FLAGS="--warn_error +285" NOSHORTLOG=1 $(MAKE) all-unstaged test-unstaged
@@ -441,6 +444,25 @@ min-test-unstaged: $(filter-out \
 	@echo $^
 	@echo "<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>"
 
+####################################################
+# Tactic (not covered by --extract, intentionally) #
+####################################################
+
+obj/Meta_Interface.ml: CODEGEN = Plugin
+obj/Meta_Interface.ml: obj/Meta.Interface.fst.checked
+
+obj/Meta_Interface.cmxs: obj/Meta_Interface.ml
+	$(OCAMLSHARED) $< -o $@
+
+# IMPORTANT NOTE: we cannot let F* compile the cmxs for several reasons.
+# First, it won't detect out-of-date .ml files and won't recompile the cmxs.
+# Second, it will race because several Hacl.Meta.%.checked targets might be
+# scheduled in parallel.
+# So, we don't trust F* to compile the tactic and add it as a step of the
+# dependency graph. Note that local Makefiles don't bother.
+obj/Hacl.Meta.%.checked: FSTAR_FLAGS += --load Meta.Interface
+$(filter obj/Hacl.Meta.%.checked,$(call to-obj-dir,$(ALL_CHECKED_FILES))): obj/Meta_Interface.cmxs
+
 ###############################################################################
 # Extracting (checked files) to OCaml, producing executables, running them to #
 # print ASM files                                                             #
@@ -452,9 +474,11 @@ obj/%.cmx: obj/%.ml
 	  $(OCAMLOPT) -c $< -o $@ \
 	  ,[OCAMLOPT-CMX] $(notdir $*),$(call to-obj-dir,$@))
 
+obj/%.ml: CODEGEN=OCaml
+
 obj/%.ml:
 	$(call run-with-log,\
-	  $(FSTAR) $(notdir $(subst .checked,,$<)) --codegen OCaml \
+	  $(FSTAR) $(notdir $(subst .checked,,$<)) --codegen $(CODEGEN) \
 	    --extract_module $(subst .fst.checked,,$(notdir $<)) \
 	  ,[EXTRACT-ML] $(notdir $*),$(call to-obj-dir,$@))
 
@@ -592,7 +616,7 @@ REQUIRED_FLAGS	=\
   $(VALE_BUNDLES) \
   -library 'Vale.Stdcalls.*' \
   -no-prefix 'Vale.Stdcalls.*' \
-  -static-header 'Vale_Inline' \
+  -static-header 'Vale.Inline.*' \
   -library 'Vale.Inline.X64.Fadd_inline' \
   -library 'Vale.Inline.X64.Fmul_inline' \
   -library 'Vale.Inline.X64.Fswap_inline' \
@@ -655,6 +679,7 @@ BUNDLE_FLAGS	=\
   $(WASMSUPPORT_BUNDLE) \
   $(CTR_BUNDLE) \
   $(TUTORIAL_BUNDLE) \
+  $(HPKE_BUNDLE) \
   $(QTESLA_BUNDLE) \
   $(FRODO_BUNDLE)
 
@@ -686,6 +711,7 @@ WASM_FLAGS	=\
   -bundle FStar.* \
   -bundle EverCrypt.*,Hacl.*,MerkleTree.*[rename=EverCrypt] \
   -bundle LowStar.* \
+  -bundle Lib.RandomBuffer.System \
   -bundle '\*[rename=Misc]' \
   -minimal -wasm
 
@@ -706,11 +732,11 @@ dist/wasm/Makefile.basic: WASMSUPPORT_BUNDLE =
 # README.EverCrypt.md)
 
 # Customizations for regular, msvc and gcc flavors.
-dist/compact/Makefile.basic: DEFAULT_FLAGS += -ctypes EverCrypt.Ed25519
+dist/gcc-compatible/Makefile.basic: DEFAULT_FLAGS += -ctypes Hacl.NaCl,EverCrypt.Curve25519,EverCrypt.HMAC,Hacl.Ed25519
 
-dist/compact-msvc/Makefile.basic: DEFAULT_FLAGS += -falloca -ftail-calls
+dist/msvc-compatible/Makefile.basic: DEFAULT_FLAGS += -falloca -ftail-calls
 
-dist/compact-gcc/Makefile.basic: DEFAULT_FLAGS += -fbuiltin-uint128
+dist/gcc64-only/Makefile.basic: DEFAULT_FLAGS += -fbuiltin-uint128
 
 
 # C89 distribution
@@ -718,10 +744,10 @@ dist/compact-gcc/Makefile.basic: DEFAULT_FLAGS += -fbuiltin-uint128
 #
 # - MerkleTree doesn't compile in C89 mode (FIXME?)
 # - Use C89 versions of ancient HACL code
-dist/compact-c89/Makefile.basic: MERKLE_BUNDLE = -bundle 'MerkleTree.*'
-dist/compact-c89/Makefile.basic: DEFAULT_FLAGS += \
+dist/c89-compatible/Makefile.basic: MERKLE_BUNDLE = -bundle 'MerkleTree.*'
+dist/c89-compatible/Makefile.basic: DEFAULT_FLAGS += \
   -fc89 -ccopt -std=c89 -ccopt -Wno-typedef-redefinition
-dist/compact-c89/Makefile.basic: HACL_OLD_FILES := $(subst -c,-c89,$(HACL_OLD_FILES))
+dist/c89-compatible/Makefile.basic: HACL_OLD_FILES := $(subst -c,-c89,$(HACL_OLD_FILES))
 
 
 # CCF distribution
@@ -754,12 +780,20 @@ dist/ccf/Makefile.basic: HAND_WRITTEN_FILES := $(filter-out %/Lib_PrintBuffer.c 
 dist/ccf/Makefile.basic: HAND_WRITTEN_H_FILES := $(filter-out %/libintvector.h,$(HAND_WRITTEN_H_FILES))
 dist/ccf/Makefile.basic: HACL_OLD_FILES =
 dist/ccf/Makefile.basic: POLY_BUNDLE =
+dist/ccf/Makefile.basic: HPKE_BUNDLE = -bundle Hacl.HPKE.*
 
 # Mozilla distribution
 # --------------------
 #
 # Disable the EverCrypt and MerkleTree layers. Only keep Chacha20, Poly1305,
 # Curve25519 for now. Everything else in Hacl is disabled.
+dist/mozilla/Makefile.basic: INTRINSIC_FLAGS = \
+  -add-include 'Hacl_Chacha20Poly1305_128:"libintvector.h"' \
+  -add-include 'Hacl_Chacha20Poly1305_256:"libintvector.h"' \
+  -add-include 'Hacl_Chacha20_Vec128:"libintvector.h"' \
+  -add-include 'Hacl_Chacha20_Vec256:"libintvector.h"' \
+  -add-include 'Hacl_Poly1305_128:"libintvector.h"' \
+  -add-include 'Hacl_Poly1305_256:"libintvector.h"'
 dist/mozilla/Makefile.basic: CURVE_BUNDLE_SLOW = -bundle Hacl.Curve25519_64_Slow
 dist/mozilla/Makefile.basic: SALSA20_BUNDLE = -bundle Hacl.Salsa20
 dist/mozilla/Makefile.basic: ED_BUNDLE = -bundle Hacl.Ed25519
@@ -768,7 +802,8 @@ dist/mozilla/Makefile.basic: E_HASH_BUNDLE =
 dist/mozilla/Makefile.basic: MERKLE_BUNDLE = -bundle MerkleTree.*
 dist/mozilla/Makefile.basic: CTR_BUNDLE =
 dist/mozilla/Makefile.basic: SHA3_BUNDLE = -bundle Hacl.SHA3
-dist/mozilla/Makefile.basic: HASH_BUNDLE = -bundle Hacl.Hash.*,Hacl.HKDF,Hacl.HMAC
+dist/mozilla/Makefile.basic: HASH_BUNDLE = -bundle Hacl.Hash.*,Hacl.HKDF,Hacl.HMAC,Hacl.HMAC_DRBG
+dist/mozilla/Makefile.basic: HPKE_BUNDLE = -bundle Hacl.HPKE.*
 dist/mozilla/Makefile.basic: QTESLA_BUNDLE = -bundle QTesla.*,Hacl.Impl.QTesla,Hacl.Impl.QTesla.*
 dist/mozilla/Makefile.basic: TUTORIAL_BUNDLE = -bundle Tutorial,TestLib,Hacl_Lib,Hacl_Kremlib
 dist/mozilla/Makefile.basic: FRODO_BUNDLE = -bundle Hacl.Frodo.*,Hacl.SHA3,Hacl.Keccak,Frodo.Params
@@ -793,7 +828,8 @@ dist/mozilla/Makefile.basic: TARGET_H_INCLUDE = -add-include '<stdbool.h>'
 # someone can download them onto their machine for debugging. Also enforces that
 # we don't have bundle errors where, say, an sse2-required function ends up in a
 # file that is *NOT* known to require sse2.
-dist/portable/Makefile.basic: OPT_FLAGS=-ccopts -mtune=generic
+dist/portable-gcc-compatible/Makefile.basic: OPT_FLAGS=-ccopts -mtune=generic
+dist/portable-gcc-compatible/Makefile.basic: DEFAULT_FLAGS += -rst-snippets
 
 
 # EVERCRYPT_CONFIG tweaks
@@ -809,11 +845,11 @@ endif
 
 # Customizations for Kaizala. No BCrypt, no Vale.
 ifeq ($(EVERCRYPT_CONFIG),kaizala)
-dist/compact/Makefile.basic: \
+dist/gcc-compatible/Makefile.basic: \
   HAND_WRITTEN_OPTIONAL_FILES := $(filter-out %_bcrypt.c,$(HAND_WRITTEN_OPTIONAL_FILES))
-dist/compact/Makefile.basic: \
+dist/gcc-compatible/Makefile.basic: \
   HAND_WRITTEN_FILES := $(filter-out %_vale_stubs.c,$(HAND_WRITTEN_FILES))
-dist/compact/Makefile.basic: \
+dist/gcc-compatible/Makefile.basic: \
   VALE_ASMS :=
 endif
 
@@ -821,7 +857,7 @@ endif
 # --------------------------
 
 .PRECIOUS: dist/%/Makefile.basic
-dist/%/Makefile.basic: $(ALL_KRML_FILES) \
+dist/%/Makefile.basic: $(ALL_KRML_FILES) dist/LICENSE.txt \
   $(HAND_WRITTEN_FILES) $(HAND_WRITTEN_H_FILES) $(HAND_WRITTEN_OPTIONAL_FILES) $(VALE_ASMS) | old-extract-c
 	mkdir -p $(dir $@)
 	[ x"$(HACL_OLD_FILES)" != x ] && cp $(HACL_OLD_FILES) $(patsubst %.c,%.h,$(HACL_OLD_FILES)) $(dir $@) || true
@@ -837,6 +873,10 @@ dist/%/Makefile.basic: $(ALL_KRML_FILES) \
 	  $(notdir $(HACL_OLD_FILES)) \
 	  $(notdir $(HAND_WRITTEN_FILES)) \
 	  -o libevercrypt.a
+	echo "This code was generated with the following toolchain." > $(dir $@)/INFO.txt
+	echo "F* version: $(shell cd $(FSTAR_HOME) && git rev-parse HEAD)" >> $(dir $@)/INFO.txt
+	echo "KreMLin version: $(shell cd $(KREMLIN_HOME) && git rev-parse HEAD)" >> $(dir $@)/INFO.txt
+	echo "Vale version: $(shell cat $(VALE_HOME)/bin/.vale_version)" >> $(dir $@)/INFO.txt
 
 dist/evercrypt-external-headers/Makefile.basic: $(ALL_KRML_FILES)
 	$(KRML) -silent \
@@ -869,8 +909,12 @@ dist/test/c/Test.c: KRML_EXTRA=-add-include '"kremlin/internal/compat.h"'
 # C Compilation (recursive make invocation relying on KreMLin-generated Makefile) #
 ###################################################################################
 
-compile-%: dist/Makefile dist/%/Makefile.basic
-	cp $< dist/$*/
+copy-kremlib:
+	mkdir -p dist/kremlin
+	(cd $(KREMLIN_HOME) && tar cvf - kremlib/dist/minimal include) | (cd dist/kremlin && tar xf -)
+
+compile-%: dist/Makefile.tmpl dist/%/Makefile.basic | copy-kremlib
+	cp $< dist/$*/Makefile
 	$(MAKE) -C dist/$*
 
 
@@ -885,17 +929,18 @@ endif
 LDFLAGS 	+= -L$(OPENSSL_HOME)
 
 CFLAGS += -Wall -Wextra -g \
-  -Wno-infinite-recursion -Wno-int-conversion -Wno-unused-parameter \
-  -O3 -march=native -mtune=native -I$(KREMLIN_HOME)/include
+  -Wno-int-conversion -Wno-unused-parameter \
+  -O3 -march=native -mtune=native -I$(KREMLIN_HOME)/kremlib/dist/minimal \
+  -I$(KREMLIN_HOME)/include
 
 # FIXME there's a kremlin error that generates a void* -- can't use -Werror
 # Need the libraries to be present and compiled.
 .PRECIOUS: %.exe
-%.exe: %.o | compile-compact
+%.exe: %.o | compile-gcc-compatible
 	# Linking with full kremlib since tests may use TestLib, etc.
 	$(call run-with-log,\
 	  $(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ \
-	    dist/compact/libevercrypt.a -lcrypto $(LDFLAGS) \
+	    dist/gcc-compatible/libevercrypt.a -lcrypto $(LDFLAGS) \
 	    $(KREMLIN_HOME)/kremlib/dist/generic/libkremlib.a \
 	  ,[LD $*],$(call to-obj-dir,$@))
 
@@ -918,7 +963,7 @@ test-c-%: dist/test/c/%.test
 # C tests (from C files) #
 ##########################
 
-test-handwritten: compile-compact-gcc
+test-handwritten: compile-gcc64-only
 	$(LD_EXTRA) KREMLIN_HOME="$(KREMLIN_HOME)" \
 	  LDFLAGS="$(LDFLAGS)" CFLAGS="$(CFLAGS)" \
 	  $(MAKE) -C tests test
@@ -938,6 +983,15 @@ dist/test/ml/%_AutoTest.ml:
 .PRECIOUS: dist/test/ml/%.exe
 dist/test/ml/%.exe: $(ALL_CMX_FILES) dist/test/ml/%_AutoTest.ml
 	$(OCAMLOPT) $^ -o $@
+
+# We ignore the result of Argon2i spec test on Cygwin
+#
+# The spec of Argon2i fails on Cygwin, although the same OCaml code
+# succeeds on Linux. This is not a problem with F* extraction but with
+# the behavior of the extracted code being platform dependent (perhaps
+# some OPAM package?).
+test-ml-Spec_Argon2i_Test: dist/test/ml/Spec_Argon2i_Test.exe
+	$< || [[ "$(OS)" == "Windows_NT" ]]
 
 test-ml-%: dist/test/ml/%.exe
 	$<

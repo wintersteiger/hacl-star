@@ -26,7 +26,7 @@
         "typing_FStar.Int.to_uint", "typing_FStar.UInt.logand"
       ],
       0,
-      "20b6951bfa9e2d6f713a6000d3e7d956"
+      "d7879917a43aabca837b08194fe5ea46"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.lemma_logand32_value_max",
@@ -51,7 +51,7 @@
         "typing_FStar.UInt64.logand", "typing_FStar.UInt64.uint_to_t"
       ],
       0,
-      "cc7caf7eca66d0aeb8a94336ed6fbb8c"
+      "dc4358817549e81975672a7636a1e51c"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.lemma_logand32_value_min",
@@ -81,7 +81,7 @@
         "typing_FStar.UInt64.uint_to_t", "typing_FStar.UInt64.v"
       ],
       0,
-      "96da457b6e873a30185ba9906e54682a"
+      "add957d86c446dc60da7b6bf9a8518ce"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.shift_right_value_lemma_int64",
@@ -101,7 +101,7 @@
         "typing_FStar.UInt32.v"
       ],
       0,
-      "4eb72fd2eb457421b2ce62a8e2beced4"
+      "8ed5c3234a71e3dc7c90dabf33225435"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.shift_right_value_lemma_int64",
@@ -136,7 +136,7 @@
         "typing_FStar.UInt32.v", "typing_Prims.pow2"
       ],
       0,
-      "6757d7212d2c5b50792eaea22419f763"
+      "c6cdaf94e69bc0105558a03d53f22313"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.lemma_int32_logxor_identities",
@@ -150,7 +150,7 @@
         "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f"
       ],
       0,
-      "ef00066b4dcb39a1f5f8b46473953690"
+      "f2dd618de91bcd939688c8bfd711d7c5"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.lemma_int32_logxor_identities",
@@ -173,9 +173,9 @@
         "equation_FStar.Int.size", "equation_FStar.Int.to_uint",
         "equation_FStar.Int.to_vec", "equation_FStar.Int.zero",
         "equation_FStar.UInt.fits", "equation_FStar.UInt.lognot",
-        "equation_FStar.UInt.max_int", "equation_FStar.UInt.min_int",
-        "equation_FStar.UInt.size", "equation_FStar.UInt.uint_t",
-        "equation_Prims.eqtype", "equation_Prims.nat", "equation_Prims.pos",
+        "equation_FStar.UInt.min_int", "equation_FStar.UInt.size",
+        "equation_FStar.UInt.uint_t", "equation_Prims.eqtype",
+        "equation_Prims.nat", "equation_Prims.pos",
         "function_token_typing_Prims.bool", "int_inversion", "int_typing",
         "lemma_FStar.BitVector.lognot_vec_definition",
         "lemma_FStar.Int.inverse_vec_lemma",
@@ -184,11 +184,11 @@
         "lemma_FStar.Int.ones_nth_lemma", "lemma_FStar.Int.zero_nth_lemma",
         "lemma_FStar.Int32.vu_inv", "lemma_FStar.Seq.Base.lemma_eq_elim",
         "lemma_FStar.UInt.inverse_aux", "lemma_FStar.UInt.inverse_num_lemma",
-        "lemma_FStar.UInt.pow2_values", "primitive_Prims.op_Addition",
-        "primitive_Prims.op_AmpAmp", "primitive_Prims.op_LessThan",
-        "primitive_Prims.op_LessThanOrEqual", "primitive_Prims.op_Minus",
-        "primitive_Prims.op_Multiply", "primitive_Prims.op_Negation",
-        "primitive_Prims.op_Subtraction", "primitive_Prims.op_disEquality",
+        "primitive_Prims.op_Addition", "primitive_Prims.op_AmpAmp",
+        "primitive_Prims.op_LessThan", "primitive_Prims.op_LessThanOrEqual",
+        "primitive_Prims.op_Minus", "primitive_Prims.op_Multiply",
+        "primitive_Prims.op_Negation", "primitive_Prims.op_Subtraction",
+        "primitive_Prims.op_disEquality",
         "projection_inverse_BoxBool_proj_0",
         "projection_inverse_BoxInt_proj_0",
         "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
@@ -204,15 +204,14 @@
         "refinement_interpretation_Tm_refine_f13070840248fced9d9d60d77bdae3ec",
         "typing_FStar.BitVector.lognot_vec",
         "typing_FStar.BitVector.logxor_vec", "typing_FStar.Int.fits",
-        "typing_FStar.Int.lognot", "typing_FStar.Int.nth",
-        "typing_FStar.Int.ones", "typing_FStar.Int.to_uint",
-        "typing_FStar.Int.to_vec", "typing_FStar.Int.zero",
-        "typing_FStar.Int32.int_to_t", "typing_FStar.Int32.logxor",
-        "typing_FStar.Int32.v", "typing_FStar.Seq.Base.length",
-        "typing_FStar.UInt.fits"
+        "typing_FStar.Int.nth", "typing_FStar.Int.ones",
+        "typing_FStar.Int.to_uint", "typing_FStar.Int.to_vec",
+        "typing_FStar.Int.zero", "typing_FStar.Int32.int_to_t",
+        "typing_FStar.Int32.logxor", "typing_FStar.Int32.v",
+        "typing_FStar.Seq.Base.length", "typing_FStar.UInt.fits"
       ],
       0,
-      "14d2018b54c182bf5a1caaa9e2e3b10f"
+      "bffd260acd48991440f1091b323f1bed"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.lemma_int32_logor_zero",
@@ -236,7 +235,7 @@
         "typing_FStar.Int.nth", "typing_FStar.Int32.v"
       ],
       0,
-      "a618532db7e2328a69117acabee2c789"
+      "ec93172727cc959abd3aed77fa152f6e"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.lemma_int32_lognot_zero",
@@ -264,7 +263,7 @@
         "typing_FStar.Int.zero", "typing_FStar.Int32.lognot"
       ],
       0,
-      "25fb2f08a974f41ed33493789c3c8a7e"
+      "a989bab7b729e45cb23b27cb5f21ee04"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.uint_pow2_minus_one",
@@ -286,7 +285,7 @@
         "typing_Prims.pow2"
       ],
       0,
-      "e5d0edc1735c47ba418506e40b21da61"
+      "4c0e94f0ea7e24258cd12eaab3df2908"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.uint_logand_pow2_minus_one",
@@ -299,7 +298,7 @@
         "refinement_interpretation_Tm_refine_774ba3f728d91ead8ef40be66c9802e5"
       ],
       0,
-      "6d6d9792b4bf94b76482e777cff88405"
+      "bd845e31a7d5f92b005f86ecd7c33cbb"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.uint_logand_pow2_minus_one",
@@ -321,7 +320,7 @@
         "typing_tok_Lib.IntTypes.SEC@tok", "typing_tok_Lib.IntTypes.U32@tok"
       ],
       0,
-      "35b34d1c21fa6f3ab60406f0884344eb"
+      "a3674049f125c3e7f25eaad925d0fe82"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.lemma_shift_left_one_eq_pow2",
@@ -348,7 +347,7 @@
         "typing_tok_Lib.IntTypes.PUB@tok", "typing_tok_Lib.IntTypes.U32@tok"
       ],
       0,
-      "b255d46ab5ca26b6b5c18202a7100339"
+      "4a282ad5fa80b0adae50c067e23573f6"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.lemma_shift_left_one_eq_pow2",
@@ -381,7 +380,7 @@
         "typing_tok_Lib.IntTypes.U32@tok"
       ],
       0,
-      "4da4f74b3fa382de0d4216458835c685"
+      "ced9d7e2ade2ebddb8e168ac5bb371eb"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.lemma_mask_logor",
@@ -424,7 +423,7 @@
         "typing_FStar.Int32.v"
       ],
       0,
-      "2e751b63786f816527a2193e97987d01"
+      "9245aa664909b8e55278f1f6e0c90703"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.shift_right_value_aux_1",
@@ -433,7 +432,7 @@
       0,
       [ "@query" ],
       0,
-      "9c27e7e7c22871c02703a62c3dbcbfb7"
+      "c39c8d8df651ae805c5c5120006b4857"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.shift_right_value_aux_1",
@@ -447,7 +446,6 @@
         "@fuel_correspondence_Prims.pow2.fuel_instrumented", "@query",
         "Prims_pretyping_f537159ed795b314b4e58c260361ae86", "b2t_def",
         "bool_inversion", "equation_FStar.BitVector.bv_t",
-        "equation_FStar.BitVector.ones_vec",
         "equation_FStar.BitVector.shift_arithmetic_right_vec",
         "equation_FStar.BitVector.shift_right_vec",
         "equation_FStar.Int.fits", "equation_FStar.Int.from_uint",
@@ -460,23 +458,22 @@
         "equation_FStar.UInt.fits", "equation_FStar.UInt.max_int",
         "equation_FStar.UInt.min_int", "equation_FStar.UInt.ones",
         "equation_FStar.UInt.size", "equation_FStar.UInt.uint_t",
-        "equation_Prims.eqtype", "equation_Prims.nat", "equation_Prims.pos",
+        "equation_FStar.UInt.zero", "equation_Prims.eqtype",
+        "equation_Prims.nat", "equation_Prims.pos",
         "function_token_typing_Prims.bool", "int_inversion", "int_typing",
-        "lemma_FStar.Int.inverse_aux", "lemma_FStar.Int.inverse_vec_lemma",
         "lemma_FStar.Int.ones_from_vec_lemma",
         "lemma_FStar.Int.to_uint_injective",
         "lemma_FStar.Int.zero_from_vec_lemma",
-        "lemma_FStar.Seq.Base.lemma_eq_elim",
-        "lemma_FStar.Seq.Base.lemma_index_create",
         "lemma_FStar.UInt.index_to_vec_ones",
-        "lemma_FStar.UInt.inverse_num_lemma",
-        "lemma_FStar.UInt.ones_from_vec_lemma", "lemma_Lib.IntTypes.pow2_2",
+        "lemma_FStar.UInt.ones_from_vec_lemma",
+        "lemma_FStar.UInt.pow2_values",
+        "lemma_FStar.UInt.zero_from_vec_lemma", "lemma_Lib.IntTypes.pow2_2",
         "lemma_Lib.IntTypes.pow2_3", "lemma_Lib.IntTypes.pow2_4",
         "primitive_Prims.op_Addition", "primitive_Prims.op_AmpAmp",
         "primitive_Prims.op_Division",
         "primitive_Prims.op_GreaterThanOrEqual",
-        "primitive_Prims.op_LessThan", "primitive_Prims.op_LessThanOrEqual",
-        "primitive_Prims.op_Minus", "primitive_Prims.op_Subtraction",
+        "primitive_Prims.op_LessThanOrEqual", "primitive_Prims.op_Minus",
+        "primitive_Prims.op_Subtraction",
         "projection_inverse_BoxBool_proj_0",
         "projection_inverse_BoxInt_proj_0",
         "refinement_interpretation_Tm_refine_414d0a9f578ab0048252f8c8f552b99f",
@@ -490,14 +487,13 @@
         "refinement_interpretation_Tm_refine_e2d5d62a90ceed8a6faf9d20615f4e1e",
         "refinement_interpretation_Tm_refine_f13070840248fced9d9d60d77bdae3ec",
         "typing_FStar.BitVector.shift_arithmetic_right_vec",
-        "typing_FStar.Int.fits", "typing_FStar.Int.max_int",
-        "typing_FStar.Int.shift_arithmetic_right",
-        "typing_FStar.Int.to_uint", "typing_FStar.Int.to_vec",
+        "typing_FStar.Int.fits", "typing_FStar.Int.to_uint",
+        "typing_FStar.Int.to_vec", "typing_FStar.Seq.Base.length",
         "typing_FStar.UInt.fits", "typing_FStar.UInt.from_vec",
         "typing_Prims.pow2"
       ],
       0,
-      "2edca087d912a6705d2f8f03b491c20a"
+      "57cc972ed223e05eabd77188fcbe007d"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.shift_right_value_aux_2",
@@ -516,9 +512,8 @@
         "equation_FStar.BitVector.shift_arithmetic_right_vec",
         "equation_FStar.BitVector.shift_right_vec",
         "equation_FStar.BitVector.zero_vec", "equation_FStar.Int.fits",
-        "equation_FStar.Int.from_uint", "equation_FStar.Int.from_vec",
-        "equation_FStar.Int.int_t", "equation_FStar.Int.max_int",
-        "equation_FStar.Int.nth",
+        "equation_FStar.Int.from_vec", "equation_FStar.Int.int_t",
+        "equation_FStar.Int.max_int", "equation_FStar.Int.nth",
         "equation_FStar.Int.shift_arithmetic_right",
         "equation_FStar.Int.size", "equation_FStar.Int.to_uint",
         "equation_FStar.Int.to_vec", "equation_FStar.UInt.fits",
@@ -529,7 +524,6 @@
         "function_token_typing_Prims.__cache_version_number__",
         "function_token_typing_Prims.bool", "int_inversion", "int_typing",
         "lemma_FStar.Int.inverse_vec_lemma",
-        "lemma_FStar.Int.to_uint_injective",
         "lemma_FStar.Seq.Base.lemma_eq_elim",
         "lemma_FStar.Seq.Base.lemma_eq_intro",
         "lemma_FStar.Seq.Base.lemma_index_app1",
@@ -571,7 +565,7 @@
         "typing_Prims.pow2"
       ],
       0,
-      "9c43723c7d7805fef9b31436684dce7c"
+      "73b588833e0b38771905d4024508fd12"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.shift_right_value_aux_3",
@@ -584,7 +578,7 @@
         "refinement_interpretation_Tm_refine_dd319c5462eccabc540582a4c9a72d35"
       ],
       0,
-      "3bff25dc29f685713a68fbbebd072732"
+      "550d32fc22112ad10847fb8dc3220350"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.shift_right_value_aux_3",
@@ -593,11 +587,11 @@
       0,
       [
         "@MaxIFuel_assumption", "@query", "equation_Prims.pos",
-        "refinement_interpretation_Tm_refine_351c1fea3a7ffd3099499a159d0da09b",
-        "refinement_interpretation_Tm_refine_774ba3f728d91ead8ef40be66c9802e5"
+        "refinement_interpretation_Tm_refine_774ba3f728d91ead8ef40be66c9802e5",
+        "refinement_interpretation_Tm_refine_b00d9c181f43169a772e3c56511f7c4f"
       ],
       0,
-      "b139ba1b6448e44112833a72c05480af"
+      "e3c0a0113b3d749e541a8799fe602adb"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.shift_right_value_aux_3",
@@ -647,7 +641,7 @@
         "well-founded-ordering-on-nat"
       ],
       0,
-      "d7afe6e253a43c62984f33d5a27139b8"
+      "9a41462ad5993706a0532ee62d8a94d3"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.shift_arithmetic_right_lemma_i32",
@@ -659,7 +653,7 @@
         "refinement_interpretation_Tm_refine_be54485bab619784795ba557ee21ff92"
       ],
       0,
-      "aeffad9384f51f8796a8d0d6ab3cd8e4"
+      "e7f2777d0eeb46fa45d385c0c6f710b1"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.shift_arithmetic_right_lemma_i32",
@@ -673,7 +667,7 @@
         "typing_FStar.Int32.shift_arithmetic_right"
       ],
       0,
-      "2da6f784d9f810e4f9a3ab5e35ba5c06"
+      "6723084490b1bd02d3664fe6814a72e3"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.shift_arithmetic_right_lemma_i64",
@@ -685,7 +679,7 @@
         "refinement_interpretation_Tm_refine_fe0a7074f314973c0aac51c47bcf7d98"
       ],
       0,
-      "1e17e19c957d31dba563734f1a4af3a5"
+      "cbae5b9ea2bafd679ae594e70c84a858"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.shift_arithmetic_right_lemma_i64",
@@ -699,7 +693,7 @@
         "typing_FStar.Int64.shift_arithmetic_right"
       ],
       0,
-      "f98f7ea3725642cbb633796d35d562f2"
+      "945b86c743734f8e2a559204fe3667a0"
     ],
     [
       "Hacl.Impl.QTesla.Lemmas.lemma_mul_nat_bound",
@@ -708,7 +702,7 @@
       0,
       [ "@query" ],
       0,
-      "5b614c8aa8983c8324660b7e6f6fac18"
+      "b4fe667af4bf363abc68bd574077d410"
     ]
   ]
 ]
