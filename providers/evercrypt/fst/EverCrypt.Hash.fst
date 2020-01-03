@@ -97,6 +97,7 @@ let frame_invariant #a l s h0 h1 =
 
 inline_for_extraction noextract
 let alloca a =
+  let h0 = ST.get () in
   let s: state_s a =
     match a with
     | MD5 -> MD5_s (B.alloca 0ul 4ul)
@@ -109,6 +110,7 @@ let alloca a =
   B.alloca s 1ul
 
 let create_in a r =
+  let h0 = ST.get () in
   let s: state_s a =
     match a with
     | MD5 -> MD5_s (B.malloc r 0ul 4ul)
@@ -137,8 +139,7 @@ friend Vale.SHA.SHA_helpers
 // A new switch between HACL and Vale; can be used in place of Hacl.Hash.SHA2.update_256
 let update_multi_256 s blocks n =
   let has_shaext = AC.has_shaext () in
-  let has_sse = AC.has_sse () in
-  if SC.vale && has_shaext && has_sse then begin
+  if SC.vale && has_shaext then begin
     let n = Int.Cast.Full.uint32_to_uint64 n in
     let open Hacl.Hash.Core.SHA2.Constants in
     B.recall k224_256;

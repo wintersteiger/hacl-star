@@ -70,8 +70,7 @@ open LowStar.BufferOps
 type e_alg = G.erased alg
 
 // abstract implementation state
-(* [@CAbstractStruct] *)
-(* ^ this should be restored once kremlin is fixed *)
+[@CAbstractStruct]
 val state_s: alg -> Type0
 
 // pointer to abstract implementation state

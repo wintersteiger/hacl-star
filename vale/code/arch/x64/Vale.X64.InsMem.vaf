@@ -9,7 +9,6 @@ include{:fstar}{:open} "Vale.X64.Stack_Sems"
 include{:fstar}{:open} "Vale.X64.State"
 include{:fstar}{:open} "Vale.X64.Decls"
 include{:fstar}{:open} "Vale.X64.QuickCode"
-include{:fstar}{:open} "Vale.X64.CPU_Features_s"
 
 module Vale.X64.InsMem
 
@@ -22,7 +21,6 @@ open Vale.X64.State
 open Vale.X64.Decls
 open Vale.X64.QuickCode
 open Vale.X64.InsBasic
-open Vale.X64.CPU_Features_s
 #endverbatim
 
 #verbatim
@@ -98,7 +96,6 @@ procedure LoadBe64_buffer(
     reads
         mem; memTaint;
     requires
-        movbe_enabled;
         valid_src_addr(mem, b, index);
         valid_taint_buf64(b, mem, memTaint, t);
         src + offset == buffer_addr(b, mem) + 8 * index;
@@ -117,7 +114,6 @@ procedure StoreBe64_buffer(
     modifies
         mem;
     requires
-        movbe_enabled;
         valid_dst_addr(mem, b, index);
         valid_taint_buf64(b, mem, memTaint, t);
         dst + offset == buffer_addr(b, mem) + 8 * index;

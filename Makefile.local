@@ -40,10 +40,8 @@ $(OUTPUT_DIR)/Vale.%.checked: FSTAR_FLAGS=$(VALE_FSTAR_FLAGS)
 	    --extract_module $(basename $(notdir $(subst .checked,,$<))) \
 	    $(notdir $(subst .checked,,$<))
 
-CODEGEN=OCaml
-
 %.ml:
-	$(FSTAR) --codegen $(CODEGEN) \
+	$(FSTAR) --codegen OCaml \
 	    --extract_module $(basename $(notdir $(subst .checked,,$<))) \
 	    $(notdir $(subst .checked,,$<))
 
@@ -52,17 +50,6 @@ CODEGEN=OCaml
 
 # Useful definitions for C compilation
 
-CFLAGS += -Idist -I$(KREMLIN_HOME)/include -I$(KREMLIN_HOME)/kremlib/dist/minimal
+CFLAGS += -Idist -I$(KREMLIN_HOME)/include
 
-%.exe:
-	$(CC) $^ -o $@
-
-# Tactic; sadly not shareable because obj vs. $(HACL_HOME)/obj
-
-$(HACL_HOME)/obj/Meta_Interface.ml: CODEGEN = Plugin
-$(HACL_HOME)/obj/Meta_Interface.ml: $(HACL_HOME)/obj/Meta.Interface.fst.checked
-
-$(HACL_HOME)/obj/Hacl.Meta.%.checked: FSTAR_FLAGS += --load Meta.Interface
-ifneq (,$(wildcard Hacl.Meta.*.fst))
-$(patsubst %,$(HACL_HOME)/obj/%.checked,$(wildcard Hacl.Meta.*.fst)): $(HACL_HOME)/obj/Meta_Interface.ml
-endif
+KREMLIB_A=$(KREMLIN_HOME)/kremlib/dist/minimal/libkremlib.a

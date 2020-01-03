@@ -9,7 +9,7 @@ include $(HACL_HOME)/Makefile.common
 all: build/runbenchmark
 
 CMAKE_DEFS+=\
-	-DEVERCRYPT_SRC_DIR=$(HACL_HOME)/dist/gcc64-only \
+	-DEVERCRYPT_SRC_DIR=$(HACL_HOME)/dist/compact-gcc \
 	-DKREMLIN_INC=$(KREMLIN_HOME)/include \
 	-DKREMLIB_DIR=$(KREMLIN_HOME)/kremlib/dist/generic \
 	-DRFC7748_DIR=$(HACL_HOME)/tests/rfc7748_src

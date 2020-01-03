@@ -11,9 +11,7 @@ test: all
 # Defines rules for producing .checked, .krml, .depend, etc.
 include ../../Makefile.local
 
-#BASE_FLAGS+= -funroll-loops 4
-
-CFLAGS += -I../../../lib/c -march=native -mtune=native -O3
+CFLAGS += -I../../../lib/c -mavx -mavx2
 export CFLAGS
 
 # CUSTOMIZE HERE: how to produce binary objects
@@ -24,6 +22,7 @@ dist/libchacha.a: dist/Makefile.basic
 dist/Makefile.basic: $(filter-out %/prims.krml,$(ALL_KRML_FILES))
 	$(KRML) $^ -o libchacha.a $(BASE_FLAGS) $(CHACHA20_BUNDLE) \
 	  -tmpdir dist \
+	  -ccopts -std=gnu11,-g,-O3 \
 	  -add-include '"libintvector.h"' \
 	  -skip-compilation
 
@@ -31,13 +30,8 @@ dist/chacha20-test.exe: $(HACL_HOME)/tests/chacha20-test.o dist/libchacha.a
 
 dist/chacha20-vec-test.exe: $(HACL_HOME)/tests/chacha20-vec-test.o dist/libchacha.a
 
-dist/chacha20-vec-openssl-test.exe: dist/libchacha.a
-	$(CC) $(CFLAGS) -I $(OPENSSL_HOME)/include -I $(OPENSSL_HOME)/include/crypto -I $(OPENSSL_HOME)/crypto -I $(HACL_HOME)/tests/tests-openssl/jasmin-chacha-avx2 \
-	$(HACL_HOME)/tests/tests-openssl/jasmin-chacha-avx2/chacha20.s $(HACL_HOME)/tests/tests-openssl/chacha20-vec-test.c $^ \
-	-o $@ $(OPENSSL_HOME)/libcrypto.a -lpthread -ldl
-
 %.exe:
-	$(CC) $(CFLAGS) -flto $^ -o $@
+	$(CC) $^ $(KREMLIB_A) -o $@
 
 clean-c:
 	$(MAKE) -C dist/ -f Makefile.basic clean

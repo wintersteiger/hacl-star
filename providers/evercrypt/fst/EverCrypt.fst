@@ -13,6 +13,7 @@ module U32 = FStar.UInt32
 module HS = FStar.HyperStack
 
 open EverCrypt.Helpers
+open C.Failure
 open LowStar.BufferOps
 
 inline_for_extraction
@@ -58,7 +59,7 @@ let random_init () =
   else if bcrypt () then
     BCrypt.random_init ()
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (random_init)"
+    failwith !$"ERROR: inconsistent configuration (random_init)"
 
 let random_sample len out =
   if openssl () then
@@ -66,7 +67,7 @@ let random_sample len out =
   else if bcrypt () then
     BCrypt.random_sample len out
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (random_sample)"
+    failwith !$"ERROR: inconsistent configuration (random_sample)"
 
 let random_cleanup () =
   if openssl () then
@@ -74,7 +75,7 @@ let random_cleanup () =
   else if bcrypt () then
     BCrypt.random_cleanup ()
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (random_cleanup)"
+    failwith !$"ERROR: inconsistent configuration (random_cleanup)"
 
 /// AES128-ECB
 
@@ -103,7 +104,7 @@ let aes128_create k =
   //  else if bcrypt () then
   //    EverCrypt.BCrypt.aes128_gcm_encrypt key iv ad adlen plaintext len cipher tag
     else
-      LowStar.Failure.failwith "ERROR: inconsistent configuration (aes128_create)"
+      failwith !$"ERROR: inconsistent configuration (aes128_create)"
   in
   B.malloc HS.root st 1ul
 
@@ -120,7 +121,7 @@ let aes128_compute k plain cipher =
 //  else if bcrypt () then
 //    EverCrypt.BCrypt.aes128_gcm_encrypt key iv ad adlen plaintext len cipher tag
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (aes128_compute)"
+    failwith !$"ERROR: inconsistent configuration (aes128_compute)"
 
 let aes128_free pk =
   let k = !*pk in
@@ -137,7 +138,7 @@ let aes128_free pk =
 //  else if bcrypt () then
 //    EverCrypt.BCrypt.aes128_gcm_encrypt key iv ad adlen plaintext len cipher tag
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (aes128_free)";
+    failwith !$"ERROR: inconsistent configuration (aes128_free)";
   B.free pk
 
 [@CAbstractStruct]
@@ -159,7 +160,7 @@ let aes256_create k =
   //  else if bcrypt () then
   //    EverCrypt.BCrypt.aes128_gcm_encrypt key iv ad adlen plaintext len cipher tag
     else
-      LowStar.Failure.failwith "ERROR: inconsistent configuration (aes256_create)"
+      failwith !$"ERROR: inconsistent configuration (aes256_create)"
   in
   B.malloc HS.root st 1ul
 
@@ -173,7 +174,7 @@ let aes256_compute k plain cipher =
 //  else if bcrypt () then
 //    EverCrypt.BCrypt.aes128_gcm_encrypt key iv ad adlen plaintext len cipher tag
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (aes256_compute)"
+    failwith !$"ERROR: inconsistent configuration (aes256_compute)"
 
 let aes256_free pk =
   let k = !*pk in
@@ -186,7 +187,7 @@ let aes256_free pk =
 //  else if bcrypt () then
 //    EverCrypt.BCrypt.aes128_gcm_encrypt key iv ad adlen plaintext len cipher tag
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (aes256_free)";
+    failwith !$"ERROR: inconsistent configuration (aes256_free)";
   B.free pk
 
 /// AES128-GCM
@@ -258,7 +259,7 @@ let aes128_gcm_encrypt key iv ad adlen plaintext len cipher tag =
   else if bcrypt () then
     BCrypt.aes128_gcm_encrypt key iv ad adlen plaintext len cipher tag
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (aes128_gcm_encrypt)"
+    failwith !$"ERROR: inconsistent configuration (aes128_gcm_encrypt)"
 
 let aes128_gcm_decrypt key iv ad adlen plaintext len cipher tag =
   if vale_and_aesni () then
@@ -275,7 +276,7 @@ let aes128_gcm_decrypt key iv ad adlen plaintext len cipher tag =
   else if bcrypt () then
     BCrypt.aes128_gcm_decrypt key iv ad adlen plaintext len cipher tag
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (aes128_gcm_decrypt)"
+    failwith !$"ERROR: inconsistent configuration (aes128_gcm_decrypt)"
 
 /// AES256-GCM
 
@@ -346,7 +347,7 @@ let aes256_gcm_encrypt key iv ad adlen plaintext len cipher tag =
   else if bcrypt () then
     BCrypt.aes256_gcm_encrypt key iv ad adlen plaintext len cipher tag
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (aes256_gcm_encrypt)"
+    failwith !$"ERROR: inconsistent configuration (aes256_gcm_encrypt)"
 
 let aes256_gcm_decrypt key iv ad adlen plaintext len cipher tag =
   if vale_and_aesni () then begin
@@ -362,7 +363,7 @@ let aes256_gcm_decrypt key iv ad adlen plaintext len cipher tag =
   else if bcrypt () then
     BCrypt.aes256_gcm_decrypt key iv ad adlen plaintext len cipher tag
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (aes256_gcm_decrypt)"
+    failwith !$"ERROR: inconsistent configuration (aes256_gcm_decrypt)"
 
 
 /// AEAD
@@ -390,7 +391,7 @@ let aead_create alg k =
       else if openssl () then
         AEAD_OPENSSL (OpenSSL.aead_create OpenSSL.AES128_GCM k)
       else
-        LowStar.Failure.failwith "ERROR: inconsistent configuration (aead_create/AES128_GCM)"
+        failwith !$"ERROR: inconsistent configuration (aead_create/AES128_GCM)"
     | AES256_GCM ->
       if vale_and_aesni () then
         let xk = B.malloc HS.root 0uy 240ul in
@@ -401,7 +402,7 @@ let aead_create alg k =
       else if openssl () then
         AEAD_OPENSSL (OpenSSL.aead_create OpenSSL.AES256_GCM k)
       else
-        LowStar.Failure.failwith "ERROR: inconsistent configuration (aead_create/AES256_GCM)"
+        failwith !$"ERROR: inconsistent configuration (aead_create/AES256_GCM)"
     | CHACHA20_POLY1305 ->
       if hacl () then
         let k0 = B.malloc HS.root 0uy 32ul in
@@ -410,7 +411,7 @@ let aead_create alg k =
       else if openssl () then
         AEAD_OPENSSL (OpenSSL.aead_create OpenSSL.CHACHA20_POLY1305 k)
       else
-        LowStar.Failure.failwith "ERROR: inconsistent configuration (aead_create/CHACHA20_POLY1305)"
+        failwith !$"ERROR: inconsistent configuration (aead_create/CHACHA20_POLY1305)"
   in
   B.malloc HS.root st 1ul
 
@@ -432,7 +433,7 @@ let aead_encrypt pkey iv ad adlen plaintext len cipher tag =
     let key = AEAD_BCRYPT?.st k in
     BCrypt.aead_encrypt key iv ad adlen plaintext len cipher tag
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (aead_encrypt)"
+    failwith !$"ERROR: inconsistent configuration (aead_encrypt)"
 
 let aead_decrypt pkey iv ad adlen plaintext len cipher tag =
   let k = !*pkey in
@@ -453,7 +454,7 @@ let aead_decrypt pkey iv ad adlen plaintext len cipher tag =
     let key = AEAD_BCRYPT?.st k in
     BCrypt.aead_decrypt key iv ad adlen plaintext len cipher tag
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (aead_decrypt)"
+    failwith !$"ERROR: inconsistent configuration (aead_decrypt)"
 
 let aead_free pk =
   let k = !*pk in
@@ -471,7 +472,7 @@ let aead_free pk =
   else if SC.bcrypt && AEAD_BCRYPT? k then
     BCrypt.aead_free (AEAD_BCRYPT?.st k)
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (aead_free)";
+    failwith !$"ERROR: inconsistent configuration (aead_free)";
   B.free pk
 
 /// DH
@@ -488,7 +489,7 @@ let dh_load_group dh_p dh_p_len dh_g dh_g_len dh_q dh_q_len =
     if openssl () then
       DH_OPENSSL (OpenSSL.dh_load_group dh_p dh_p_len dh_g dh_g_len dh_q dh_q_len)
     else
-      LowStar.Failure.failwith "ERROR: inconsistent configuration (dh_load_group)"
+      failwith !$"ERROR: inconsistent configuration (dh_load_group)"
   in
   B.malloc HS.root st 1ul
 
@@ -497,7 +498,7 @@ let dh_free_group st =
   if SC.openssl && DH_OPENSSL? s then
     OpenSSL.dh_free_group (DH_OPENSSL?.st s)
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (dh_free_group)";
+    failwith !$"ERROR: inconsistent configuration (dh_free_group)";
   B.free st
 
 let dh_keygen st public =
@@ -505,14 +506,14 @@ let dh_keygen st public =
   if SC.openssl && DH_OPENSSL? s then
     OpenSSL.dh_keygen (DH_OPENSSL?.st s) public
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (dh_keygen)"
+    failwith !$"ERROR: inconsistent configuration (dh_keygen)"
 
 let dh_compute st public public_len out =
   let s = !*st in
   if SC.openssl && DH_OPENSSL? s then
     OpenSSL.dh_compute (DH_OPENSSL?.st s) public public_len out
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (dh_compute)"
+    failwith !$"ERROR: inconsistent configuration (dh_compute)"
 
 /// DH
 
@@ -534,7 +535,7 @@ let ecdh_load_curve g =
         | ECC_X448 -> OpenSSL.ECC_X448 in
       ECDH_OPENSSL (OpenSSL.ecdh_load_curve g')
     else
-      LowStar.Failure.failwith "ERROR: inconsistent configuration (ecdh_load_curve)"
+      failwith !$"ERROR: inconsistent configuration (ecdh_load_curve)"
   in
   B.malloc HS.root st 1ul
 
@@ -543,7 +544,7 @@ let ecdh_free_curve st =
   if SC.openssl && ECDH_OPENSSL? s then
     OpenSSL.ecdh_free_curve (ECDH_OPENSSL?.st s)
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (ecdh_free_curve)";
+    failwith !$"ERROR: inconsistent configuration (ecdh_free_curve)";
   B.free st
 
 let ecdh_keygen st outx outy =
@@ -551,11 +552,11 @@ let ecdh_keygen st outx outy =
   if SC.openssl && ECDH_OPENSSL? s then
     OpenSSL.ecdh_keygen (ECDH_OPENSSL?.st s) outx outy
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (ecdh_keygen)"
+    failwith !$"ERROR: inconsistent configuration (ecdh_keygen)"
 
 let ecdh_compute st inx iny out =
   let s = !*st in
   if SC.openssl && ECDH_OPENSSL? s then
     OpenSSL.ecdh_compute (ECDH_OPENSSL?.st s) inx iny out
   else
-    LowStar.Failure.failwith "ERROR: inconsistent configuration (ecdh_compute)"
+    failwith !$"ERROR: inconsistent configuration (ecdh_compute)"

@@ -1,9 +1,8 @@
 # A minimalistic Makefile for all testing options.
 
-# Add GF128 tests once code/experimental/gf128 is promoted to code
-TARGETS = $(filter-out gf128-%, $(patsubst %.c,%.exe,$(wildcard *.c)))
+TARGETS = $(patsubst %.c,%.exe,$(wildcard *.c))
 
-CFLAGS += -I$(KREMLIN_HOME)/include -I../dist/gcc64-only \
+CFLAGS += -I$(KREMLIN_HOME)/include -I../dist/compact-gcc \
   -I$(KREMLIN_HOME)/kremlib/dist/minimal \
   -O3 -march=native -mtune=native
 
@@ -26,7 +25,7 @@ test: $(patsubst %.exe,%.test,$(TARGETS))
 curve64-rfc.exe: $(patsubst %.c,%.o,$(wildcard rfc7748_src/*.c))
 
 %.exe: %.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ ../dist/gcc64-only/libevercrypt.a -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ ../dist/compact-gcc/libevercrypt.a $(KREMLIN_HOME)/kremlib/dist/minimal/libkremlib.a -o $@
 
 # Running tests
 

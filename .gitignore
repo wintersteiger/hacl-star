@@ -4,7 +4,6 @@
 *.d
 *.cm*
 *.so
-*.a
 *.exe
 *.exe.dSYM
 *.cmi
@@ -19,8 +18,8 @@ out.krml
 code/old/**/*-c
 code/old/**/*-c89
 .evercrypt_config
-code/**/dist
-!code/**/dist/Makefile
+dist
+!dist/Makefile
 *.orig
 .didhelp
 .last_vale_version

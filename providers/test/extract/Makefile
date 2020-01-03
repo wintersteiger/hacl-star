@@ -2,7 +2,7 @@ KREMLIN_HOME ?= ../../../../kremlin
 
 -include Makefile.include
 
-EVERCRYPT_HOME=../../dist/gcc-compatible
+EVERCRYPT_HOME=../../dist/compact
 MLCRYPTO_HOME?=../../../../MLCrypto
 OPENSSL_HOME=$(MLCRYPTO_HOME)/openssl
 
