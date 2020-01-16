@@ -21,18 +21,12 @@
 
     "NotificationEnabled" : true,
     "NotificationChannel" : "#hacl-build",
-    "PublicBranches" : [ "dev", "_dev", "fstar-master" ],
+    "PublicBranches" : [ "fstar-master" ],
+    
+    "TrackPerformance" : true,
 
-    "CompressBuildFolder": true,
-    "FolderToCompress" : "hacl-star",
-    "FoldersToExclude" : [ ],
-
-    "TrackPerformance" : false,
-
-    "RepoVersions" : {
-        "kremlin_version" : "origin/master",
-        "mitls_version" : "origin/master",
-        "mlcrypto_version" : "origin/master",
-        ".vale_version" : "origin/master"
-    }
+    "kremlin_version" : "origin/master",
+    "mitls_version" : "origin/master",
+    "mlcrypto_version" : "origin/master",
+    ".vale_version" : "origin/master"
 }

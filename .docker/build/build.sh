@@ -29,7 +29,7 @@ function export_home() {
 function vale_test() {
   echo Running Vale Test &&
   fetch_kremlin &&
-        fetch_vale &&
+        fetch_and_make_vale &&
         env VALE_SCONS_PARALLEL_OPT="-j $threads" make -j $threads vale.build -k
 }
 
@@ -125,8 +125,23 @@ function fetch_mitls() {
 }
 
 function fetch_vale() {
-    HACL_HOME=$(pwd) tools/get_vale.sh
-    export_home VALE "$(pwd)/../vale"
+    # NOTE: the name of the directory where Vale is downloaded MUST NOT be vale, because the latter already exists
+    # so let's call it valebin
+    if [ ! -d valebin ]; then
+        git clone https://github.com/project-everest/vale valebin
+    fi
+    cd valebin
+    git fetch origin
+    local ref=$(if [ -f ../.vale_version ]; then cat ../.vale_version | tr -d '\r\n'; else echo origin/master; fi)
+    echo Switching to Vale $ref
+    git reset --hard $ref
+    cd ..
+    export_home VALE "$(pwd)/valebin"
+}
+
+function fetch_and_make_vale() {
+    fetch_vale
+    pushd valebin && ./run_scons.sh -j $threads && popd
 }
 
 function refresh_hacl_hints() {
@@ -237,6 +252,5 @@ export MAKEFLAGS="$MAKEFLAGS -Otarget"
 
 export_home FSTAR "$(pwd)/FStar"
 cd hacl-star
-rootPath=$(pwd)
 exec_build
 cd ..

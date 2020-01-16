@@ -5,9 +5,8 @@
 # By default it always look for the latest FStar container available
 # In case you would like to reference a specific commit,
 # replace latest with the commit id from github using 12 characters.
-ARG DOCKERHUBPROJECT
 ARG COMMITID
-FROM ${DOCKERHUBPROJECT}fstar-windows-nt:${COMMITID}
+FROM fstar-windows-nt:${COMMITID}
 
 ARG BUILDLOGFILE
 ARG MAXTHREADS
