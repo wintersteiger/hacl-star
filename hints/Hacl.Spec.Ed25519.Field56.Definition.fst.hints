@@ -1,0 +1,114 @@
+[
+  "£¸\u0010ûF\u001bd*¥√\\çg\u0006G9",
+  [
+    [
+      "Hacl.Spec.Ed25519.Field56.Definition.pow32",
+      1,
+      0,
+      0,
+      [ "@query" ],
+      0,
+      "ad072298a27d84ca5ba7d9f0db51ea7f"
+    ],
+    [
+      "Hacl.Spec.Ed25519.Field56.Definition.pow56",
+      1,
+      0,
+      0,
+      [ "@query" ],
+      0,
+      "c0ce36c4b668bfead47aa7a9ff63abe4"
+    ],
+    [
+      "Hacl.Spec.Ed25519.Field56.Definition.as_nat5",
+      1,
+      0,
+      0,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "constructor_distinct_Lib.IntTypes.U64",
+        "equality_tok_Lib.IntTypes.SEC@tok",
+        "equality_tok_Lib.IntTypes.U64@tok", "equation_Lib.IntTypes.minint",
+        "equation_Lib.IntTypes.range", "equation_Lib.IntTypes.unsigned",
+        "equation_Lib.IntTypes.v", "primitive_Prims.op_Addition",
+        "primitive_Prims.op_Multiply", "projection_inverse_BoxBool_proj_0",
+        "projection_inverse_BoxInt_proj_0",
+        "refinement_interpretation_Tm_refine_4ae12848fac0601da6605bac9d6872f1"
+      ],
+      0,
+      "79a025033de9b252e2e869b2fe915833"
+    ],
+    [
+      "Hacl.Spec.Ed25519.Field56.Definition.as_nat10",
+      1,
+      0,
+      0,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "constructor_distinct_Lib.IntTypes.U64",
+        "equality_tok_Lib.IntTypes.SEC@tok",
+        "equality_tok_Lib.IntTypes.U64@tok",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p1",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p2",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p3",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p4",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p5",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p6",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p7",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p8",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p9",
+        "equation_Lib.IntTypes.minint", "equation_Lib.IntTypes.range",
+        "equation_Lib.IntTypes.unsigned", "equation_Lib.IntTypes.v",
+        "primitive_Prims.op_Addition", "primitive_Prims.op_Multiply",
+        "projection_inverse_BoxInt_proj_0",
+        "refinement_interpretation_Tm_refine_83845a86f2550cdf941eeb1d9b59602b",
+        "typing_Lib.IntTypes.v", "typing_tok_Lib.IntTypes.SEC@tok",
+        "typing_tok_Lib.IntTypes.U64@tok"
+      ],
+      0,
+      "483bb4f4eb4b710a5f8b60b8a704f97a"
+    ],
+    [
+      "Hacl.Spec.Ed25519.Field56.Definition.eval_wide9",
+      1,
+      0,
+      0,
+      [
+        "@MaxIFuel_assumption", "@query",
+        "constructor_distinct_Lib.IntTypes.U128",
+        "equality_tok_Lib.IntTypes.SEC@tok",
+        "equality_tok_Lib.IntTypes.U128@tok",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p1",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p2",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p3",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p4",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p5",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p6",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p7",
+        "equation_Hacl.Spec.Ed25519.Field56.Definition.p8",
+        "equation_Lib.IntTypes.minint", "equation_Lib.IntTypes.range",
+        "equation_Lib.IntTypes.unsigned", "equation_Lib.IntTypes.v",
+        "primitive_Prims.op_Addition", "primitive_Prims.op_Multiply",
+        "projection_inverse_BoxInt_proj_0",
+        "refinement_interpretation_Tm_refine_83845a86f2550cdf941eeb1d9b59602b",
+        "typing_Lib.IntTypes.v", "typing_tok_Lib.IntTypes.SEC@tok",
+        "typing_tok_Lib.IntTypes.U128@tok"
+      ],
+      0,
+      "94a70936b43a5d45ed01e9b9f2c00b66"
+    ],
+    [
+      "Hacl.Spec.Ed25519.Field56.Definition.felem_fits",
+      1,
+      0,
+      0,
+      [
+        "@query", "constructor_distinct_Lib.IntTypes.U64",
+        "equality_tok_Lib.IntTypes.U64@tok",
+        "equation_Lib.IntTypes.unsigned", "projection_inverse_BoxBool_proj_0"
+      ],
+      0,
+      "14a50bdb93538fad40e20db4650aa5ea"
+    ]
+  ]
+]

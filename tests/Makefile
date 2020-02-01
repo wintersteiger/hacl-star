@@ -1,9 +1,11 @@
 # A minimalistic Makefile for all testing options.
 
-TARGETS = $(patsubst %.c,%.exe,$(wildcard *.c))
+# Add GF128 tests once code/experimental/gf128 is promoted to code
+TARGETS = $(filter-out gf128-%, $(patsubst %.c,%.exe,$(wildcard *.c)))
 
-CFLAGS += -I$(KREMLIN_HOME)/include -I../dist/compact-gcc \
+CFLAGS += -I$(KREMLIN_HOME)/include -I../dist/gcc64-only \
   -I$(KREMLIN_HOME)/kremlib/dist/minimal \
+  -I../secure_api/merkle_tree \
   -O3 -march=native -mtune=native
 
 all: $(TARGETS)
@@ -22,15 +24,10 @@ test: $(patsubst %.exe,%.test,$(TARGETS))
 # Side-effect: running with -B ensures *ALL* files get recompiled with optimized
 # flags.
 
-%.exe: %.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
-
-curve51-ours.exe curve64-ours.exe: ../dist/compact-gcc/Hacl_Curve25519.o \
-  $(KREMLIN_HOME)/kremlib/dist/minimal/FStar_UInt_8_16_32_64.o
-
 curve64-rfc.exe: $(patsubst %.c,%.o,$(wildcard rfc7748_src/*.c))
 
-merkle_tree_test.exe: ../dist/compact-gcc/libevercrypt.a $(KREMLIN_HOME)/kremlib/dist/minimal/libkremlib.a
+%.exe: %.o
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ ../dist/gcc64-only/libevercrypt.a -o $@
 
 # Running tests
 

@@ -21,7 +21,7 @@ module B = LowStar.Buffer
 open FStar.HyperStack.ST
 open FStar.Integers
 
-open Spec.AEAD
+open Spec.Agile.AEAD
 open EverCrypt.Error
 
 /// Note: if the fst and the fsti are running on different fuel settings,
@@ -55,11 +55,25 @@ val footprint_s: #a:alg -> state_s a -> GTot B.loc
 let footprint (#a:alg) (m: HS.mem) (s: state a) =
   B.(loc_union (loc_addr_of_buffer s) (footprint_s (B.deref m s)))
 
-unfold let loc_includes_union_l_footprint_s = EverCrypt.Hash.loc_includes_union_l_footprint_s
-unfold let loc_in = EverCrypt.Hash.loc_in
-unfold let loc_unused_in = EverCrypt.Hash.loc_unused_in
-unfold let fresh_loc = EverCrypt.Hash.fresh_loc
-unfold let fresh_is_disjoint = EverCrypt.Hash.fresh_is_disjoint
+// TR: the following pattern is necessary because, if we generically
+// add such a pattern directly on `loc_includes_union_l`, then
+// verification will blowup whenever both sides of `loc_includes` are
+// `loc_union`s. We would like to break all unions on the
+// right-hand-side of `loc_includes` first, using
+// `loc_includes_union_r`.  Here the pattern is on `footprint_s`,
+// because we already expose the fact that `footprint` is a
+// `loc_union`. (In other words, the pattern should be on every
+// smallest location that is not exposed to be a `loc_union`.)
+
+let loc_includes_union_l_footprint_s
+  (l1 l2: B.loc) (#a: alg) (s: state_s a)
+: Lemma
+  (requires (
+    B.loc_includes l1 (footprint_s s) \/ B.loc_includes l2 (footprint_s s)
+  ))
+  (ensures (B.loc_includes (B.loc_union l1 l2) (footprint_s s)))
+  [SMTPat (B.loc_includes (B.loc_union l1 l2) (footprint_s s))]
+= B.loc_includes_union_l l1 l2 (footprint_s s)
 
 val invariant_s: (#a:alg) -> HS.mem -> state_s a -> Type0
 let invariant (#a:alg) (m: HS.mem) (s: state a) =
@@ -73,7 +87,7 @@ val invariant_loc_in_footprint
   (m: HS.mem)
 : Lemma
   (requires (invariant m s))
-  (ensures (loc_in (footprint m s) m))
+  (ensures (B.loc_in (footprint m s) m))
   [SMTPat (invariant m s)]
 
 val frame_invariant: #a:alg -> l:B.loc -> s:state a -> h0:HS.mem -> h1:HS.mem -> Lemma
@@ -84,13 +98,20 @@ val frame_invariant: #a:alg -> l:B.loc -> s:state a -> h0:HS.mem -> h1:HS.mem ->
   (ensures (
     invariant h1 s /\
     footprint h0 s == footprint h1 s))
+  [ SMTPat (invariant h1 s); SMTPat (B.modifies l h0 h1) ]
 
 
 /// Actual stateful API
 /// -------------------
 
 noextract
-let bytes = Seq.seq UInt8.t
+let bytes = Seq.seq uint8
+
+val alg_of_state (a: G.erased alg) (s: state (G.reveal a)): Stack alg
+  (requires (fun h0 -> invariant #(G.reveal a) h0 s))
+  (ensures (fun h0 a' h1 ->
+    a' == G.reveal a /\
+    h0 == h1))
 
 /// The API is constructed in a way that one can always get the original key
 /// value behind a state, any any memory.
@@ -100,7 +121,7 @@ inline_for_extraction noextract
 let create_in_st (a: alg) =
   r:HS.rid ->
   dst:B.pointer (B.pointer_or_null (state_s a)) ->
-  k:B.buffer UInt8.t { B.length k = key_length a } ->
+  k:B.buffer uint8 { B.length k = key_length a } ->
   ST error_code
     (requires fun h0 ->
       ST.is_eternal_region r /\
@@ -114,10 +135,11 @@ let create_in_st (a: alg) =
           // Sanity
           is_supported_alg a /\
           not (B.g_is_null s) /\
+          invariant h1 s /\
 
           // Memory stuff
           B.(modifies (loc_buffer dst) h0 h1) /\
-          fresh_loc (footprint h1 s) h0 h1 /\
+          B.fresh_loc (footprint h1 s) h0 h1 /\
           B.(loc_includes (loc_region_only true r) (footprint h1 s)) /\
           freeable h1 s /\
 
@@ -126,53 +148,81 @@ let create_in_st (a: alg) =
       | _ -> False)
 
 /// This function takes a pointer to a caller-allocated reference ``dst`` then,
-/// if the algorithm is supported, allocates a fresh state and modifies ``dst``
-/// to point to it. The key-value associated with this can be obtained via ``kv
-/// (B.deref dst)``; as long as ``dst`` is not modified, then the caller can
-/// derive that the ``kv`` remains the same, which will be required for encrypt.
+/// if the algorithm is supported (on this platform), allocates a fresh state
+/// and modifies ``dst`` to point to it. The key-value associated with this can
+/// be obtained via ``kv (B.deref dst)``; as long as ``dst`` is not modified,
+/// then the caller can derive that the ``kv`` remains the same, which will be
+/// required for encrypt.
 (** @type: true
 *)
 val create_in: #a:alg -> create_in_st a
 
-let iv_p a = iv:B.buffer UInt8.t { B.length iv = iv_length a }
-let ad_p a = ad:B.buffer UInt8.t { B.length ad <= max_length a }
-let plain_p a = p:B.buffer UInt8.t { B.length p <= max_length a }
-let cipher_p a = p:B.buffer UInt8.t { B.length p + tag_length a <= max_length a }
+let iv_p a = iv:B.buffer uint8 { iv_length a (B.length iv)}
+let ad_p a = ad:B.buffer uint8 { B.length ad <= max_length a }
+let plain_p a = p:B.buffer uint8 { B.length p <= max_length a }
+let cipher_p a = p:B.buffer uint8 { B.length p + tag_length a <= max_length a }
+
+// SNIPPET_START: encrypt_pre
+let encrypt_pre (a: supported_alg)
+  (s:B.pointer_or_null (state_s a))
+  (iv:iv_p a)
+  (iv_len: UInt32.t)
+  (ad:ad_p a)
+  (ad_len: UInt32.t)
+  (plain: plain_p a)
+  (plain_len: UInt32.t)
+  (cipher: B.buffer uint8)
+  (tag: B.buffer uint8)
+  (h0: HS.mem)
+=
+  v iv_len = B.length iv /\ v iv_len > 0 /\
+  v ad_len = B.length ad /\ v ad_len <= pow2 31 /\
+  v plain_len = B.length plain /\ v plain_len <= max_length a /\
+  B.length cipher = B.length plain /\
+  B.length tag = tag_length a /\ (
+  not (B.g_is_null s) ==>
+    invariant h0 s /\
+    B.(loc_disjoint (footprint h0 s) (loc_buffer iv)) /\
+    B.(loc_disjoint (footprint h0 s) (loc_buffer ad)) /\
+    B.(loc_disjoint (footprint h0 s) (loc_buffer tag)) /\
+    B.(loc_disjoint (footprint h0 s) (loc_buffer plain)) /\
+    B.(loc_disjoint (footprint h0 s) (loc_buffer cipher)) /\
+    MB.(all_live h0 [ buf iv; buf ad; buf plain; buf cipher; buf tag ]) /\
+    (B.disjoint plain cipher \/ plain == cipher) /\
+    B.disjoint cipher tag /\
+    B.disjoint iv cipher /\ B.disjoint iv tag /\
+    B.disjoint plain tag /\
+    B.disjoint plain ad /\
+    B.disjoint ad cipher /\ B.disjoint ad tag)
+// SNIPPET_END: encrypt_pre
+
 
 inline_for_extraction noextract
 let encrypt_st (a: supported_alg) =
   s:B.pointer_or_null (state_s a) ->
   iv:iv_p a ->
+  iv_len: UInt32.t { v iv_len = B.length iv /\ v iv_len > 0 } ->
   ad:ad_p a ->
   ad_len: UInt32.t { v ad_len = B.length ad /\ v ad_len <= pow2 31 } ->
   plain: plain_p a ->
   plain_len: UInt32.t { v plain_len = B.length plain /\ v plain_len <= max_length a } ->
-  cipher: B.buffer UInt8.t { B.length cipher = B.length plain } ->
-  tag: B.buffer UInt8.t { B.length tag = tag_length a } ->
+  cipher: B.buffer uint8 { B.length cipher = B.length plain } ->
+  tag: B.buffer uint8 { B.length tag = tag_length a } ->
   Stack error_code
-    (requires fun h0 ->
-      not (B.g_is_null s) ==>
-        invariant h0 s /\
-        B.(loc_disjoint (footprint h0 s) (loc_buffer iv)) /\
-        B.(loc_disjoint (footprint h0 s) (loc_buffer ad)) /\
-        B.(loc_disjoint (footprint h0 s) (loc_buffer tag)) /\
-        B.(loc_disjoint (footprint h0 s) (loc_buffer plain)) /\
-        B.(loc_disjoint (footprint h0 s) (loc_buffer cipher)) /\
-        MB.(all_live h0 [ buf iv; buf ad; buf plain; buf cipher; buf tag ]) /\
-        (B.disjoint plain cipher \/ plain == cipher) /\
-        B.disjoint cipher tag /\
-        B.disjoint iv cipher /\ B.disjoint iv tag /\
-        B.disjoint plain tag /\
-        B.disjoint plain ad /\
-        B.disjoint ad cipher /\ B.disjoint ad tag)
+    (requires encrypt_pre a s iv iv_len ad ad_len plain plain_len cipher tag)
     (ensures fun h0 r h1 ->
       match r with
       | Success ->
           not (B.g_is_null s) /\
-          B.(modifies (loc_union (loc_buffer cipher) (loc_buffer tag)) h0 h1) /\
+        B.(modifies (loc_union (footprint h1 s) (loc_union (loc_buffer cipher) (loc_buffer tag))) h0 h1) /\
+        invariant h1 s /\
+        footprint h0 s == footprint h1 s /\
+        preserves_freeable s h0 h1 /\
+        as_kv (B.deref h1 s) == as_kv (B.deref h0 s) /\
           S.equal (S.append (B.as_seq h1 cipher) (B.as_seq h1 tag))
             (encrypt #a (as_kv (B.deref h0 s)) (B.as_seq h0 iv) (B.as_seq h0 ad) (B.as_seq h0 plain))
       | InvalidKey ->
+          B.g_is_null s /\
           B.(modifies loc_none h0 h1)
       | _ -> False)
 
@@ -189,12 +239,13 @@ inline_for_extraction noextract
 let decrypt_st (a: supported_alg) =
   s:B.pointer_or_null (state_s a) ->
   iv:iv_p a ->
+  iv_len:UInt32.t { v iv_len = B.length iv /\ v iv_len > 0 } ->
   ad:ad_p a ->
   ad_len: UInt32.t { v ad_len = B.length ad /\ v ad_len <= pow2 31 } ->
   cipher: cipher_p a ->
   cipher_len: UInt32.t { v cipher_len = B.length cipher } ->
-  tag: B.buffer UInt8.t { B.length tag = tag_length a } ->
-  dst: B.buffer UInt8.t { B.length dst = B.length cipher } ->
+  tag: B.buffer uint8 { B.length tag = tag_length a } ->
+  dst: B.buffer uint8 { B.length dst = B.length cipher } ->
   Stack error_code
     (requires fun h0 ->
       not (B.g_is_null s) ==>
@@ -205,21 +256,33 @@ let decrypt_st (a: supported_alg) =
         B.(loc_disjoint (footprint h0 s) (loc_buffer dst)) /\
         B.(loc_disjoint (footprint h0 s) (loc_buffer cipher)) /\
         MB.(all_live h0 [ buf iv; buf ad; buf cipher; buf tag; buf dst ]) /\
+        B.disjoint tag dst /\ B.disjoint tag cipher /\
+        B.disjoint tag ad /\
+        B.disjoint cipher ad /\ B.disjoint dst ad /\
         (B.disjoint cipher dst \/ cipher == dst))
     (ensures fun h0 err h1 ->
       let cipher_tag = B.as_seq h0 cipher `S.append` B.as_seq h0 tag in
       match err with
       | InvalidKey ->
+          B.g_is_null s /\
           B.(modifies loc_none h0 h1)
       | Success ->
           not (B.g_is_null s) /\ (
           let plain = decrypt #a (as_kv (B.deref h0 s)) (B.as_seq h0 iv) (B.as_seq h0 ad) cipher_tag in
-          B.(modifies (loc_buffer dst) h0 h1) /\
+          B.(modifies (loc_union (footprint h1 s) (loc_buffer dst)) h0 h1) /\
+          invariant h1 s /\
+          footprint h0 s == footprint h1 s /\
+          preserves_freeable s h0 h1 /\
+          as_kv (B.deref h1 s) == as_kv (B.deref h0 s) /\
           Some? plain /\ S.equal (Some?.v plain) (B.as_seq h1 dst))
       | AuthenticationFailure ->
           not (B.g_is_null s) /\ (
           let plain = decrypt #a (as_kv (B.deref h0 s)) (B.as_seq h0 iv) (B.as_seq h0 ad) cipher_tag in
-          B.(modifies (loc_buffer dst) h0 h1) /\
+          B.(modifies (loc_union (footprint h1 s) (loc_buffer dst)) h0 h1) /\
+          invariant h1 s /\
+          footprint h0 s == footprint h1 s /\
+          preserves_freeable s h0 h1 /\
+          as_kv (B.deref h1 s) == as_kv (B.deref h0 s) /\
           None? plain)
       | _ ->
           False)

@@ -21,13 +21,16 @@ let getter (flag: bool) = unit -> Stack bool
     B.(modifies loc_none h0 h1) /\
     (b ==> flag)))
 
-val has_shaext: getter X64.CPU_Features_s.sha_enabled
-val has_aesni: getter X64.CPU_Features_s.aesni_enabled
-val has_pclmulqdq: getter X64.CPU_Features_s.pclmulqdq_enabled
-val has_avx2: getter X64.CPU_Features_s.avx2_enabled
-val has_avx: getter X64.CPU_Features_s.avx_enabled
-val has_bmi2: getter X64.CPU_Features_s.bmi2_enabled
-val has_adx: getter X64.CPU_Features_s.adx_enabled
+val has_shaext: getter Vale.X64.CPU_Features_s.sha_enabled
+val has_aesni: getter Vale.X64.CPU_Features_s.aesni_enabled
+val has_pclmulqdq: getter Vale.X64.CPU_Features_s.pclmulqdq_enabled
+val has_avx2: getter Vale.X64.CPU_Features_s.avx2_enabled
+val has_avx: getter Vale.X64.CPU_Features_s.avx_enabled
+val has_bmi2: getter Vale.X64.CPU_Features_s.bmi2_enabled
+val has_adx: getter Vale.X64.CPU_Features_s.adx_enabled
+val has_sse: getter Vale.X64.CPU_Features_s.sse_enabled
+val has_movbe: getter Vale.X64.CPU_Features_s.movbe_enabled
+val has_rdrand: getter Vale.X64.CPU_Features_s.rdrand_enabled
 
 val wants_vale: unit ->
   Stack bool (requires fun _ -> True) (ensures fun h0 _ h1 -> B.(modifies loc_none h0 h1))
@@ -69,9 +72,14 @@ let disabler = unit -> Stack unit
   BCrypt) the client can disable a provider entirely. *)
 val disable_avx2: disabler
 val disable_avx: disabler
+val disable_bmi2: disabler
+val disable_adx: disabler
 val disable_shaext: disabler
 val disable_aesni: disabler
 val disable_pclmulqdq: disabler
+val disable_sse: disabler
+val disable_movbe: disabler
+val disable_rdrand: disabler
 val disable_vale: disabler
 val disable_hacl: disabler
 val disable_openssl: disabler

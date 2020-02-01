@@ -75,14 +75,14 @@ int MITLS_CALLCONV quic_crypto_hkdf_extract(quic_hash a, unsigned char *prk,
                              const unsigned char *ikm, uint32_t ikm_len)
 {
   if(a < TLS_hash_SHA256) return 0;
-  EverCrypt_HKDF_hkdf_extract(CONVERT_ALG(a), (uint8_t*) prk, (uint8_t*)salt, salt_len, (uint8_t*)ikm, ikm_len);
+  EverCrypt_HKDF_extract(CONVERT_ALG(a), (uint8_t*) prk, (uint8_t*)salt, salt_len, (uint8_t*)ikm, ikm_len);
   return 1;
 }
 
 int MITLS_CALLCONV quic_crypto_hkdf_expand(quic_hash a, unsigned char *okm, uint32_t olen, const unsigned char *prk, uint32_t prk_len, const unsigned char *info, uint32_t info_len)
 {
   if(a < TLS_hash_SHA256) return 0;
-  EverCrypt_HKDF_hkdf_expand(CONVERT_ALG(a), (uint8_t*) okm, (uint8_t*)prk, prk_len, (uint8_t*)info, info_len, olen);
+  EverCrypt_HKDF_expand(CONVERT_ALG(a), (uint8_t*) okm, (uint8_t*)prk, prk_len, (uint8_t*)info, info_len, olen);
   return 1;
 }
 
@@ -97,15 +97,11 @@ int MITLS_CALLCONV quic_crypto_hkdf_label(quic_hash a, unsigned char *info, size
 
   info[0] = out_len >> 8;
   info[1] = out_len & 255;
-  info[2] = label_len + 5;
-  memcpy(info+3, "quic ", 5);
-  memcpy(info+8, label, label_len);
-  info[8+label_len] = 0; // hlen;
-
-//  if(!quic_crypto_hash(a, info + label_len + 9, (const unsigned char*)label, 0))
-//    return 0;
-
-  *info_len = 9 + label_len; // + hlen;
+  info[2] = label_len + 11;
+  memcpy(info+3, "tls13 quic ", 11);
+  memcpy(info+14, label, label_len);
+  info[14+label_len] = 0;
+  *info_len = 15 + label_len;
   return 1;
 }
 
@@ -360,29 +356,29 @@ int MITLS_CALLCONV quic_crypto_decrypt(quic_key *key, unsigned char *plain, uint
   return r;
 }
 
-int MITLS_CALLCONV quic_crypto_packet_number_otp(quic_key *key, const unsigned char *sample, unsigned char *mask)
+int MITLS_CALLCONV quic_crypto_hp_mask(quic_key *key, const unsigned char *sample, unsigned char *mask)
 {
   unsigned char block[16];
   if(key->alg == TLS_aead_AES_128_GCM)
   {
     EverCrypt_aes128_compute(key->pne.case_aes128, (uint8_t*)sample, block);
-    memcpy(mask, block, 4);
+    memcpy(mask, block, 5);
     return 1;
   }
 
   if(key->alg == TLS_aead_AES_256_GCM)
   {
     EverCrypt_aes256_compute(key->pne.case_aes256, (uint8_t*)sample, block);
-    memcpy(mask, block, 4);
+    memcpy(mask, block, 5);
     return 1;
   }
 
   if(key->alg == TLS_aead_CHACHA20_POLY1305)
   {
-    uint8_t zero[4] = {0};
+    uint8_t zero[5] = {0};
     uint32_t ctr = sample[0] + (sample[1] << 8) + (sample[2] << 16) + (sample[3] << 24);
 
-    EverCrypt_Cipher_chacha20(4, mask, zero, (uint8_t*)key->pne.case_chacha20,
+    EverCrypt_Cipher_chacha20(5, mask, zero, (uint8_t*)key->pne.case_chacha20,
         (uint8_t*)sample+4, ctr);
     return 1;
   }

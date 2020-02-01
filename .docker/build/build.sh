@@ -34,16 +34,33 @@ function vale_test() {
 }
 
 function hacl_test() {
+    make_target=ci
+    if [[ $target == "mozilla-ci" ]]; then
+        make_target=mozilla-ci
+    fi
     fetch_and_make_kremlin &&
         fetch_and_make_mlcrypto &&
         fetch_mitls &&
         fetch_vale &&
         export_home OPENSSL "$(pwd)/mlcrypto/openssl" &&
-        env VALE_SCONS_PARALLEL_OPT="-j $threads" make -j $threads ci -k
+        (
+          unset KREMLIN_HOME;
+          cd dist
+          r=true
+          for a in *; do
+            if [[ $a != "kremlin" && $a != "vale" && $a != "linux" && -d $a ]]; then
+              echo "Building snapshot: $a"
+              make -C $a -j $threads || r=false
+              echo
+            fi
+          done
+          $r
+        ) &&
+        env VALE_SCONS_PARALLEL_OPT="-j $threads" make -j $threads $make_target -k
 }
 
-function hacl_test_and_hints() {
-    hacl_test && refresh_hacl_hints
+function hacl_test_hints_dist() {
+    hacl_test && refresh_hacl_hints_dist
 }
 
 function fetch_and_make_kremlin() {
@@ -125,27 +142,54 @@ function fetch_mitls() {
 }
 
 function fetch_vale() {
-    # NOTE: the name of the directory where Vale is downloaded MUST NOT be vale, because the latter already exists
-    # so let's call it valebin
-    if [ ! -d valebin ]; then
-        mkdir valebin
-    fi
-    vale_version=$(<vale/.vale_version)
-    vale_version=${vale_version%$'\r'}  # remove Windows carriage return, if it exists
-    wget "https://github.com/project-everest/vale/releases/download/v${vale_version}/vale-release-${vale_version}.zip" -O valebin/vale-release.zip
-    rm -rf "valebin/vale-release-${vale_version}"
-    unzip -o valebin/vale-release.zip -d valebin
-    rm -rf "valebin/bin"
-    mv "valebin/vale-release-${vale_version}/bin" valebin/
-    chmod +x valebin/bin/*.exe
-    export_home VALE "$(pwd)/valebin"
+    HACL_HOME=$(pwd) tools/get_vale.sh
+    export_home VALE "$(pwd)/../vale"
 }
 
-function refresh_hacl_hints() {
+function refresh_doc() {
+  git config --global user.name "Dzomo, the Everest Yak"
+  git config --global user.email "everbld@microsoft.com"
+
+  git clone git@github.com:hacl-star/hacl-star.github.io website
+
+  (cd doc && ./ci.sh ../website/)
+
+  pushd website && {
+    git add -A . &&
+    if ! git diff --exit-code HEAD > /dev/null; then
+        git commit -m "[CI] Refresh HACL & EverCrypt doc" &&
+        git push
+    else
+        echo No git diff for the tutorial, not generating a commit
+    fi
+    errcode=$?
+  } &&
+  popd &&
+  return $errcode
+}
+
+function refresh_hacl_hints_dist() {
     # We should not generate hints when building on Windows
     if [[ "$OS" != "Windows_NT" ]]; then
-        refresh_hints "git@github.com:mitls/hacl-star.git" "true" "regenerate hints" "."
+        refresh_hints_dist "git@github.com:mitls/hacl-star.git" "true" "regenerate hints and dist" "."
+        if [[ $branchname == "master" ]] ; then
+          refresh_doc
+        fi
     fi
+}
+
+# Re-build and re-test all C code.
+# Then add changes to git.
+function clean_build_dist() {
+    ORANGE_FILE="../orange_file.txt"
+    rm -rf dist/*/*
+    env VALE_SCONS_PARALLEL_OPT="-j $threads" make -j $threads all-unstaged -k
+    echo "Searching for a diff in dist/"
+    if ! git diff --exit-code --name-only -- dist :!dist/*/INFO.txt; then
+        echo "GIT DIFF: the files in dist/ have a git diff"
+        { echo " - dist-diff (hacl-star)" >> $ORANGE_FILE; }
+    fi
+    git add dist
 }
 
 # Note: this performs an _approximate_ refresh of the hints, in the sense that
@@ -153,14 +197,14 @@ function refresh_hacl_hints() {
 # merged to $CI_BRANCH in the meanwhile, which would invalidate some hints. So, we
 # reset to origin/$CI_BRANCH, take in our hints, and push. This is short enough that
 # the chances of someone merging in-between fetch and push are low.
-function refresh_hints() {
+function refresh_hints_dist() {
     local remote=$1
     local extra="$2"
     local msg="$3"
     local hints_dir="$4"
 
     # Figure out the branch
-    CI_BRANCH=$branchname
+    CI_BRANCH=${branchname##refs/heads/}
     echo "Current branch_name=$CI_BRANCH"
 
     # Add all the hints, even those not under version control
@@ -170,6 +214,8 @@ function refresh_hints() {
     # when $2 = "git ls-files src/ocaml-output/ | xargs git add",
     # outputting the list of files to stdout
     eval "$extra"
+
+    clean_build_dist
 
     git commit --allow-empty -m "[CI] $msg"
     # Memorize that commit
@@ -185,8 +231,16 @@ function refresh_hints() {
     # Silent, always-successful merge
     export GIT_MERGE_AUTOEDIT=no
     git merge $commit -Xtheirs
+
+    # If build hints branch exists on remote, remove it
+    exists=$(git branch -r -l "origin/BuildHints-$CI_BRANCH")
+    if [ ! -z $exists ]; then
+        git push $remote :BuildHints-$CI_BRANCH
+    fi
+
     # Push.
-    git push $remote $CI_BRANCH
+    git checkout -b BuildHints-$CI_BRANCH
+    git push $remote BuildHints-$CI_BRANCH
 }
 
 function exec_build() {
@@ -201,10 +255,13 @@ function exec_build() {
         return
     fi
 
+    ORANGE_FILE="../orange_file.txt"
+    echo '' >$ORANGE_FILE
+
     export_home HACL "$(pwd)"
     export_home EVERCRYPT "$(pwd)/providers"
 
-    if [[ $target == "hacl-ci" ]]; then
+    if [[ $target == "hacl-ci" || $target == "mozilla-ci" ]]; then
         echo target - >hacl-ci
         if [[ $branchname == "vale" ||  $branchname == "_vale" ]]; then
           vale_test && echo -n true >$status_file
@@ -217,7 +274,7 @@ function exec_build() {
           vale_test && echo -n true >$status_file
         else
           export OTHERFLAGS="--record_hints $OTHERFLAGS --z3rlimit_factor 2"
-          hacl_test_and_hints && echo -n true >$status_file
+          hacl_test_hints_dist && echo -n true >$status_file
         fi
     else
         echo "Invalid target"
@@ -228,6 +285,9 @@ function exec_build() {
     if [[ $(cat $status_file) != "true" ]]; then
         echo "Build failed"
         echo Failure >$result_file
+    elif [[ $(cat $ORANGE_FILE) != "" ]]; then
+        echo "Build had breakages"
+        echo Success with breakages $(cat $ORANGE_FILE) >$result_file
     else
         echo "Build succeeded"
         echo Success >$result_file
