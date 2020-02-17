@@ -34,6 +34,8 @@ type hash_alg =
   | SHA2_512
   | SHA1
   | MD5
+  | Blake2S
+  | Blake2B
 
 // BB. Remove when renamed.
 let algorithm = hash_alg
@@ -55,6 +57,8 @@ let max_input_length: hash_alg -> Tot nat = function
   | MD5 | SHA1
   | SHA2_224 | SHA2_256 -> pow2 61 - 1
   | SHA2_384 | SHA2_512 -> pow2 125 - 1
+  | Blake2S -> pow2 64 - 1
+  | Blake2B -> pow2 128 - 1
 
 // BB. Removed once renamed...
 let max_input = max_input_length
@@ -63,8 +67,10 @@ let max_input = max_input_length
 inline_for_extraction
 let len_int_type: hash_alg -> inttype = function
   | MD5 | SHA1
-  | SHA2_224 | SHA2_256 -> U64
-  | SHA2_384 | SHA2_512 -> U128
+  | SHA2_224 | SHA2_256
+  | Blake2S -> U64
+  | SHA2_384 | SHA2_512
+  | Blake2B -> U128
 
 inline_for_extraction
 let nat_to_len (a:hash_alg) (n:nat{n <= maxint (len_int_type a)}) =
@@ -74,27 +80,33 @@ let nat_to_len (a:hash_alg) (n:nat{n <= maxint (len_int_type a)}) =
 inline_for_extraction
 let len_t: hash_alg -> Type = function
   | MD5 | SHA1
-  | SHA2_224 | SHA2_256 -> pub_uint64
-  | SHA2_384 | SHA2_512 -> pub_uint128
+  | SHA2_224 | SHA2_256
+  | Blake2S -> pub_uint64
+  | SHA2_384 | SHA2_512
+  | Blake2B -> pub_uint128
 
 val len_v: a:hash_alg -> len_t a -> nat
 let len_v = function
   | MD5 | SHA1
-  | SHA2_224 | SHA2_256 -> uint_v #U64 #PUB
-  | SHA2_384 | SHA2_512 -> uint_v #U128 #PUB
+  | SHA2_224 | SHA2_256
+  | Blake2S -> uint_v #U64 #PUB
+  | SHA2_384 | SHA2_512
+  | Blake2B -> uint_v #U128 #PUB
 
 (* Number of bytes occupied by a len_t, i.e. the size of the encoded length in
    the padding. *)
 let len_length: hash_alg -> Tot nat = function
   | MD5 | SHA1
-  | SHA2_224 | SHA2_256 -> 8
-  | SHA2_384 | SHA2_512 -> 16
+  | SHA2_224 | SHA2_256
+  | Blake2S -> 8
+  | SHA2_384 | SHA2_512
+  | Blake2B -> 16
 
 (* Same thing, as a machine integer *)
 inline_for_extraction
 let len_len: a:hash_alg -> Tot (n:size_t{v n = len_length a}) = function
-  | MD5 | SHA1 | SHA2_224 | SHA2_256 -> 8ul
-  | SHA2_384 | SHA2_512 -> 16ul
+  | MD5 | SHA1 | SHA2_224 | SHA2_256 | Blake2S -> 8ul
+  | SHA2_384 | SHA2_512 | Blake2B -> 16ul
 
 (** Working state of the algorithms. *)
 
@@ -102,8 +114,10 @@ let len_len: a:hash_alg -> Tot (n:size_t{v n = len_length a}) = function
 inline_for_extraction
 let word_t: hash_alg -> Tot inttype = function
   | MD5 | SHA1
-  | SHA2_224 | SHA2_256 -> U32
-  | SHA2_384 | SHA2_512 -> U64
+  | SHA2_224 | SHA2_256
+  | Blake2S -> U32
+  | SHA2_384 | SHA2_512
+  | Blake2B -> U64
 
 inline_for_extraction
 let word (a: hash_alg) = uint_t (word_t a) SEC
@@ -112,8 +126,10 @@ let word (a: hash_alg) = uint_t (word_t a) SEC
 (* In bytes *)
 let word_length: hash_alg -> Tot nat = function
   | MD5 | SHA1
-  | SHA2_224 | SHA2_256 -> 4
-  | SHA2_384 | SHA2_512 -> 8
+  | SHA2_224 | SHA2_256
+  | Blake2S -> 4
+  | SHA2_384 | SHA2_512
+  | Blake2B -> 8
 
 (* Number of words for a block size *)
 noextract
@@ -135,6 +151,7 @@ let state_word_length a =
   match a with
   | MD5 -> 4
   | SHA1 -> 5
+  | Blake2S | Blake2B -> 16 // 4 rows of 4 words each
   | _ -> 8
 
 (* The working state *)
@@ -149,6 +166,7 @@ let hash_word_length: hash_alg -> Tot nat = function
   | SHA2_256 -> 8
   | SHA2_384 -> 6
   | SHA2_512 -> 8
+  | Blake2S | Blake2B -> 8
 
 (* Define the final hash length in bytes *)
 // BB. Needs to be renamed
@@ -175,14 +193,16 @@ let pad_length (a: hash_alg) (len: nat): Tot (n:nat { (len + n) % block_length a
 
 (* Define word based operators *)
 let bytes_of_words: a:hash_alg -> Tot (#len:size_nat{FStar.Mul.(len * word_length a) <= max_size_t} -> s:lseq (word a) len -> Tot (lbytes FStar.Mul.(word_length a * len))) = function
-  | MD5 -> Lib.ByteSequence.uints_to_bytes_le #U32 #SEC
+  | MD5 | Blake2S -> Lib.ByteSequence.uints_to_bytes_le #U32 #SEC
   | SHA1 | SHA2_224 | SHA2_256 -> Lib.ByteSequence.uints_to_bytes_be #U32 #SEC
   | SHA2_384 | SHA2_512 -> Lib.ByteSequence.uints_to_bytes_be #U64 #SEC
+  | Blake2B -> Lib.ByteSequence.uints_to_bytes_le #U64 #SEC
 
 let words_of_bytes: a:hash_alg -> Tot (#len:size_nat{FStar.Mul.(len * word_length a) <= max_size_t} -> b:lbytes FStar.Mul.(word_length a * len) -> Tot (lseq (word a) len)) = function
-  | MD5 -> Lib.ByteSequence.uints_from_bytes_le #U32 #SEC
+  | MD5 | Blake2S -> Lib.ByteSequence.uints_from_bytes_le #U32 #SEC
   | SHA1 | SHA2_224 | SHA2_256 -> Lib.ByteSequence.uints_from_bytes_be #U32 #SEC
   | SHA2_384 | SHA2_512 -> Lib.ByteSequence.uints_from_bytes_be #U64 #SEC
+  | Blake2B -> Lib.ByteSequence.uints_from_bytes_le #U64 #SEC
 
 (** The data format taken and returned by the hash specifications. *)
 

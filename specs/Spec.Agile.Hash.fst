@@ -4,6 +4,7 @@ module S = FStar.Seq
 
 open Spec.Hash.Definitions
 open Spec.Hash.PadFinish
+open Lib.Sequence
 
 let init a =
   match a with
@@ -13,6 +14,12 @@ let init a =
       Spec.MD5.init
   | SHA1 ->
       Spec.SHA1.init
+  | Blake2S ->
+     let s = Spec.Blake2.blake2_init Spec.Blake2.Blake2S 0 Seq.empty 32 in
+     (s.[0] @| s.[1] @| s.[2] @| s.[3])
+  | Blake2B ->
+     let s = Spec.Blake2.blake2_init Spec.Blake2.Blake2B 0 Seq.empty 64 in
+     (s.[0] @| s.[1] @| s.[2] @| s.[3])
 
 let update a =
   match a with
