@@ -178,6 +178,20 @@ let double_result_on_curve p =
   (xr *% xr *% xr +% a *% xr +% b) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp);
     };
 
+
+assert((xr *% xr *% xr +% a *% xr +% b) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) == 
+    (b *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp)    -% 
+    
+    (2 *% xp -% inv *% inv *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (2 *% xp -% inv *% inv *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (2 *% xp -% inv *% inv *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp)  
+    
+    -% a  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp)   *%  (2 *% xp -% inv *% inv *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)))
+    )
+    by (p256_field());
+
+
+
   admit()
 
 
