@@ -125,8 +125,10 @@ let double_result_on_curve p =
 
   assert(2 *% yp <> 0);
 
+  assert(yp *% yp == xp *% xp *% xp +% a *% xp +% b);
+
   (* (2 *% up) ** (number of inverses) *)
-(*
+
   calc (==) {
     yr *% yr  *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp);
     == {
@@ -147,48 +149,81 @@ let double_result_on_curve p =
     assert(((yp *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) -% 1 *% (3 *% xp *% (2 *% yp) *% (2 *% yp) -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (3 *% xp *% xp +% a)) *% 
   (yp *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) -% 1 *% (3 *% xp *% (2 *% yp) *% (2 *% yp) -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (3 *% xp *% xp +% a))) == 
     
-  (8 *% yp *% yp *% yp *% yp -% (12 *% xp *% yp *% yp  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))
+  (8 *% (yp *% yp) *% (yp *% yp) -% (12 *% xp *% (yp *% yp)  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))
   *% (3 *% xp *% xp +% a)) *% 
-  (8 *% yp *% yp *% yp *% yp -% (12 *% xp *% yp *% yp  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) 
+  (8 *% (yp *% yp) *% (yp *% yp) -% (12 *% xp *% (yp *% yp)  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) 
   *% (3 *% xp *% xp +% a))) by (p256_field())
   }
   
-  (8 *% yp *% yp *% yp *% yp -% (12 *% xp *% yp *% yp  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (3 *% xp *% xp +% a)) *% 
-  (8 *% yp *% yp *% yp *% yp -% (12 *% xp *% yp *% yp  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (3 *% xp *% xp +% a));
+ (8 *% (yp *% yp) *% (yp *% yp) -% (12 *% xp *% (yp *% yp)  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))
+  *% (3 *% xp *% xp +% a)) *% 
+  (8 *% (yp *% yp) *% (yp *% yp) -% (12 *% xp *% (yp *% yp)  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) 
+  *% (3 *% xp *% xp +% a));
 
+ == {}
+
+
+ (8 *% (xp *% xp *% xp +% a *% xp +% b) *% (xp *% xp *% xp +% a *% xp +% b) -% (12 *% xp *% (xp *% xp *% xp +% a *% xp +% b)  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))
+  *% (3 *% xp *% xp +% a)) *% 
+  (8 *% (xp *% xp *% xp +% a *% xp +% b) *% (xp *% xp *% xp +% a *% xp +% b) -% (12 *% xp *% (xp *% xp *% xp +% a *% xp +% b)  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) 
+  *% (3 *% xp *% xp +% a));
+
+   
 };
 
-*)
 
   calc (==) {
   (xr *% xr *% xr +% a *% xr +% b) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp);
   == {
-  assert((xr *% xr *% xr +% a *% xr +% b) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) == 
-    (b -% 
+       assert(
+    (xr *% xr *% xr +% a *% xr +% b) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) == 
     
-    (2 *% xp -% inv *% inv *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
-    (2 *% xp -% inv *% inv *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
-    (2 *% xp -% inv *% inv *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))
+    (b *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp) -% 
+    (2 *% xp *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (2 *% xp *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (2 *% xp *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))
     
-    -% a *% (2 *% xp -% inv *% inv *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp)  
-    )
-    by (p256_field())
+    -% a  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *%  (2 *% xp   *% (2 *% yp) *% (2 *% yp)  -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))))  by (p256_field())
+
   }
-
-  (xr *% xr *% xr +% a *% xr +% b) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp);
-    };
-
-
-assert((xr *% xr *% xr +% a *% xr +% b) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) == 
-    (b *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp)    -% 
+    (b *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp) -% 
+    (2 *% xp *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (2 *% xp *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (2 *% xp *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))
     
-    (2 *% xp -% inv *% inv *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
-    (2 *% xp -% inv *% inv *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
-    (2 *% xp -% inv *% inv *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp)  
+    -% a  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *%  (2 *% xp   *% (2 *% yp) *% (2 *% yp)  -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)));
+  
+  == {mul_inverse (2 *% yp)}
+
+    (b *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp) -% 
+    (2 *% xp *% (2 *% yp) *% (2 *% yp) -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (2 *% xp *% (2 *% yp) *% (2 *% yp) -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (2 *% xp *% (2 *% yp) *% (2 *% yp) -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))
     
-    -% a  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp)   *%  (2 *% xp -% inv *% inv *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)))
-    )
-    by (p256_field());
+    -% a  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *%  (2 *% xp   *% (2 *% yp) *% (2 *% yp)  -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)));
+
+
+  == {
+    assert((b *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp) -% 
+    (2 *% xp *% (2 *% yp) *% (2 *% yp) -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (2 *% xp *% (2 *% yp) *% (2 *% yp) -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (2 *% xp *% (2 *% yp) *% (2 *% yp) -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))
+    
+    -% a  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *%  (2 *% xp   *% (2 *% yp) *% (2 *% yp)  -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)))  == 
+    
+    (64 *% b *% yp *% yp *% yp *% yp *% yp *% yp -% 
+    (8 *% xp *% yp *% yp -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (8 *% xp *% yp *% yp -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (8 *% xp *% yp *% yp -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))
+    -% a *% 16 *% yp *% yp *% yp *% yp *%  (8 *% xp *% yp *% yp  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)))) by (p256_field())}
+
+    (64 *% b *% yp *% yp *% yp *% yp *% yp *% yp -% 
+    (8 *% xp *% yp *% yp -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (8 *% xp *% yp *% yp -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% 
+    (8 *% xp *% yp *% yp -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a))
+    -% a *% 16 *% yp *% yp *% yp *% yp *%  (8 *% xp *% yp *% yp  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)));
+};
+
 
 
 
