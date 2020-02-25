@@ -122,6 +122,7 @@ let double_result_on_curve p =
   let yr = lambda1 *% (xp -% xr) -% yp in
 
   assert(2 *% yp <> 0);
+  
   calc (==) {
    (yr *% yr) *% (64 *% yp *% yp *% yp *% yp *% yp *% yp);
   
@@ -143,17 +144,15 @@ let double_result_on_curve p =
   (8 *% (xp *% xp *% xp +% a *% xp +% b) *% (xp *% xp *% xp +% a *% xp +% b) -% (12 *% xp *% (xp *% xp *% xp +% a *% xp +% b)  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (3 *% xp *% xp +% a)) *% (8 *% (xp *% xp *% xp +% a *% xp +% b) *% (xp *% xp *% xp +% a *% xp +% b) -% (12 *% xp *% (xp *% xp *% xp +% a *% xp +% b)  -% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (3 *% xp *% xp +% a));
 };
 
-
-
   calc (==) {
   (xr *% xr *% xr +% a *% xr +% b)  *% (64 *% yp *% yp *% yp *% yp *% yp *% yp);
     
     == {
-    assert((xr *% xr *% xr +% a *% xr +% b) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) == 
+    assert((xr *% xr *% xr +% a *% xr +% b) *% (64 *% yp *% yp *% yp *% yp *% yp *% yp) == 
     (b *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp) -% (2 *% xp *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (2 *% xp *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (2 *% xp *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) -% a  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *%  (2 *% xp   *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)))) by (p256_field())}
 
   (b *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp) -% (2 *% xp *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (2 *% xp *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (2 *% xp *% (2 *% yp) *% (2 *% yp) -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) -% a  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *%  (2 *% xp   *% (2 *% yp) *% (2 *% yp)  -% (inv *% (2 *% yp)) *% (inv *% (2 *% yp)) *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)));
-  
+
   == {mul_inverse (2 *% yp)}
   
   (b *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp)  *% (2 *% yp) *% (2 *% yp) -% (2 *% xp *% (2 *% yp) *% (2 *% yp) -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (2 *% xp *% (2 *% yp) *% (2 *% yp) -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) *% (2 *% xp *% (2 *% yp) *% (2 *% yp) -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)) -% a  *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *% (2 *% yp) *%  (2 *% xp   *% (2 *% yp) *% (2 *% yp)  -% 1 *% 1 *% (3 *% xp *% xp +% a) *% (3 *% xp *% xp +% a)));
