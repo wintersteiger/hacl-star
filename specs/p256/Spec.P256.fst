@@ -50,6 +50,8 @@ let order: n:pos{n < pow2 256} =
 
 #push-options "--ifuel 1" // Or use `allow_inversion point`
 
+#reset-options " --z3rlimit 200"
+
 val lemma_add_neq_on_curve: p: point -> q: point {p <> q /\ p <> O /\ q <> O /\ 
   (
     let P xp _ = p in 
@@ -64,13 +66,7 @@ val lemma_add_neq_on_curve: p: point -> q: point {p <> q /\ p <> O /\ q <> O /\
     let xr = lambda *% lambda -% xp -% xq in
     let yr = lambda *% (xp -% xr) -% yp in
     on_curve xr yr)
-
-assume val l0: a: elem -> b: elem -> c: elem -> d: elem -> e: elem -> f: elem -> k: elem -> 
-  Lemma ((a -% b -% c -% d +% e +% f) *% k == a *% k -% b *% k -% c *% k -% d *% k +% e *% k +% f*% k)
-
-
-#reset-options " --z3rlimit 100"
-
+    
 let lemma_add_neq_on_curve p q = 
   let P xp yp = p in
   let P xq yq = q in
@@ -79,14 +75,46 @@ let lemma_add_neq_on_curve p q =
   assert(on_curve xq yq);
 
   let inverse = inverse (xq -% xp) in 
-  let l = (yq -% yp) *% inverse in 
+  let lambda1 = (yq -% yp) *% inverse in 
 
-  let xr = l *% l -% xp -% xq in
-  let yr = l *% (xp -% xr) -% yp in
-
-  let i = (xq -% xp) in 
+  let xr = lambda1 *% lambda1 -% xp -% xq in
+  let yr = lambda1 *% (xp -% xr) -% yp in
   
-  admit()
+  calc (==)
+  {
+    (yr *% yr) *% ((xq -% xp) *%  (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp));
+    == {
+      assert((yr *% yr) *% ((xq -% xp) *%  (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp))  == 
+    ((zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) -% inverse  *% (xq -% xp) *% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (inverse *% (xq -% xp)) *% (inverse *% (xq -% xp)) *% (yp -% yq) *% (yp -% yq))) *% (zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) -% inverse  *% (xq -% xp) *% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (inverse *% (xq -% xp)) *% (inverse *% (xq -% xp)) *% (yp -% yq) *% (yp -% yq))))) by (p256_field())}
+    
+  ((zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp)-% inverse  *% (xq -% xp) *% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (inverse *% (xq -% xp)) *% (inverse *% (xq -% xp)) *% (yp -% yq) *% (yp -% yq))) *% 
+  (zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) -% inverse  *% (xq -% xp) *% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (inverse *% (xq -% xp)) *% (inverse *% (xq -% xp)) *% (yp -% yq) *% (yp -% yq))));
+
+  == {mul_inverse (xq -% xp)}
+
+  ((zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) -% 1 *% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% 1 *% 1 *% (yp -% yq) *% (yp -% yq))) *% 
+  (zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) -% 1 *% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% 1 *% 1 *% (yp -% yq) *% (yp -% yq))));
+
+
+ == {
+     assert((zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) -% 1 *% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% 1 *% 1 *% (yp -% yq) *% (yp -% yq))) *% 
+  (zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) -% 1 *% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% 1 *% 1 *% (yp -% yq) *% (yp -% yq))) ==
+ 
+  (zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) -% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp)  -% (yp -% yq) *% (yp -% yq))) *% 
+  
+  (zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) -% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (yp -% yq) *% (yp -% yq))))
+  by (p256_field())
+  }
+
+ (zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) -% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp)  -% (yp -% yq) *% (yp -% yq))) *% 
+  
+  (zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) -% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (yp -% yq) *% (yp -% yq)));
+
+};
+  
+
+admit()
+
 
 (** TODO: prove that the result is on the curve when xp <> xq *)
 val add_neq: p:point -> q:point{p <> q /\ p <> O /\ q <> O} -> point
