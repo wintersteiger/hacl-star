@@ -106,7 +106,7 @@ let add_neq p q =
 
 #reset-options " --z3rlimit 300"
 
-val double_result_on_curve: p: point {p <> O /\ (let P xp yp = p in yp <> 0)} -> 
+val lemma_double_result_on_curve: p: point {p <> O /\ (let P xp yp = p in yp <> 0)} -> 
     Lemma (
       let P xp yp = p in
       let lambda = (3 *% xp *% xp +% a) /% (2 *% yp) in 
@@ -114,7 +114,7 @@ val double_result_on_curve: p: point {p <> O /\ (let P xp yp = p in yp <> 0)} ->
       let yr = lambda *% (xp -% xr) -% yp in
       on_curve xr yr)
 
-let double_result_on_curve p = 
+let lemma_double_result_on_curve p = 
   let P xp yp = p in
   let inv = inverse (2 *% yp) in
   let lambda1 = (3 *% xp *% xp +% a) *% inv in
@@ -186,7 +186,6 @@ let double_result_on_curve p =
   mod_mult_congr (yr *% yr) (xr *% xr *% xr +% a *% xr +% b) (64 *% yp *% yp *% yp *% yp *% yp *% yp)
 
 
-(** TODO: prove that the result is on the curve when yp <> 0 *)
 val double: p:point{p <> O} -> point
 let double p =
   let P xp yp = p in
@@ -197,7 +196,7 @@ let double p =
     let lambda = (3 *% xp *% xp +% a) /% (2 *% yp) in
     let xr = lambda *% lambda -% 2 *% xp in
     let yr = lambda *% (xp -% xr) -% yp in
-    assume (on_curve xr yr);
+    lemma_double_result_on_curve p;
     P xr yr
     end
 
