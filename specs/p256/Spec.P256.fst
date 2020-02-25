@@ -80,7 +80,7 @@ let lemma_add_neq_on_curve p q =
   let xr = lambda1 *% lambda1 -% xp -% xq in
   let yr = lambda1 *% (xp -% xr) -% yp in
   
-  calc (==)
+  (*calc (==)
   {
     (yr *% yr) *% ((xq -% xp) *%  (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp));
     == {
@@ -111,8 +111,31 @@ let lemma_add_neq_on_curve p q =
   (zero -% yp *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) -% (yp -% yq) *% (2 *% xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (yp -% yq) *% (yp -% yq)));
 
 };
-  
 
+*)
+
+  calc (==) 
+  {
+    (xr *% xr *% xr +% a *% xr +% b) *% ((xq -% xp) *%  (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp));
+    == {
+
+    assert((xr *% xr *% xr +% a *% xr +% b) *% ((xq -% xp) *%  (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp))  ==
+    (b  *%  (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) -% a *% (xp *% (xq -% xp) *% (xq -% xp) +% xq *% (xq -% xp) *% (xq -% xp) -% (inverse *% (xq -% xp)) *% (inverse *% (xq -% xp)) *% (yp -% yq) *% (yp -% yq)) *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) -% (xp  *%  (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (inverse *% (xq -% xp)) *% (inverse *% (xq -% xp)) *% (yp -% yq) *% (yp -% yq)) *% (xp  *%  (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (inverse *% (xq -% xp)) *% (inverse *% (xq -% xp)) *% (yp -% yq) *% (yp -% yq)) *% (xp  *%  (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (inverse *% (xq -% xp)) *% (inverse *% (xq -% xp)) *% (yp -% yq) *% (yp -% yq)))) by (p256_field())}
+
+    (b  *%  (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) -% a *% (xp *% (xq -% xp) *% (xq -% xp) +% xq *% (xq -% xp) *% (xq -% xp) -% (inverse *% (xq -% xp)) *% (inverse *% (xq -% xp)) *% (yp -% yq) *% (yp -% yq)) *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) -% (xp  *%  (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (inverse *% (xq -% xp)) *% (inverse *% (xq -% xp)) *% (yp -% yq) *% (yp -% yq)) *% (xp  *%  (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (inverse *% (xq -% xp)) *% (inverse *% (xq -% xp)) *% (yp -% yq) *% (yp -% yq)) *% (xp  *%  (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% (inverse *% (xq -% xp)) *% (inverse *% (xq -% xp)) *% (yp -% yq) *% (yp -% yq)));
+
+    == {mul_inverse (xq -% xp)}
+
+      (b  *%  (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) 
+      -% a *% (xp *% (xq -% xp) *% (xq -% xp) +% xq *% (xq -% xp) *% (xq -% xp) -% 1 *% 1 *% (yp -% yq) *% (yp -% yq)) 
+	
+      *%  (xq -% xp)  *% (xq -% xp) *% (xq -% xp) *% (xq -% xp) -% (xp  *%  (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% 1 *% 1 *% (yp -% yq) *% (yp -% yq)) 
+      
+      *% (xp *% (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% 1 *% 1 *% (yp -% yq) *% (yp -% yq)) *% (xp  *%  (xq -% xp) *% (xq -% xp) +% xq  *%  (xq -% xp) *% (xq -% xp) -% 1 *% 1 *% (yp -% yq) *% (yp -% yq)));
+
+};
+
+ 
 admit()
 
 
