@@ -1,4 +1,4 @@
-module Spec.P256
+module Spec.P256.Intermediate
 
 open FStar.Mul
 
@@ -90,7 +90,8 @@ let _point_add (p:point_nat_prime) (q:point_nat_prime) : point_nat_prime =
       (x3, y3, z3)
 
 
-let isPointAtInfinity (p:point_nat) =
+(* This function takes any number and returns whether it's a point at infinity *)
+let isPointAtInfinityArbitrary (p:point_nat) =
   let (_, _, z) = p in z = 0
 
 
@@ -103,7 +104,7 @@ let _norm (p:point_nat_prime) : point_nat_prime =
   let z3i = modp_inv2_pow z3 in
   let x3 = (z2i * x) % prime in
   let y3 = (z3i * y) % prime in
-  let z3 = if isPointAtInfinity p then 0 else 1 in
+  let z3 = if isPointAtInfinityArbitrary p then 0 else 1 in
   (*assert(x3 == (x * (pow (z * z) (prime - 2) % prime) % prime));
   assert(y3 == (y * (pow (z * z * z) (prime - 2) % prime) % prime)); *)
   (x3, y3, z3)
