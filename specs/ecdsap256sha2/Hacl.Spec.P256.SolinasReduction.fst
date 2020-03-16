@@ -10,9 +10,9 @@ open Lib.Sequence
 open FStar.Tactics
 open FStar.Tactics.Canon
 
-#reset-options "--fuel 0 --ifuel 0 --z3rlimit 300"
+open Spec.P256.Field
 
-let prime = prime256
+#reset-options "--fuel 0 --ifuel 0 --z3rlimit 300"
 
 let _uint32 = n:nat{n < pow2 32}
 
@@ -75,8 +75,6 @@ val c11_reduction: c11: _uint32 -> Lemma
   (2 * c11 * pow2 (3 * 32) + c11 * pow2 (2 * 32) - c11 - c11 * pow2 (32 * 7) - c11 * pow2 (5 * 32)) % prime)
   
 let c11_reduction c11  =  
-  let open FStar.Tactics in
-  let open FStar.Tactics.Canon in
   calc (==) {
     c11 * pow2 (11 * 32) % prime;
     == { lemma_mod_mul_distr_r c11 (pow2 (11 * 32)) prime }

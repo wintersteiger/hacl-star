@@ -12,17 +12,15 @@ open Hacl.Spec.P256.MontgomeryMultiplication
 open Lib.Loops
 open FStar.Mul
 open Hacl.Spec.P256
+open Spec.P256.Field
 
 open Hacl.Spec.P256.MontgomeryMultiplication.PointDouble
-
-let prime = prime256
-
 #reset-options "--z3rlimit 500"  
 
 noextract       
 val lemma_pointAddToSpecification: 
-  pxD: nat {pxD < prime256} -> pyD: nat{pyD < prime256} -> pzD: nat {pzD < prime256} -> 
-  qxD: nat {qxD < prime256} -> qyD: nat {qyD < prime256} -> qzD: nat {qzD < prime256} -> 
+  pxD: nat {pxD < prime} -> pyD: nat{pyD < prime} -> pzD: nat {pzD < prime} -> 
+  qxD: nat {qxD < prime} -> qyD: nat {qyD < prime} -> qzD: nat {qzD < prime} -> 
   x3: nat -> y3: nat -> z3: nat -> 
   u1: nat -> u2: nat -> s1: nat -> s2: nat -> 
   h: nat -> r: nat -> 
@@ -35,13 +33,13 @@ val lemma_pointAddToSpecification:
       let rD = fromDomain_ r in    
       let hD = fromDomain_ h in 
      
-      u1 == toDomain_ (qzD * qzD * pxD % prime256) /\
-      u2 == toDomain_ (pzD * pzD * qxD % prime256) /\
-      s1 == toDomain_ (qzD * qzD * qzD * pyD % prime256) /\
-      s2 == toDomain_ (pzD * pzD * pzD * qyD % prime256) /\
+      u1 == toDomain_ (qzD * qzD * pxD % prime) /\
+      u2 == toDomain_ (pzD * pzD * qxD % prime) /\
+      s1 == toDomain_ (qzD * qzD * qzD * pyD % prime) /\
+      s2 == toDomain_ (pzD * pzD * pzD * qyD % prime) /\
       
-      h == toDomain_ ((u2D - u1D) % prime256) /\
-      r == toDomain_ ((s2D - s1D) % prime256) /\
+      h == toDomain_ ((u2D - u1D) % prime) /\
+      r == toDomain_ ((s2D - s1D) % prime) /\
       (
 	if qzD = 0 then 
 	  fromDomain_ x3 == pxD /\ fromDomain_ y3 == pyD /\ fromDomain_ z3 == pzD
@@ -104,24 +102,24 @@ let lemma_pointAddToSpecification x1D y1D z1D x2D y2D z2D x3 y3 z3  u1 u2 s1 s2 
 
 
 val lemma_point_add_0: a: int -> b: int -> c: int -> Lemma 
-  ((a - b - 2 * (c % prime256)) % prime256 == (a - b - 2 * c) % prime256)
+  ((a - b - 2 * (c % prime)) % prime == (a - b - 2 * c) % prime)
 
 let lemma_point_add_0 a b c = 
-  lemma_mod_sub_distr (a - b) (2 * (c % prime256)) prime256;
-  lemma_mod_mul_distr_r 2 c prime256;
-  lemma_mod_sub_distr (a - b) (2 * c) prime256
+  lemma_mod_sub_distr (a - b) (2 * (c % prime)) prime;
+  lemma_mod_mul_distr_r 2 c prime;
+  lemma_mod_sub_distr (a - b) (2 * c) prime
 
 
 val lemma_point_add_1: a: int -> b: int -> c: int -> d: int -> e: int -> Lemma
-  ((((a % prime256) - b) * c - d * (e % prime256)) % prime256 ==((a - b) * c - d * e) % prime256)
+  ((((a % prime - b) * c - d * (e % prime)) % prime ==((a - b) * c - d * e) % prime))
 
 let lemma_point_add_1 a b c d e = 
-  lemma_mod_add_distr (- d * (e % prime256)) (((a % prime256) - b) * c) prime256;
-  lemma_mod_mul_distr_l ((a % prime256) - b) c prime256;
-  lemma_mod_add_distr (-b) a prime256;
-  lemma_mod_mul_distr_l (a - b) c prime256;
-  lemma_mod_add_distr (- d * (e % prime256)) ((a - b) * c) prime256;
+  lemma_mod_add_distr (- d * (e % prime)) (((a % prime) - b) * c) prime;
+  lemma_mod_mul_distr_l ((a % prime) - b) c prime;
+  lemma_mod_add_distr (-b) a prime;
+  lemma_mod_mul_distr_l (a - b) c prime;
+  lemma_mod_add_distr (- d * (e % prime)) ((a - b) * c) prime;
   
-  lemma_mod_sub_distr ((a - b) * c) (d * (e % prime256)) prime256;
-  lemma_mod_mul_distr_r d e prime256;
-  lemma_mod_sub_distr ((a - b) * c) (d * e) prime256
+  lemma_mod_sub_distr ((a - b) * c) (d * (e % prime)) prime;
+  lemma_mod_mul_distr_r d e prime;
+  lemma_mod_sub_distr ((a - b) * c) (d * e) prime

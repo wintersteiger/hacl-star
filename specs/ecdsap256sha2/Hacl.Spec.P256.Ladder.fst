@@ -13,7 +13,6 @@ open Hacl.Spec.P256.MontgomeryMultiplication.PointAdd
 open Hacl.Spec.P256.MontgomeryMultiplication.PointDouble
 open Hacl.Spec.P256
 
-
 open FStar.Math.Lemmas
 open Lib.Sequence
 open Lib.ByteSequence

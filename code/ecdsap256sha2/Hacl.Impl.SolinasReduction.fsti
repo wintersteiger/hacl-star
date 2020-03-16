@@ -15,6 +15,7 @@ open Hacl.Impl.LowLevel
 open Hacl.Spec.P256.Definitions
 open FStar.Mul
 
+open Spec.P256.Field
 
 val solinas_reduction_impl: i: lbuffer uint64 (size 8) -> o: lbuffer uint64 (size 4) -> 
   Stack unit

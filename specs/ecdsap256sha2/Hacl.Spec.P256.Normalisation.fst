@@ -10,12 +10,11 @@ open Hacl.Spec.P256.Lemmas
 
 open FStar.Math.Lemmas
 
-let prime = prime256
-
+open Spec.P256.Field
 
 open FStar.Mul  
 #reset-options " --z3rlimit 300" 
-val lemma_norm_as_specification: xD: nat{xD < prime256} -> yD: nat{yD < prime256} -> zD: nat {zD < prime256} -> 
+val lemma_norm_as_specification: xD: nat{xD < prime} -> yD: nat{yD < prime} -> zD: nat {zD < prime} -> 
   x3 : nat {x3 == xD * (pow (zD * zD) (prime-2) % prime) % prime}-> 
   y3 : nat {y3 == yD * (pow (zD * zD * zD) (prime -2) % prime) % prime} -> 
   z3: nat {if isPointAtInfinity(xD, yD, zD) then z3 == 0 else z3 == 1} -> 

@@ -17,6 +17,9 @@ module Def = Spec.Hash.Definitions
 open FStar.Math.Lemmas
 open FStar.Math.Lib
 
+open Spec.P256.Field
+
+
 (*
 // Sage scratchpad
 
@@ -517,9 +520,9 @@ val verifyQValidCurvePointSpec:
 
 let verifyQValidCurvePointSpec publicKey =
   let (x: nat), (y:nat), (z:nat) = publicKey in
-  x < prime256 &&
-  y < prime256 &&
-  z < prime256 &&
+  x < prime &&
+  y < prime &&
+  z < prime &&
   isPointOnCurve (x, y, z) &&
   isPointAtInfinity (scalar_multiplication prime_p256_order_seq publicKey)
 
@@ -534,7 +537,7 @@ let checkCoordinates r s =
 
 unfold
 let basePoint: point_nat_prime =
-  assert_norm (0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296 < prime256);
+  assert_norm (0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296 < prime);
   (0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296,
    0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5,
    1)

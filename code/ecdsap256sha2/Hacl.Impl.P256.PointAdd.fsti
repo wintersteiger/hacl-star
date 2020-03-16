@@ -20,7 +20,7 @@ open Hacl.Impl.P256.LowLevel
 open Hacl.Impl.P256.MontgomeryMultiplication
 open Hacl.Spec.P256
 open Hacl.Impl.P256.Math 
-
+open Spec.P256.Field
 open Hacl.Impl.P256.PointDouble
 
 open FStar.Tactics 

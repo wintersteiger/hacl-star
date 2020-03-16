@@ -16,6 +16,7 @@ open Hacl.Spec.ECDSAP256.Definition
 
 open Hacl.Impl.P256
 
+open Spec.P256.Field
 open FStar.Mul
 
 (* This code is not side channel resistant *)
@@ -67,8 +68,8 @@ val isPointAtInfinityPublic: p:point -> Stack bool
 (* This is unused internally and not exposed in the top-level API *)
 val isPointOnCurvePublic: p:point -> Stack bool
   (requires fun h -> live h p /\    
-    as_nat h (gsub p (size 0) (size 4)) < prime256 /\ 
-    as_nat h (gsub p (size 4) (size 4)) < prime256 /\
+    as_nat h (gsub p (size 0) (size 4)) < prime /\ 
+    as_nat h (gsub p (size 4) (size 4)) < prime /\
     as_nat h (gsub p (size 8) (size 4)) == 1)
   (ensures fun h0 r h1 ->
     modifies0 h0 h1 /\ 

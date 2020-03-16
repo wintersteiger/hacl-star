@@ -29,6 +29,8 @@ open FStar.Math.Lemmas
 friend Hacl.Spec.P256.MontgomeryMultiplication
 open FStar.Mul
 
+open Spec.P256.Field
+
 #reset-options "--z3rlimit 300" 
 
 

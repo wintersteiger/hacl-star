@@ -10,12 +10,7 @@ open Lib.Sequence
 open Lib.Buffer
 open FStar.Mul
 
-
-noextract
-let prime256: (a: pos {a < pow2 256}) =
-  assert_norm (pow2 256 - pow2 224 + pow2 192 + pow2 96 -1 > 0);
-  assert_norm (pow2 256 - pow2 224 + pow2 192 + pow2 96 -1 < pow2 256);
-  pow2 256 - pow2 224 + pow2 192 + pow2 96 -1
+open Spec.P256.Field
 
 
 inline_for_extraction noextract
@@ -26,13 +21,13 @@ let p256_prime_list : x:list uint64{List.Tot.length x == 4 /\
     let l1 = uint_v (List.Tot.index x 1) in 
     let l2 = uint_v (List.Tot.index x 2) in 
     let l3 = uint_v (List.Tot.index x 3) in 
-    l0 + l1 * pow2 64 + l2 * pow2 128 + l3 * pow2 192 == prime256)
+    l0 + l1 * pow2 64 + l2 * pow2 128 + l3 * pow2 192 == prime)
   } =
   let open FStar.Mul in 
   [@inline_let]
   let x =
     [ (u64 0xffffffffffffffff);  (u64 0xffffffff); (u64 0);  (u64 0xffffffff00000001);] in
-    assert_norm(0xffffffffffffffff + 0xffffffff * pow2 64 + 0xffffffff00000001 * pow2 192 == prime256);
+    assert_norm(0xffffffffffffffff + 0xffffffff * pow2 64 + 0xffffffff00000001 * pow2 192 == prime);
   x
 
 inline_for_extraction noextract
@@ -68,16 +63,15 @@ let wide_as_nat4 f =
 
 noextract
 let point_nat = tuple3 nat nat nat
-
 noextract
-let point_nat_prime = (p: point_nat {let (a, b, c) = p in a < prime256 /\ b < prime256 /\ c < prime256})
+let point_nat_prime = (p: point_nat {let (a, b, c) = p in a < prime /\ b < prime /\ c < prime})
 
 
 noextract
 let point_seq = Lib.Sequence.lseq uint64 12 
-
 noextract
 let felem_seq = lseq uint64 4
+
 
 inline_for_extraction
 let felem = lbuffer uint64 (size 4)
@@ -117,14 +111,13 @@ let wide_as_nat (h:mem) (e:widefelem) : GTot nat =
   wide_as_nat4 (s0, s1, s2, s3, s4, s5, s6, s7)
 
 
-
 noextract
 let felem_seq_as_nat (a: felem_seq) : Tot nat  = 
   let open FStar.Mul in 
   let a0 = Lib.Sequence.index a 0 in 
-  let a1 =  Lib.Sequence.index a 1 in 
-  let a2 =  Lib.Sequence.index  a 2 in 
-  let a3 =  Lib.Sequence.index a 3 in 
+  let a1 = Lib.Sequence.index a 1 in 
+  let a2 = Lib.Sequence.index a 2 in 
+  let a3 = Lib.Sequence.index a 3 in 
   uint_v a0 + uint_v a1 * pow2 64 + uint_v a2 * pow2 64 * pow2 64 + uint_v a3 * pow2 64 * pow2 64 * pow2 64
 
 
@@ -153,10 +146,13 @@ let felem_seq_as_nat_8 (a: lseq uint64 8) : Tot nat =
 open FStar.Mul
 
 noextract
-let felem_seq_prime = a: felem_seq {felem_seq_as_nat a < prime256}
-noextract
-let point_prime =  p: point_seq{let x = Lib.Sequence.sub p 0 4 in let y = Lib.Sequence.sub p 4 4 in let z = Lib.Sequence.sub p 8 4 in 
-  felem_seq_as_nat x < prime256 /\ felem_seq_as_nat y < prime256 /\ felem_seq_as_nat z < prime256} 
+let point_prime =  p: point_seq
+  {
+    let x = Lib.Sequence.sub p 0 4 in 
+    let y = Lib.Sequence.sub p 4 4 in 
+    let z = Lib.Sequence.sub p 8 4 in 
+    felem_seq_as_nat x < prime /\ felem_seq_as_nat y < prime /\ felem_seq_as_nat z < prime
+  } 
 
 
 inline_for_extraction

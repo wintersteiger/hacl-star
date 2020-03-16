@@ -34,6 +34,8 @@ open FStar.Mul
 module H = Spec.Agile.Hash
 module Def = Spec.Hash.Definitions
 
+open Spec.P256.Field
+
 #set-options "--fuel 0 --ifuel 0 --z3rlimit 300"
 
 (* This code is not side channel resistant *)
@@ -211,18 +213,18 @@ val ecdsa_verification_step5_0:
       disjoint tempBuffer u1 /\
       disjoint tempBuffer u2 /\
       LowStar.Monotonic.Buffer.all_disjoint [loc points; loc pubKeyAsPoint; loc tempBuffer] /\
-      point_x_as_nat h pubKeyAsPoint < prime256 /\
-      point_y_as_nat h pubKeyAsPoint < prime256 /\
-      point_z_as_nat h pubKeyAsPoint < prime256
+      point_x_as_nat h pubKeyAsPoint < prime /\
+      point_y_as_nat h pubKeyAsPoint < prime /\
+      point_z_as_nat h pubKeyAsPoint < prime
     )
   (ensures fun h0 _ h1 ->
     modifies (loc pubKeyAsPoint |+| loc tempBuffer |+| loc points) h0 h1 /\
-    as_nat h1 (gsub points (size 0) (size 4)) < prime256 /\
-    as_nat h1 (gsub points (size 4) (size 4)) < prime256 /\
-    as_nat h1 (gsub points (size 8) (size 4)) < prime256 /\
-    as_nat h1 (gsub points (size 12) (size 4)) < prime256 /\
-    as_nat h1 (gsub points (size 16) (size 4)) < prime256 /\
-    as_nat h1 (gsub points (size 20) (size 4)) < prime256 /\
+    as_nat h1 (gsub points (size 0) (size 4)) < prime /\
+    as_nat h1 (gsub points (size 4) (size 4)) < prime /\
+    as_nat h1 (gsub points (size 8) (size 4)) < prime /\
+    as_nat h1 (gsub points (size 12) (size 4)) < prime /\
+    as_nat h1 (gsub points (size 16) (size 4)) < prime /\
+    as_nat h1 (gsub points (size 20) (size 4)) < prime /\
     (
       let pointU1 = gsub points (size 0) (size 12) in
       let pointU2 = gsub points (size 12) (size 12) in
@@ -260,13 +262,13 @@ val ecdsa_verification_step5_1:
       disjoint tempBuffer u1 /\
       disjoint tempBuffer u2 /\
       LowStar.Monotonic.Buffer.all_disjoint [loc pointSum; loc pubKeyAsPoint; loc tempBuffer] /\
-      point_x_as_nat h pubKeyAsPoint < prime256 /\
-      point_y_as_nat h pubKeyAsPoint < prime256 /\
-      point_z_as_nat h pubKeyAsPoint < prime256
+      point_x_as_nat h pubKeyAsPoint < prime /\
+      point_y_as_nat h pubKeyAsPoint < prime /\
+      point_z_as_nat h pubKeyAsPoint < prime
     )
     (ensures fun h0 _ h1 ->
       modifies (loc pointSum |+| loc tempBuffer |+| loc pubKeyAsPoint) h0 h1 /\
-      as_nat h1 (gsub pointSum (size 0) (size 4)) < prime256 /\
+      as_nat h1 (gsub pointSum (size 0) (size 4)) < prime /\
       (
         let pointAtInfinity = (0, 0, 0) in
         let u1D, _ = montgomery_ladder_spec (as_seq h0 u1) (pointAtInfinity, basePoint) in
@@ -308,13 +310,13 @@ val ecdsa_verification_step5:
       disjoint tempBuffer u1 /\
       disjoint tempBuffer u2 /\
       LowStar.Monotonic.Buffer.all_disjoint [loc x; loc pubKeyAsPoint; loc tempBuffer] /\
-      point_x_as_nat h pubKeyAsPoint < prime256 /\
-      point_y_as_nat h pubKeyAsPoint < prime256 /\
-      point_z_as_nat h pubKeyAsPoint < prime256
+      point_x_as_nat h pubKeyAsPoint < prime /\
+      point_y_as_nat h pubKeyAsPoint < prime /\
+      point_z_as_nat h pubKeyAsPoint < prime
     )
     (ensures fun h0 state h1 ->
       modifies (loc x |+| loc pubKeyAsPoint |+| loc tempBuffer) h0 h1 /\
-      as_nat h1 x < prime256 /\
+      as_nat h1 x < prime /\
       (
         let pointAtInfinity = (0, 0, 0) in
         let u1D, _ = montgomery_ladder_spec (as_seq h0 u1) (pointAtInfinity, basePoint) in
@@ -386,9 +388,9 @@ val ecdsa_verification_core:
       disjoint tempBuffer m /\
       LowStar.Monotonic.Buffer.all_disjoint [loc publicKeyPoint; loc hashAsFelem; loc xBuffer; loc tempBuffer] /\
       as_nat h s < prime_p256_order /\ as_nat h r < prime_p256_order /\
-      point_x_as_nat h publicKeyPoint < prime256 /\
-      point_y_as_nat h publicKeyPoint < prime256 /\
-      point_z_as_nat h publicKeyPoint < prime256
+      point_x_as_nat h publicKeyPoint < prime /\
+      point_y_as_nat h publicKeyPoint < prime /\
+      point_z_as_nat h publicKeyPoint < prime
     )
     (ensures fun h0 state h1 ->
       modifies (loc publicKeyPoint |+| loc hashAsFelem |+| loc xBuffer |+| loc tempBuffer) h0 h1 /\

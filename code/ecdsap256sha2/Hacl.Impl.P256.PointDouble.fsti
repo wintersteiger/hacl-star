@@ -27,6 +27,8 @@ open FStar.Tactics.Canon
 open FStar.Math.Lemmas
 open FStar.Mul
 
+open Spec.P256.Field
+
 #reset-options "--z3rlimit 300" 
 
 val point_double: p: point -> result: point -> tempBuffer: lbuffer uint64 (size 88) -> Stack unit
