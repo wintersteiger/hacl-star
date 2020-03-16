@@ -1,11 +1,11 @@
-module Hacl.Spec.P256.MontgomeryMultiplication
+module Spec.P256.MontgomeryMultiplication
 
 open FStar.Math.Lemmas
 open FStar.Math.Lib
 open FStar.Mul
 
-open Hacl.Spec.P256.Lemmas
-open Hacl.Spec.P256.Definitions
+open Spec.P256.Lemmas
+open Spec.P256.Definitions
 
 open Lib.IntTypes
 
@@ -48,7 +48,6 @@ val multiplicationInDomainNat: #k: nat -> #l: nat ->
 
 val additionInDomain: a: nat {a < prime} -> b: nat {b < prime} -> Lemma 
   ((a + b) % prime == toDomain_ (fromDomain_ a + fromDomain_ b))
-  
+
 val substractionInDomain: a: nat {a < prime} -> b: nat { b < prime} -> Lemma 
   ((a - b) % prime == toDomain_ (fromDomain_ a - fromDomain_ b))
-
