@@ -143,43 +143,7 @@ let felem_seq_as_nat_8 (a: lseq uint64 8) : Tot nat =
   uint_v a6 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 + 
   uint_v a7 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64
 
-
-open FStar.Mul
-
 inline_for_extraction
 type point = lbuffer uint64 (size 12)
 
-inline_for_extraction
-let long = lbuffer uint64 (size 9)
-
 type scalar = lbuffer uint8 (size 32)
-
-(*
-noextract
-val as_nat9: f: felem9 -> Tot nat 
-let as_nat9 f = 
-  let (s0, s1, s2, s3, s4, s5, s6, s7, s8) = f in
-  v s0 + v s1 * pow2 64 + v s2 * pow2 64 * pow2 64 +
-  v s3 * pow2 64 * pow2 64 * pow2 64 +
-  v s4 * pow2 64 * pow2 64 * pow2 64 * pow2 64 +
-  v s5 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 +
-  v s6 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 +
-  v s7 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 +
-  v s8 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 
-
-
-noextract
-let long_as_nat (h:mem) (e:long) : GTot nat =
-  let open Lib.Sequence in 
-  let s = as_seq h e in
-  let s0 = s.[0] in
-  let s1 = s.[1] in
-  let s2 = s.[2] in
-  let s3 = s.[3] in
-  let s4 = s.[4] in
-  let s5 = s.[5] in
-  let s6 = s.[6] in
-  let s7 = s.[7] in
-  let s8 = s.[8] in 
-  as_nat9 (s0, s1, s2, s3, s4, s5, s6, s7, s8)
-*)
