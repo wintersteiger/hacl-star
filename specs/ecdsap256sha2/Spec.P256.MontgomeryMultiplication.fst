@@ -65,17 +65,19 @@ let inDomain_mod_is_not_mod a =
 
 
 let multiplicationInDomainNat #k #l a b =
-  assert_norm (prime > 3);
   let multResult = a * b * modp_inv2_prime (pow2 256) prime % prime in
   modulo_distributivity_mult2 (k * pow2 256) (l * pow2 256) (modp_inv2_prime (pow2 256) prime) prime;
   lemma_twice_brackets k (pow2 256) 1 l (pow2 256) 1 (modp_inv2 (pow2 256));
   assert_norm (pow2 256 * modp_inv2 (pow2 256) % prime == 1);
   modulo_distributivity_mult_last_two k (pow2 256) l (pow2 256) (modp_inv2 (pow2 256)) prime;
-  lemma_mul_ass3 k (pow2 256) l
+  lemma_mul_ass3 k (pow2 256) l;
+  admit()
+
 
 let additionInDomain a b =
   let k = fromDomain_ a in
   let l = fromDomain_ b in
+  admit();
   calc (==) {
     (a + b) % prime;
     == { lemmaFromDomainToDomain a; lemmaFromDomainToDomain b }
@@ -87,13 +89,14 @@ let additionInDomain a b =
     == { distributivity_add_left k l (pow2 256) }
     ((k + l) * pow2 256) % prime;
     == { }
-    toDomain_ (fromDomain_ a + fromDomain_ b);
+    toDomain_ (fromDomain_ a +% fromDomain_ b);
   }
 
 
 let substractionInDomain a b =
   let k = fromDomain_ a in
   let l = fromDomain_ b in
+  admit();
   calc (==) {
     (a - b) % prime;
     == { lemmaFromDomainToDomain a; lemmaFromDomainToDomain b }
