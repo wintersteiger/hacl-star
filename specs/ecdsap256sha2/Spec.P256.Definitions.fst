@@ -79,7 +79,7 @@ let felem = lbuffer uint64 (size 4)
 inline_for_extraction 
 let widefelem = lbuffer uint64 (size 8)
 
-
+(* Impromptu *)
 noextract
 let as_nat (h:mem) (e:felem) : GTot nat =
   let s = as_seq h e in
@@ -89,7 +89,6 @@ let as_nat (h:mem) (e:felem) : GTot nat =
   let s3 = s.[3] in
   as_nat4 (s0, s1, s2, s3)
 
-(*A: Attempt *)
 noextract
 let as_nat_elem (h:mem) (e:felem {as_nat h e < prime}) : GTot elem =
   let s = as_seq h e in
@@ -107,6 +106,15 @@ let as_nat_elem1 (h:mem) (e:felem) : GTot elem =
   let s2 = s.[2] in
   let s3 = s.[3] in
   as_nat4 (s0, s1, s2, s3) % prime
+
+
+let inField (h: mem) (e: felem) : GTot bool = 
+  let s = as_seq h e in
+  let s0 = s.[0] in
+  let s1 = s.[1] in
+  let s2 = s.[2] in
+  let s3 = s.[3] in
+  as_nat4 (s0, s1, s2, s3) < prime
 
 
 
