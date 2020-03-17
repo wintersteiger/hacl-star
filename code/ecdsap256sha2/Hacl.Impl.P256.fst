@@ -25,7 +25,7 @@ open Hacl.Impl.P256.Math
 open Hacl.Impl.P256.PointAdd
 open Hacl.Impl.P256.PointDouble
 
-
+open Spec.P256.Jacobian
 
 open FStar.Tactics 
 open FStar.Tactics.Canon
@@ -138,14 +138,17 @@ val cswap: bit:uint64{v bit <= 1} -> p:point -> q:point
       as_nat h (gsub q (size 8) (size 4)) < prime
 )
     (ensures  fun h0 _ h1 ->
-      modifies (loc p |+| loc q) h0 h1 /\
+      modifies (loc p |+| loc q) h0 h1 (*
       (let pBefore = as_seq h0 p in let qBefore = as_seq h0 q in 
   let pAfter = as_seq h1 p in let qAfter = as_seq h1 q in 
   let condP0, condP1 = conditional_swap bit pBefore qBefore  in 
   condP0 == pAfter /\ condP1 == qAfter) /\ 
 
       (v bit == 1 ==> as_seq h1 p == as_seq h0 q /\ as_seq h1 q == as_seq h0 p) /\
-      (v bit == 0 ==> as_seq h1 p == as_seq h0 p /\ as_seq h1 q == as_seq h0 q))
+      (v bit == 0 ==> as_seq h1 p == as_seq h0 p /\ as_seq h1 q == as_seq h0 q)
+   *)   
+      
+      )
 
 
 let cswap bit p1 p2 =
@@ -454,7 +457,7 @@ let montgomery_ladder #a p q scalar tempBuffer =
   let spec_ml h0 = _ml_step (as_seq h0 scalar) in 
 
   [@inline_let] 
-  let acc (h:mem) : GTot (tuple2 point_nat_prime point_nat_prime) = 
+  let acc (h:mem) : GTot (tuple2 pointJ pointJ) = 
   (fromDomainPoint(point_prime_to_coordinates (as_seq h p)), fromDomainPoint(point_prime_to_coordinates (as_seq h q)))  in 
   
   Lib.LoopCombinators.eq_repeati0 256 (spec_ml h0) (acc h0);

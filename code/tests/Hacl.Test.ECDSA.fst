@@ -94,22 +94,22 @@ val check_bound: b:Lib.Buffer.lbuffer uint8 32ul -> Stack bool
   (ensures  fun h0 r h1 ->
     h0 == h1 /\
     r == (Lib.ByteSequence.nat_from_bytes_be (Lib.Buffer.as_seq h0 b) <
-          Spec.ECDSAP256.Definition.prime_p256_order))
+          Spec.P256.order))
 
 let check_bound b =
   let open FStar.Mul in
   let open Lib.ByteSequence in
   let open Spec.ECDSAP256.Definition in
   [@inline_let]
-  let q1 = normalize_term (prime_p256_order % pow2 64) in
+  let q1 = normalize_term (Spec.P256.order % pow2 64) in
   [@inline_let]
-  let q2 = normalize_term ((prime_p256_order / pow2 64) % pow2 64) in
+  let q2 = normalize_term ((Spec.P256.order / pow2 64) % pow2 64) in
   [@inline_let]
-  let q3 = normalize_term ((prime_p256_order / pow2 128) % pow2 64) in
+  let q3 = normalize_term ((Spec.P256.order / pow2 128) % pow2 64) in
   [@inline_let]
-  let q4 = normalize_term (((prime_p256_order / pow2 128) / pow2 64) % pow2 64) in
+  let q4 = normalize_term (((Spec.P256.order / pow2 128) / pow2 64) % pow2 64) in
   assert_norm (pow2 128 * pow2 64 == pow2 192);
-  assert (prime_p256_order == q1 + pow2 64 * q2 + pow2 128 * q3 + pow2 192 * q4); 
+  assert (Spec.P256.order == q1 + pow2 64 * q2 + pow2 128 * q3 + pow2 192 * q4); 
   let q1 = mk_int #U64 #PUB q1 in
   let q2 = mk_int #U64 #PUB q2 in
   let q3 = mk_int #U64 #PUB q3 in

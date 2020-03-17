@@ -41,8 +41,8 @@ val ecdsa_p256_sha2_sign: result: lbuffer uint8 (size 64) -> mLen: size_t -> m: 
     disjoint result m /\
     disjoint result privKey /\
     disjoint result k /\
-    nat_from_bytes_be (as_seq h privKey) < prime_p256_order /\
-    nat_from_bytes_be (as_seq h k) < prime_p256_order
+    nat_from_bytes_be (as_seq h privKey) < order /\
+    nat_from_bytes_be (as_seq h k) < order
   )
   (ensures fun h0 flag h1 -> 
     modifies (loc result) h0 h1 /\

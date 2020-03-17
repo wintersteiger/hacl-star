@@ -62,7 +62,7 @@ let isZero_uint64_nCT f =
 val isMoreThanZeroLessThanOrderMinusOne: f:felem -> Stack bool
   (requires fun h -> live h f)
   (ensures  fun h0 r h1 -> modifies0 h0 h1 /\
-    r = (as_nat h0 f > 0 && as_nat h0 f < prime_p256_order))
+    r = (as_nat h0 f > 0 && as_nat h0 f < order))
 
 let isMoreThanZeroLessThanOrderMinusOne f =
   push_frame();
@@ -98,7 +98,7 @@ val ecdsa_verification_step23: hashAsFelem : felem -> mLen: size_t -> m: lbuffer
   (
       assert_norm (pow2 32 < pow2 61);
       let hashM = H.hash Def.SHA2_256 (as_seq h0 m) in 
-      as_nat h1 hashAsFelem == nat_from_bytes_be hashM % prime_p256_order)
+      as_nat h1 hashAsFelem == nat_from_bytes_be hashM % order)
   )
 
 let ecdsa_verification_step23 hashAsFelem mLen m =
@@ -133,15 +133,15 @@ val ecdsa_verification_step4:
       disjoint bufferU2 hash /\
       disjoint bufferU2 r /\
       disjoint bufferU2 s /\
-      as_nat h s < prime_p256_order /\
-      as_nat h hash < prime_p256_order /\
-      as_nat h r < prime_p256_order
+      as_nat h s < order /\
+      as_nat h hash < order /\
+      as_nat h r < order
     )
     (ensures fun h0 _ h1 ->
       modifies (loc bufferU1 |+| loc bufferU2) h0 h1 /\
       (
-	let p0 = pow (as_nat h0 s) (prime_p256_order - 2) * as_nat h0 hash % prime_p256_order in 
-	let p1 = pow (as_nat h0 s) (prime_p256_order - 2) * as_nat h0 r % prime_p256_order in 
+	let p0 = pow (as_nat h0 s) (order - 2) * as_nat h0 hash % order in 
+	let p1 = pow (as_nat h0 s) (order - 2) * as_nat h0 r % order in 
 	as_seq h1 bufferU1 == nat_to_bytes_be 32 p0 /\
 	as_seq h1 bufferU2 == nat_to_bytes_be 32 p1
       )
@@ -387,7 +387,7 @@ val ecdsa_verification_core:
       disjoint tempBuffer s /\
       disjoint tempBuffer m /\
       LowStar.Monotonic.Buffer.all_disjoint [loc publicKeyPoint; loc hashAsFelem; loc xBuffer; loc tempBuffer] /\
-      as_nat h s < prime_p256_order /\ as_nat h r < prime_p256_order /\
+      as_nat h s < order /\ as_nat h r < order /\
       point_x_as_nat h publicKeyPoint < prime /\
       point_y_as_nat h publicKeyPoint < prime /\
       point_z_as_nat h publicKeyPoint < prime
@@ -397,10 +397,10 @@ val ecdsa_verification_core:
        (
          assert_norm (pow2 32 < pow2 61);
 	 let hashM = H.hash Def.SHA2_256 (as_seq h0 m) in 
-	 let hashNat = nat_from_bytes_be hashM % prime_p256_order in 
+	 let hashNat = nat_from_bytes_be hashM % order in 
 	 
-         let p0 = pow (as_nat h0 s) (prime_p256_order - 2) * hashNat % prime_p256_order in 
-	 let p1 = pow (as_nat h0 s) (prime_p256_order - 2) * as_nat h0 r % prime_p256_order in 
+         let p0 = pow (as_nat h0 s) (order - 2) * hashNat % order in 
+	 let p1 = pow (as_nat h0 s) (order - 2) * as_nat h0 r % order in 
 
 	 let bufferU1 = nat_to_bytes_be 32 p0  in 
 	 let bufferU2 = nat_to_bytes_be 32 p1 in 
