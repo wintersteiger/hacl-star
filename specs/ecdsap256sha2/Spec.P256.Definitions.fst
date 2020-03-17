@@ -89,6 +89,18 @@ let as_nat (h:mem) (e:felem) : GTot nat =
   let s3 = s.[3] in
   as_nat4 (s0, s1, s2, s3)
 
+(*A: Attempt *)
+noextract
+let as_nat_elem (h:mem) (e:felem {as_nat h e < prime}) : GTot elem =
+  let s = as_seq h e in
+  let s0 = s.[0] in
+  let s1 = s.[1] in
+  let s2 = s.[2] in
+  let s3 = s.[3] in
+  as_nat4 (s0, s1, s2, s3)
+
+
+
 noextract
 let as_nat_il (h:mem) (e:ilbuffer uint64 (size 4)) : GTot nat =
   let s = as_seq h e in

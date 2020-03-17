@@ -7,6 +7,8 @@ open FStar.HyperStack.ST
 module ST = FStar.HyperStack.ST
 module HS = FStar.HyperStack
 
+open Spec.P256
+
 open Lib.IntTypes
 open Lib.Buffer
 
@@ -225,6 +227,6 @@ val secretToPublicWithoutNorm: result: point -> scalar: lbuffer uint8 (size 32) 
       as_nat h1 (gsub result (size 8) (size 4)) < prime /\
       (
 	let p1 = fromDomainPoint(point_prime_to_coordinates (as_seq h1 result)) in 
-	let rN, _ = montgomery_ladder_spec (as_seq h0 scalar) ((0, 0, 0), basePoint) in 
+	let rN, _ = montgomery_ladder_spec (as_seq h0 scalar) ((0, 0, 0), base) in 
 	rN == p1))  
 
