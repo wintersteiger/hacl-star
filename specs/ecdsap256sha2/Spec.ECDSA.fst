@@ -9,7 +9,6 @@ open Lib.IntTypes
 open Lib.Sequence
 
 open Spec.Hash
-open Spec.P256
 
 module Def = Spec.Hash.Definitions
 
@@ -20,11 +19,17 @@ open Spec.P256.Field
 open Spec.P256.Jacobian
 open Spec.P256.Intermediate
 
+(* This is slightly akward to have power in Lemmas, but well *)
+open Spec.P256.Lemmas
+
 #set-options "--fuel 0 --ifuel 0 --z3rlimit 100"
 
-let prime = prime_p256_order
 
-let nat_prime = n:nat{n < prime}
+(*A: Important! 
+  There is a difference between power used for P256 stuff and for ECDSA. P256 takes any number in p256 fiels, whereas here the power function takes any natural number*)
+
+
+let nat_prime = n:nat{n < Spec.P256.order}
 
 
 val lemma_scalar_ith: sc:lbytes 32 -> k:nat{k < 32} -> Lemma
@@ -63,7 +68,7 @@ let ith_bit k i =
   res
 
 
-let ( *% ) a b = (a * b) % prime
+let ( *% ) a b = (a * b) % Spec.P256.order
 
 
 val _exp_step0: p:nat_prime -> q:nat_prime -> tuple2 nat_prime nat_prime
@@ -85,7 +90,7 @@ let _exp_step1 r0 r1 =
 let swap p q = q, p
 
 
-val conditional_swap: i:uint64 -> p:nat_prime -> q:nat_prime -> tuple2 nat_prime nat_prime
+val conditional_swap: i: uint64 -> p: nat_prime -> q: nat_prime -> tuple2 nat_prime nat_prime
 
 let conditional_swap i p q =
   if v i = 0 then (p, q) else (q, p)
@@ -112,8 +117,7 @@ let _exp_step k i (p, q) =
   if uint_to_nat bit = 0 then _exp_step0 p q else _exp_step1 p q
 
 
-val _exponent_spec: k:lseq uint8 32  -> tuple2 nat_prime nat_prime
-  -> tuple2 nat_prime nat_prime
+val _exponent_spec: k:lseq uint8 32  -> tuple2 nat_prime nat_prime -> tuple2 nat_prime nat_prime
 
 let _exponent_spec k (p, q) =
   let open Lib.LoopCombinators in
@@ -135,7 +139,7 @@ let lemma_even index k =
   FStar.Math.Lemmas.division_multiplication_lemma number (pow2 n) 2
 
 
-val lemma_odd: index:pos{index <= 256} -> k:lseq uint8 32 {uint_v (ith_bit k (256 - index)) == 1} ->
+val lemma_odd: index:pos {index <= 256} -> k:lseq uint8 32 {uint_v (ith_bit k (256 - index)) == 1} ->
   Lemma(
     let number = nat_from_intseq_le k in
     let n = 256 - index  in
@@ -162,8 +166,8 @@ val lemma_exponen_spec: k:lseq uint8 32
     let number = nat_from_bytes_le k in
     let newIndex = 256 - index in
     let f0, f1 = Lib.LoopCombinators.repeati index (_exp_step k) start in
-    f0 == pow start1 (arithmetic_shift_right number newIndex) % prime_p256_order /\
-    f1 == pow start1 (arithmetic_shift_right number newIndex + 1) % prime_p256_order
+    f0 == Spec.P256.Lemmas.pow start1 (arithmetic_shift_right number newIndex) % prime_p256_order /\
+    f1 == Spec.P256.Lemmas.pow start1 (arithmetic_shift_right number newIndex + 1) % prime_p256_order
   )
 
 #push-options "--fuel 1"
@@ -176,8 +180,8 @@ val lemma_exponen_spec_0: k:lseq uint8 32
     let number = nat_from_bytes_le k in
     let newIndex = 256 in
     let f0, f1 = Lib.LoopCombinators.repeati 0 (_exp_step k) start in
-    f0 == pow start1 (arithmetic_shift_right number newIndex) % prime_p256_order /\
-    f1 == pow start1 (arithmetic_shift_right number newIndex + 1) % prime_p256_order
+    f0 == Spec.P256.Lemmas.pow start1 (arithmetic_shift_right number newIndex) % prime_p256_order /\
+    f1 == Spec.P256.Lemmas.pow start1 (arithmetic_shift_right number newIndex + 1) % prime_p256_order
   )
 
 let lemma_exponen_spec_0 k start =
@@ -190,6 +194,7 @@ let lemma_exponen_spec_0 k start =
 
 #pop-options
 
+(* broken *)
 let rec lemma_exponen_spec k start index =
   let f = _exp_step k in
   let st0, st1 = start in
@@ -205,62 +210,63 @@ let rec lemma_exponen_spec k start index =
     let bitMask = uint_v (ith_bit k (256 - index)) in
     match bitMask with
       | 0 ->
-        let a0 = pow st1 (arithmetic_shift_right number (256 - index + 1)) in
-        let a1 = pow st1 (arithmetic_shift_right number (256 - index + 1) + 1) in
+        let a0 = Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index + 1)) in
+        let a1 = Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index + 1) + 1) in
         calc (==) {
           (a0 % prime_p256_order) * (a0 % prime_p256_order) % prime_p256_order;
           == {modulo_distributivity_mult a0 a0 prime_p256_order}
           (a0 * a0) % prime_p256_order;
           == { }
-          (pow st1 (arithmetic_shift_right number (256 - index + 1)) * pow st1 (arithmetic_shift_right number (256 - index + 1))) % prime_p256_order;
-          == {pow_plus st1 (arithmetic_shift_right number (256 - index + 1)) (arithmetic_shift_right number (256 - index + 1))}
-          (pow st1 (arithmetic_shift_right number (256 - index + 1) + arithmetic_shift_right number (256 - index + 1))) % prime_p256_order;
+          (Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index + 1)) * pow st1 (arithmetic_shift_right number (256 - index + 1))) % prime_p256_order;
+          == {Spec.P256.Lemmas.pow_plus st1 (arithmetic_shift_right number (256 - index + 1)) (arithmetic_shift_right number (256 - index + 1))}
+          (Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index + 1) + arithmetic_shift_right number (256 - index + 1))) % prime_p256_order;
           == {}
-          (pow st1 (2 * arithmetic_shift_right number (256 - index + 1))) % prime_p256_order;
+          (Spec.P256.Lemmas.pow st1 (2 * arithmetic_shift_right number (256 - index + 1))) % prime_p256_order;
           == {lemma_even index k}
-          pow st1 (arithmetic_shift_right number newIndex) % prime_p256_order;
+          Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number newIndex) % prime_p256_order;
         };
+	
         calc (==) {
           (a0 % prime_p256_order) * (a1 % prime_p256_order) % prime_p256_order;
           == {modulo_distributivity_mult a0 a1 prime_p256_order}
           (a0 * a1) % prime_p256_order;
           == { }
-          (pow st1 (arithmetic_shift_right number (256 - index + 1)) * pow st1 (arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
-          == {pow_plus st1 (arithmetic_shift_right number (256 - index + 1)) (arithmetic_shift_right number (256 - index + 1) + 1)}
-          (pow st1 (arithmetic_shift_right number (256 - index + 1) + arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
+          (Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index + 1)) * pow st1 (arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
+          == {Spec.P256.Lemmas.pow_plus st1 (arithmetic_shift_right number (256 - index + 1)) (arithmetic_shift_right number (256 - index + 1) + 1)}
+          (Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index + 1) + arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
           == {}
-          (pow st1 (2* arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
+          (Spec.P256.Lemmas.pow st1 (2* arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
           == {lemma_even index k}
-          (pow st1 (arithmetic_shift_right number (256 - index) + 1)) % prime_p256_order;
+          (Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index) + 1)) % prime_p256_order;
         }
       | 1 ->
-        let a0 = pow st1 (arithmetic_shift_right number (256 - index + 1)) in
-        let a1 = pow st1 (arithmetic_shift_right number (256 - index + 1) + 1) in
+        let a0 = Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index + 1)) in
+        let a1 = Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index + 1) + 1) in
         calc (==) {
           (a1 % prime_p256_order) * (a1 % prime_p256_order) % prime_p256_order;
           == {modulo_distributivity_mult a1 a1 prime_p256_order}
           (a1 * a1) % prime_p256_order;
           == { }
-          (pow st1 (arithmetic_shift_right number (256 - index + 1) + 1) * pow st1 (arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
-          == {pow_plus st1 (arithmetic_shift_right number (256 - index + 1) + 1) (arithmetic_shift_right number (256 - index + 1) + 1)}
-          (pow st1 (arithmetic_shift_right number (256 - index + 1) + 1 + arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
+          (Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index + 1) + 1) * pow st1 (arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
+          == {Spec.P256.Lemmas.pow_plus st1 (arithmetic_shift_right number (256 - index + 1) + 1) (arithmetic_shift_right number (256 - index + 1) + 1)}
+          (Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index + 1) + 1 + arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
           == {}
-          (pow st1 (2 * arithmetic_shift_right number (256 - index + 1) + 2)) % prime_p256_order;
+          (Spec.P256.Lemmas.pow st1 (2 * arithmetic_shift_right number (256 - index + 1) + 2)) % prime_p256_order;
           == {lemma_odd index k}
-          pow st1 (arithmetic_shift_right number newIndex + 1) % prime_p256_order;
+          Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number newIndex + 1) % prime_p256_order;
         };
         calc (==) {
           (a0 % prime_p256_order) * (a1 % prime_p256_order) % prime_p256_order;
           == {modulo_distributivity_mult a0 a1 prime_p256_order}
           (a0 * a1) % prime_p256_order;
           == { }
-          (pow st1 (arithmetic_shift_right number (256 - index + 1)) * pow st1 (arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
-          == {pow_plus st1 (arithmetic_shift_right number (256 - index + 1)) (arithmetic_shift_right number (256 - index + 1) + 1)}
-          (pow st1 (arithmetic_shift_right number (256 - index + 1) + arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
+          (Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index + 1)) * pow st1 (arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
+          == {Spec.P256.Lemmas.pow_plus st1 (arithmetic_shift_right number (256 - index + 1)) (arithmetic_shift_right number (256 - index + 1) + 1)}
+          (Spec.P256.Lemmas.pow st1 (arithmetic_shift_right number (256 - index + 1) + arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
           == {}
-          (pow st1 (2* arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
+          (Spec.P256.Lemmas.pow st1 (2* arithmetic_shift_right number (256 - index + 1) + 1)) % prime_p256_order;
           == {lemma_odd index k}
-          (pow st1 (arithmetic_shift_right (nat_from_bytes_le k) (256 - index)) % prime_p256_order);
+          (Spec.P256.Lemmas.pow st1 (arithmetic_shift_right (nat_from_bytes_le k) (256 - index)) % prime_p256_order);
         }
     end
 
