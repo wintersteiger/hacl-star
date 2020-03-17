@@ -12,7 +12,6 @@ open FStar.Mul
 
 open Spec.P256.Field
 
-
 inline_for_extraction noextract
 let p256_prime_list : x:list uint64{List.Tot.length x == 4 /\ 
   (
@@ -30,6 +29,7 @@ let p256_prime_list : x:list uint64{List.Tot.length x == 4 /\
     assert_norm(0xffffffffffffffff + 0xffffffff * pow2 64 + 0xffffffff00000001 * pow2 192 == prime);
   x
 
+
 inline_for_extraction noextract
 let felem4 = tuple4 uint64 uint64 uint64 uint64
 inline_for_extraction noextract
@@ -38,7 +38,6 @@ inline_for_extraction noextract
 let felem8_32 = tuple8 uint32 uint32 uint32 uint32 uint32 uint32 uint32 uint32
 inline_for_extraction noextract
 let felem9 = tuple9 uint64 uint64 uint64  uint64 uint64 uint64 uint64 uint64 uint64
-
 
 
 noextract
@@ -60,15 +59,17 @@ let wide_as_nat4 f =
   v s6 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 +
   v s7 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64
 
-
+(*
 noextract
 let point_nat = tuple3 nat nat nat
+
 noextract
 let point_nat_prime = (p: point_nat {let (a, b, c) = p in a < prime /\ b < prime /\ c < prime})
-
+*)
 
 noextract
 let point_seq = Lib.Sequence.lseq uint64 12 
+
 noextract
 let felem_seq = lseq uint64 4
 
@@ -77,6 +78,7 @@ inline_for_extraction
 let felem = lbuffer uint64 (size 4)
 inline_for_extraction 
 let widefelem = lbuffer uint64 (size 8)
+
 
 noextract
 let as_nat (h:mem) (e:felem) : GTot nat =
@@ -142,36 +144,17 @@ let felem_seq_as_nat_8 (a: lseq uint64 8) : Tot nat =
   uint_v a7 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64 * pow2 64
 
 
-
 open FStar.Mul
-
-noextract
-let point_prime =  p: point_seq
-  {
-    let x = Lib.Sequence.sub p 0 4 in 
-    let y = Lib.Sequence.sub p 4 4 in 
-    let z = Lib.Sequence.sub p 8 4 in 
-    felem_seq_as_nat x < prime /\ felem_seq_as_nat y < prime /\ felem_seq_as_nat z < prime
-  } 
-
 
 inline_for_extraction
 type point = lbuffer uint64 (size 12)
 
-
-(* Montgomery multiplication parameters *)
-inline_for_extraction
-let s = 64ul
 inline_for_extraction
 let long = lbuffer uint64 (size 9)
 
 type scalar = lbuffer uint8 (size 32)
 
-val border_felem4: f: felem4 -> Lemma (as_nat4 f < pow2 256)
-
-let border_felem4 (f0, f1, f2, f3) = 
-    assert_norm(as_nat4 (f0, f1, f2, f3) < pow2 256)
-
+(*
 noextract
 val as_nat9: f: felem9 -> Tot nat 
 let as_nat9 f = 
@@ -199,4 +182,4 @@ let long_as_nat (h:mem) (e:long) : GTot nat =
   let s7 = s.[7] in
   let s8 = s.[8] in 
   as_nat9 (s0, s1, s2, s3, s4, s5, s6, s7, s8)
-
+*)

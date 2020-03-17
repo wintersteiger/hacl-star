@@ -10,15 +10,9 @@ open Spec.P256.Definitions
 open Spec.P256.Lemmas
 
 open Spec.P256.Field
+open Spec.P256.Jacobian
 
 #set-options "--fuel 0 --ifuel 0 --z3rlimit 100"
-
-(*
-Curve NIST-P256
-
-y^2 = x^3-3x+41058363725152142129326129780047268409114441015993725554835256314039467401291
-
-modulo p = 2^256 - 2^224 + 2^192 + 2^96 - 1 *)
 
 let aCoordinateP256 = -3 
 let bCoordinateP256 : (a: nat {a < prime}) =
@@ -26,7 +20,7 @@ let bCoordinateP256 : (a: nat {a < prime}) =
   41058363725152142129326129780047268409114441015993725554835256314039467401291
 
 noextract
-let basePoint : point_nat_prime =
+let basePoint : pointJ =
   assert_norm (0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296 < prime);
   (0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296,
    0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5,
@@ -34,7 +28,7 @@ let basePoint : point_nat_prime =
 
 
 noextract
-let _point_double (p:point_nat_prime) : point_nat_prime =
+let _point_double (p:pointJ) : pointJ =
   let x, y, z = p in
   let s = (4 * x * y * y) % prime in
   let m = ((-3) * z * z * z * z + 3 * x * x) % prime in
@@ -45,7 +39,7 @@ let _point_double (p:point_nat_prime) : point_nat_prime =
 
 
 noextract
-let _point_add (p:point_nat_prime) (q:point_nat_prime) : point_nat_prime =
+let _point_add (p:pointJ) (q:pointJ) : pointJ =
   let open FStar.Tactics in
   let open FStar.Tactics.Canon in
 
@@ -91,11 +85,11 @@ let _point_add (p:point_nat_prime) (q:point_nat_prime) : point_nat_prime =
 
 
 (* This function takes any number and returns whether it's a point at infinity *)
-let isPointAtInfinityArbitrary (p:point_nat) =
+let isPointAtInfinityArbitrary (p:tuple3 nat nat nat) =
   let (_, _, z) = p in z = 0
 
 
-let _norm (p:point_nat_prime) : point_nat_prime =
+let _norm (p:pointJ) : pointJ =
   assert_norm (prime - 2 > 0);
   let (x, y, z) = p in
   let z2 = z * z in
@@ -118,7 +112,7 @@ let ith_bit (k:lbytes 32) (i:nat{i < 256}) : uint64 =
   to_u64 ((index k q >>. r) &. u8 1)
 
 
-val _ml_step0: p:point_nat_prime -> q:point_nat_prime -> tuple2 point_nat_prime point_nat_prime
+val _ml_step0: p:pointJ -> q:pointJ -> tuple2 pointJ pointJ
 
 let _ml_step0 r0 r1 =
   let r0 = _point_add r1 r0 in
@@ -126,7 +120,7 @@ let _ml_step0 r0 r1 =
   (r0, r1)
 
 
-val _ml_step1: p: point_nat_prime -> q: point_nat_prime -> tuple2 point_nat_prime point_nat_prime
+val _ml_step1: p: pointJ -> q: pointJ -> tuple2 pointJ pointJ
 
 let _ml_step1 r0 r1 =
   let r1 = _point_add r0 r1 in
@@ -134,8 +128,7 @@ let _ml_step1 r0 r1 =
   (r0, r1)
 
 
-val _ml_step: k:scalar -> i:nat{i < 256} -> tuple2 point_nat_prime point_nat_prime
-  -> tuple2 point_nat_prime point_nat_prime
+val _ml_step: k:scalar -> i:nat{i < 256} -> tuple2 pointJ pointJ -> tuple2 pointJ pointJ
 
 let _ml_step k i (p, q) =
   let bit = 255 - i in
@@ -147,27 +140,27 @@ let _ml_step k i (p, q) =
     _ml_step0 p q
 
 
-val montgomery_ladder_spec: k:scalar -> tuple2 point_nat_prime point_nat_prime
-  -> tuple2 point_nat_prime point_nat_prime
+val montgomery_ladder_spec: k:scalar -> tuple2 pointJ pointJ -> tuple2 pointJ pointJ
+
 let montgomery_ladder_spec k pq =
   Lib.LoopCombinators.repeati 256 (_ml_step k) pq
 
 
-val scalar_multiplication: scalar -> point_nat_prime -> point_nat_prime
+val scalar_multiplication: scalar -> pointJ -> pointJ
 let scalar_multiplication k p =
   let pai = (0, 0, 0) in
   let q, f = montgomery_ladder_spec k (pai, p) in
   _norm q
 
 
-val secret_to_public: scalar -> point_nat_prime
+val secret_to_public: scalar -> pointJ
 let secret_to_public k =
   let pai = (0, 0, 0) in
   let q, f = montgomery_ladder_spec k (pai, basePoint) in
   _norm q
 
 
-val isPointOnCurve: point_nat_prime -> bool
+val isPointOnCurve: pointJ -> bool
 let isPointOnCurve p =
   let (x, y, z) = p in
   (y * y) % prime =
