@@ -11,7 +11,9 @@ open Spec.P256.Definitions
 open Spec.P256.MontgomeryMultiplication
 open Spec.P256.MontgomeryMultiplication.PointAdd 
 open Spec.P256.MontgomeryMultiplication.PointDouble
+
 open Spec.P256
+open Spec.P256.Jacobian
 
 open FStar.Math.Lemmas
 open Lib.Sequence
@@ -19,13 +21,13 @@ open Lib.ByteSequence
 
 #reset-options " --z3rlimit 100"
 
-val swap: p: point_prime -> q: point_prime -> Tot (r: tuple2 point_prime point_prime {let pNew, qNew = r in 
+val swap: p: pointJ -> q: pointJ -> Tot (r: tuple2 pointJ pointJ {let pNew, qNew = r in 
   pNew == q /\ qNew == p})
 
 let swap p q = (q, p)
 
 
-val conditional_swap: i: uint64 -> p: point_prime -> q: point_prime -> Tot (r: tuple2 point_prime point_prime
+val conditional_swap: i: uint64 -> p: pointJ -> q: pointJ -> Tot (r: tuple2 pointJ pointJ
   {
     let pNew, qNew = r in 
     if uint_v i = 0 then pNew == p /\ qNew == q
