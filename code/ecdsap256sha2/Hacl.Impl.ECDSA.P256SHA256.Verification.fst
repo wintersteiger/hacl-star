@@ -17,7 +17,7 @@ open Spec.P256.Ladder
 
 open Spec.ECDSAP256.Definition
 open Spec.ECDSA
-open Spec.P256
+open Spec.P256.Intermediate
 open Spec.P256.Lemmas
 
 open Hacl.Impl.P256.PointAdd
@@ -324,7 +324,7 @@ val ecdsa_verification_step5:
         let sumD = _point_add u1D u2D in
         let pointNorm = _norm sumD in
         let (xResult, yResult, zResult) = pointNorm in
-        state == not (Spec.P256.isPointAtInfinity pointNorm) /\
+        state == not (isPointAtInfinityArbitrary pointNorm) /\
         as_nat h1 x == xResult
     )
   )
@@ -409,7 +409,7 @@ val ecdsa_verification_core:
          let u2D, _ = montgomery_ladder_spec bufferU2 (pointAtInfinity, point_prime_to_coordinates (as_seq h0 publicKeyPoint)) in
          let sumD = _point_add u1D u2D in
          let (xResult, yResult, zResult) = _norm sumD in
-         state == not (Spec.P256.isPointAtInfinity (_norm sumD)) /\
+         state == not (isPointAtInfinityArbitrary (_norm sumD)) /\
          as_nat h1 xBuffer == xResult
       )
   )

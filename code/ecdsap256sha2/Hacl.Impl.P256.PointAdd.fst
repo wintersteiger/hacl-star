@@ -18,7 +18,7 @@ open Spec.P256.MontgomeryMultiplication.PointAdd
 open Hacl.Impl.LowLevel
 open Hacl.Impl.P256.LowLevel
 open Hacl.Impl.P256.MontgomeryMultiplication
-open Spec.P256
+open Spec.P256.Intermediate
 open Hacl.Impl.P256.Math 
 
 open Spec.P256.Field

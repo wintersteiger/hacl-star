@@ -8,7 +8,7 @@ open Lib.ByteBuffer
 open Lib.ByteSequence
 open Lib.Buffer
 
-open Spec.P256
+open Spec.P256.Intermediate
 open Spec.P256.Definitions
 
 open Spec.ECDSA
@@ -62,7 +62,7 @@ val bufferToJac: p:lbuffer uint64 (size 8) -> result:point -> Stack unit
 val isPointAtInfinityPublic: p:point -> Stack bool
   (requires fun h -> live h p)
   (ensures  fun h0 r h1 -> modifies0 h0 h1 /\
-    r == Spec.P256.isPointAtInfinity (point_prime_to_coordinates (as_seq h0 p)))
+    r == isPointAtInfinityArbitrary (point_prime_to_coordinates (as_seq h0 p)))
 
 (* This code is not side channel resistant *)
 (* This is unused internally and not exposed in the top-level API *)

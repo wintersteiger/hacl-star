@@ -19,7 +19,7 @@ open Spec.P256.MontgomeryMultiplication.PointDouble
 open Spec.P256.MontgomeryMultiplication.PointAdd
 open Spec.P256.Ladder
 
-open Spec.P256
+open Spec.P256.Intermediate
 
 open Lib.Loops
 open FStar.Math.Lemmas
@@ -92,11 +92,11 @@ val isPointAtInfinityPrivate: p: point -> Stack uint64
       (uint_v r == 0 \/ uint_v r == maxint U64) /\ 
       (
 	let x, y, z = fromDomainPoint(point_prime_to_coordinates (as_seq h0 p)) in 
-	if Spec.P256.isPointAtInfinity (x, y, z) then uint_v r = maxint U64 else uint_v r = 0
+	if isPointAtInfinityArbitrary (x, y, z) then uint_v r = maxint U64 else uint_v r = 0
       ) /\
       (
 	let x, y, z = point_prime_to_coordinates (as_seq h0 p) in 
-	if Spec.P256.isPointAtInfinity (x, y, z) then uint_v r = maxint U64 else uint_v r = 0
+	if isPointAtInfinityArbitrary (x, y, z) then uint_v r = maxint U64 else uint_v r = 0
       )
    )
   )

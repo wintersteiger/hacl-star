@@ -9,7 +9,7 @@ open Lib.ByteBuffer
 open Lib.ByteSequence
 open Lib.Buffer 
 
-open Spec.P256 
+open Spec.P256.Intermediate
 open Spec.P256.Definitions
 
 open Spec.ECDSA
@@ -109,7 +109,7 @@ inline_for_extraction noextract
 val upload_p256_point_on_curve_constant: x: felem -> Stack unit
   (requires fun h -> live h x)
   (ensures fun h0 _ h1 -> modifies (loc x) h0 h1 /\ 
-    as_nat h1 x == toDomain_ Spec.P256.bCoordinateP256 /\
+    as_nat h1 x == toDomain_ bCoordinateP256 /\
     as_nat h1 x < prime
  )
 
@@ -121,7 +121,7 @@ let upload_p256_point_on_curve_constant x =
   assert_norm (
     15608596021259845087 + 12461466548982526096 * pow2 64 + 
     16546823903870267094 * pow2 64 * pow2 64 + 
-    15866188208926050356 * pow2 64 * pow2 64 * pow2 64 == Spec.P256.bCoordinateP256 * pow2 256 % prime)
+    15866188208926050356 * pow2 64 * pow2 64 * pow2 64 == bCoordinateP256 * pow2 256 % prime)
 
 
 val lemma_xcube: x_: nat {x_ < prime} -> Lemma 
@@ -132,10 +132,10 @@ let lemma_xcube x_ =
   lemma_mod_sub_distr (x_ * x_ * x_ ) (3 * x_) prime
 
 
-val lemma_xcube2: x_ : nat {x_ < prime} -> Lemma (toDomain_ (((((x_ * x_ * x_) - (3 * x_)) % prime) + Spec.P256.bCoordinateP256) % prime) == toDomain_ ((x_ * x_ * x_  + Spec.P256.aCoordinateP256 * x_ + Spec.P256.bCoordinateP256) % prime))
+val lemma_xcube2: x_ : nat {x_ < prime} -> Lemma (toDomain_ (((((x_ * x_ * x_) - (3 * x_)) % prime) + bCoordinateP256) % prime) == toDomain_ ((x_ * x_ * x_  + aCoordinateP256 * x_ + bCoordinateP256) % prime))
 
 let lemma_xcube2 x_ = 
-  lemma_mod_add_distr Spec.P256.bCoordinateP256 ((x_ * x_ * x_) - (3 * x_)) prime
+  lemma_mod_add_distr bCoordinateP256 ((x_ * x_ * x_) - (3 * x_)) prime
 
 
 inline_for_extraction noextract
@@ -145,7 +145,7 @@ val xcube_minus_x: x: felem -> r: felem -> Stack unit
     modifies (loc r) h0 h1 /\
     (
       let x_ = as_nat h0 x in 
-      as_nat h1 r = toDomain_((x_ * x_ * x_ - 3 * x_ + Spec.P256.bCoordinateP256) % prime))
+      as_nat h1 r = toDomain_((x_ * x_ * x_ - 3 * x_ + bCoordinateP256) % prime))
     )
 
 let xcube_minus_x x r = 
@@ -166,7 +166,7 @@ let xcube_minus_x x r =
   
   let x_ = as_nat h0 x in 
   lemma_xcube x_;
-  lemma_mod_add_distr Spec.P256.bCoordinateP256 ((x_ * x_ * x_) - (3 * x_)) prime;
+  lemma_mod_add_distr bCoordinateP256 ((x_ * x_ * x_) - (3 * x_)) prime;
   lemma_xcube2 x_
 
 
@@ -201,7 +201,8 @@ let isPointOnCurvePublic p =
     y_2 y y2Buffer;
     xcube_minus_x x xBuffer;
     
-    lemma_modular_multiplication_p256_2_d ((as_nat h0 y) * (as_nat h0 y) % prime) (let x_ = as_nat h0 x in (x_ * x_ * x_ - 3 * x_ + Spec.P256.bCoordinateP256) % prime);
+    lemma_modular_multiplication_p256_2_d ((as_nat h0 y) * (as_nat h0 y) % prime)
+       (let x_ = as_nat h0 x in (x_ * x_ * x_ - 3 * x_ + bCoordinateP256) % prime);
     
     let r = compare_felem y2Buffer xBuffer in 
     let z = not (eq_0_u64 r) in 
@@ -305,7 +306,7 @@ val isOrderCorrect: p: point -> tempBuffer: lbuffer uint64 (size 100) -> Stack b
   (ensures fun h0 r h1 -> 
     modifies(loc tempBuffer) h0 h1 /\ 
     (let (xN, yN, zN) = scalar_multiplication prime_p256_order_seq (point_prime_to_coordinates (as_seq h0 p)) in 
-     r == Spec.P256.isPointAtInfinity (xN, yN, zN))
+     r == isPointAtInfinityArbitrary (xN, yN, zN))
   )
 
 let isOrderCorrect p tempBuffer = 

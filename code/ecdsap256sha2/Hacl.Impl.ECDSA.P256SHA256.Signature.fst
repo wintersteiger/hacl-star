@@ -13,7 +13,7 @@ open FStar.Math.Lemmas
 
 open Hacl.Hash.SHA2
 
-open Spec.P256
+open Spec.P256.Intermediate
 open Spec.P256.Lemmas
 open Spec.P256.Definitions
 

@@ -15,7 +15,7 @@ open Spec.P256.MontgomeryMultiplication
 open Spec.P256.MontgomeryMultiplication.PointDouble
 open Spec.P256.MontgomeryMultiplication.PointAdd
 open Spec.P256.Normalisation
-open Spec.P256
+open Spec.P256.Intermediate
 open Hacl.Impl.SolinasReduction
 open Hacl.Impl.LowLevel
 open Hacl.Impl.P256.LowLevel
@@ -91,10 +91,10 @@ let copy_point p result = copy result p
 
 (* https://crypto.stackexchange.com/questions/43869/point-at-infinity-and-error-handling*)
 val lemma_pointAtInfInDomain: x: nat -> y: nat -> z: nat {z < prime256} -> 
-  Lemma (isPointAtInfinity (x, y, z) == isPointAtInfinity ((fromDomain_ x), (fromDomain_ y), (fromDomain_ z)))
+  Lemma (isPointAtInfinityArbitrary (x, y, z) == isPointAtInfinityArbitrary ((fromDomain_ x), (fromDomain_ y), (fromDomain_ z)))
 
 let lemma_pointAtInfInDomain x y z =
-  assert (if isPointAtInfinity (x, y, z) then z == 0 else z <> 0);
+  assert (if isPointAtInfinityArbitrary (x, y, z) then z == 0 else z <> 0);
   assert_norm (modp_inv2 (pow2 256) % prime256 <> 0);
   lemmaFromDomain z;
   assert (fromDomain_ z == (z * modp_inv2 (pow2 256) % prime256));
@@ -194,7 +194,7 @@ val normalisation_update: z2x: felem -> z3y: felem ->p: point ->  resultPoint: p
 
       x1 == fromDomain_(as_nat h0 z2x) /\ y1 == fromDomain_(as_nat h0 z3y)  /\ 
       (
-	if Spec.P256.isPointAtInfinity (fromDomain_ x0, fromDomain_ y0, fromDomain_ z0) then  z1 == 0 else z1 == 1
+	if isPointAtInfinityArbitrary (fromDomain_ x0, fromDomain_ y0, fromDomain_ z0) then  z1 == 0 else z1 == 1
       ))
   )
 

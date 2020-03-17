@@ -1,3 +1,4 @@
+
 module Hacl.Impl.P256.DH
 
 open FStar.HyperStack.All
@@ -8,7 +9,7 @@ open Lib.IntTypes
 open Lib.Buffer
 open Lib.ByteSequence
 
-open Spec.P256
+open Spec.P256.Intermediate
 open Spec.ECDSA
 open Spec.P256.Definitions
 open Spec.DH
@@ -74,7 +75,7 @@ val _ecp256dh_r:
         x3 < prime /\ y3 < prime /\ z3 < prime /\
         (let xN, yN, zN = scalar_multiplication (as_seq h0 scalar) (pointJacX, pointJacY, pointJacZ) in
          xN == x3 /\ yN == y3 /\ zN == z3 /\
-         (if isPointAtInfinity (xN, yN, zN) then
+         (if isPointAtInfinityArbitrary (xN, yN, zN) then
            uint_v r = maxint U64
          else
            uint_v r = 0))))

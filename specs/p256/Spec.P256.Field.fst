@@ -56,8 +56,11 @@ let rec exp a b =
 // We don't want `pow` to normalize in the proofs below (e.g. `inverse_opp)
 // But we want it to normalize for short exponents.
 // We define an operator `**` for this second use case.
+
+
+(* Anna: I think we need to change pow such that the second argument could be equal to 0 *)
 [@(strict_on_arguments [0;1])]
-val pow: elem -> pos -> elem
+val pow: elem -> nat -> elem
 let rec pow a b =
   if b = 1 then a
   else pow a (b - 1) *% a
@@ -332,14 +335,13 @@ let mod_sub_congr a b c d x =
   assert ((a - x - b) % prime = ((c - x - d) % prime))
 
 
-(* TO UNCOMMENT. DIDNOT WANNA WORK IMMEDIATELY *)
-assume val mod_mult_congr (a b c:elem) : Lemma
+val mod_mult_congr (a b c:elem) : Lemma
   (requires (a *% c) = (b *% c) /\ c <> 0)
   (ensures  a = b)
 
-(*let mod_mult_congr a b c =
+let mod_mult_congr a b c =
   divides_prime ();
-  FStar.Math.Fermat.mod_mult_congr prime a b c *)
+  FStar.Math.Fermat.mod_mult_congr prime a b c
 
 val opp_opp (a:elem) : Lemma (~%(~%a) == a)
 let opp_opp a =
@@ -360,9 +362,11 @@ let rec pow_one = function
   | 1 -> ()
   | k -> pow_one (k-1)
 
-val pow_plus (a:elem) (k m:pos): Lemma
+(* Anna: broke it, I want the power to be nat, not pos *)
+val pow_plus (a:elem) (k m: nat): Lemma
   (ensures pow a (k + m) == pow a k *% pow a m)
   (decreases k)
+
 let rec pow_plus a k m =
   match k with
   | 1 -> ()

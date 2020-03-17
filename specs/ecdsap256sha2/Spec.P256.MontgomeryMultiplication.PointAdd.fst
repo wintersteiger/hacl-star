@@ -11,7 +11,7 @@ open Spec.P256.MontgomeryMultiplication
 open Lib.Loops
 open FStar.Mul
 
-open Spec.P256
+open Spec.P256.Intermediate
 open Spec.P256.Field
 
 open Spec.P256.MontgomeryMultiplication.PointDouble

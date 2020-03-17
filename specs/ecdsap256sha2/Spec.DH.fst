@@ -4,7 +4,7 @@ open Lib.IntTypes
 open Lib.ByteSequence
 open Lib.Sequence
 
-open Spec.P256
+open Spec.P256.Intermediate
 open Spec.ECDSA
 
 #set-options "--fuel 0 --ifuel 0"
@@ -14,7 +14,7 @@ val ecp256_dh_i: s:lbytes 32 -> tuple3 (lbytes 32) (lbytes 32) uint64
 
 let ecp256_dh_i s =
   let xN, yN, zN = secret_to_public s in
-  if isPointAtInfinity (xN, yN, zN) then
+  if isPointAtInfinityArbitrary (xN, yN, zN) then
     nat_to_bytes_be 32 xN, nat_to_bytes_be 32 yN, u64 (pow2 64 - 1)
   else
     nat_to_bytes_be 32 xN, nat_to_bytes_be 32 yN, (u64 0)
@@ -29,7 +29,7 @@ let ecp256_dh_r x y s =
   let pointJacX, pointJacY, pointJacZ = toJacobianCoordinates (x_, y_) in
   if verifyQValidCurvePointSpec (pointJacX, pointJacY, pointJacZ) then
     let xN, yN, zN = scalar_multiplication s (pointJacX, pointJacY, pointJacZ) in
-    if isPointAtInfinity (xN, yN, zN) then
+    if isPointAtInfinityArbitrary (xN, yN, zN) then
       nat_to_bytes_be 32 xN, nat_to_bytes_be 32 yN, u64 (pow2 64 - 1)
     else
       nat_to_bytes_be 32 xN, nat_to_bytes_be 32 yN, u64 0

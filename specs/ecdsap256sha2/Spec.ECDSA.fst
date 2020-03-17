@@ -90,7 +90,7 @@ val conditional_swap: i:uint64 -> p:nat_prime -> q:nat_prime -> tuple2 nat_prime
 let conditional_swap i p q =
   if v i = 0 then (p, q) else (q, p)
 
-(*
+
 val lemma_swaped_steps: p: nat_prime -> q: nat_prime ->
   Lemma (
     let afterSwapP, afterSwapQ = swap p q in
@@ -100,7 +100,6 @@ val lemma_swaped_steps: p: nat_prime -> q: nat_prime ->
     p2 == r0 /\ q2 == r1)
 
 let lemma_swaped_steps p q = ()
-*)
 
 
 val _exp_step: k:lseq uint8 32 -> i:nat{i < 256} -> before:tuple2 nat_prime nat_prime
@@ -169,6 +168,7 @@ val lemma_exponen_spec: k:lseq uint8 32
 
 #push-options "--fuel 1"
 
+(* broken *)
 val lemma_exponen_spec_0: k:lseq uint8 32
   -> start:tuple2 nat_prime nat_prime {let st0, _ = start in st0 == 1} ->
   Lemma (
@@ -493,7 +493,7 @@ let ecdsa_verification publicKey r s mLen input =
       let sumPoints = _point_add u1D u2D in
       let pointNorm = _norm sumPoints in
       let x, y, z = pointNorm in
-      if Spec.P256.isPointAtInfinity pointNorm then false else x = r
+      if Spec.P256.Intermediate.isPointAtInfinityArbitrary pointNorm then false else x = r
     end
   end
 
