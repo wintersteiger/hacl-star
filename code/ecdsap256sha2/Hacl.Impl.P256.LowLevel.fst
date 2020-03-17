@@ -20,12 +20,14 @@ open Lib.IntTypes.Intrinsics
 
 open Spec.P256.Field
 
-#reset-options " --z3rlimit 300"
 
 inline_for_extraction
 let prime256_buffer: x: ilbuffer uint64 (size 4) {witnessed #uint64 #(size 4) x (Lib.Sequence.of_list p256_prime_list) /\ recallable x /\ felem_seq_as_nat (Lib.Sequence.of_list (p256_prime_list)) == prime} = 
   assert_norm (felem_seq_as_nat (Lib.Sequence.of_list (p256_prime_list)) == prime);
   createL_global p256_prime_list
+
+
+#set-options "--fuel 0 --ifuel 0 --z3rlimit 200"
 
 
 inline_for_extraction noextract
@@ -43,28 +45,19 @@ val reduction_prime256_2prime256_with_carry_impl: cin: uint64 -> x: felem -> res
 
 
 let reduction_prime256_2prime256_with_carry_impl cin x result = 
+  assert_norm (pow2 64 * pow2 64 * pow2 64 * pow2 64 = pow2 256);
   push_frame();
     let tempBuffer = create (size 4) (u64 0) in 
     let tempBufferForSubborrow = create (size 1) (u64 0) in
-    recall_contents prime256_buffer (Lib.Sequence.of_list p256_prime_list);
+      recall_contents prime256_buffer (Lib.Sequence.of_list p256_prime_list);
     let c = sub4_il x prime256_buffer tempBuffer in
   let h0 = ST.get() in 
-      assert(uint_v c <= 1);
       assert(if uint_v c = 0 then as_nat h0 x >= prime else as_nat h0 x < prime);
     let carry = sub_borrow_u64 c cin (u64 0) tempBufferForSubborrow in 
     cmovznz4 carry tempBuffer x result;
   let h1 = ST.get() in 
-      assert_norm (pow2 64 * pow2 64 * pow2 64 * pow2 64 = pow2 256);
-      assert_norm(pow2 256 < 2 * prime);
-
-      assert(uint_v cin <= 1);
-      assert(uint_v c <= 1);
-
       assert(if as_nat h0 x >= prime then uint_v c = 0 else True);
       assert(if uint_v cin < uint_v c then as_nat h1 result == as_nat h0 x else as_nat h1 result == as_nat h0 tempBuffer);
-
-      assert(as_nat h1 result < prime);
-
       modulo_addition_lemma (as_nat h1 result) prime 1;
       small_modulo_lemma_1 (as_nat h1 result) prime; 
   pop_frame()   
@@ -74,7 +67,9 @@ inline_for_extraction
 val reduction_prime256_2prime256_8_with_carry_impl: x: widefelem -> result: felem -> 
   Stack unit 
     (requires fun h -> live h x /\ live h result /\ eq_or_disjoint x result /\ wide_as_nat h x < 2 * prime)
-    (ensures fun h0 _ h1 -> modifies (loc result) h0 h1 /\ as_nat h1 result = wide_as_nat h0 x % prime)
+    (ensures fun h0 _ h1 -> modifies (loc result) h0 h1 /\ 
+      as_nat h1 result = wide_as_nat h0 x % prime
+   )
 
 let reduction_prime256_2prime256_8_with_carry_impl x result = 
   push_frame();
@@ -89,33 +84,33 @@ let reduction_prime256_2prime256_8_with_carry_impl x result =
     let c = Hacl.Impl.LowLevel.sub4_il x_ prime256_buffer tempBuffer in 
     let carry = sub_borrow_u64 c cin (u64 0) tempBufferForSubborrow in 
     cmovznz4 carry tempBuffer x_ result; 
-      let h4 = ST.get() in 
-      assert(if (wide_as_nat h0 x < prime) then begin
-      small_modulo_lemma_1 (wide_as_nat h0 x) prime;
-      as_nat h4 result = (wide_as_nat h0 x) % prime end 
-      else 
-	begin 
-	small_modulo_lemma_1 (as_nat h4 result) prime;
-	lemma_mod_sub (wide_as_nat h0 x) prime 1;
-	as_nat h4 result = (wide_as_nat h0 x) % prime
-	end );
+      let h1 = ST.get() in 
+      assert(
+	if (wide_as_nat h0 x < prime) then 
+	  begin
+	    small_modulo_lemma_1 (wide_as_nat h0 x) prime;
+	    as_nat h1 result = (wide_as_nat h0 x) % prime 
+	  end 
+	else 
+	  begin 
+	    small_modulo_lemma_1 (as_nat h1 result) prime;
+	    lemma_mod_sub (wide_as_nat h0 x) prime 1;
+	    as_nat h1 result = (wide_as_nat h0 x) % prime
+	  end
+	);
  pop_frame()
-
-val lemma_reduction1_0: a: nat {a < pow2 256 /\ a >= prime} -> r: nat{r = a - prime} -> 
-  Lemma (r = a % prime)
-
-let lemma_reduction1_0 a r = 
-  assert_norm (pow2 256 - prime < prime);
-  small_modulo_lemma_1 r prime; 
-  lemma_mod_sub_distr a prime prime
 
 
 val lemma_reduction1: a: nat {a < pow2 256} -> r: nat{if a >= prime then r = a - prime else r = a} ->
   Lemma (r = a % prime)
 
 let lemma_reduction1 a r = 
-  if a >= prime then
-   lemma_reduction1_0 a r
+  if a >= prime then 
+    begin
+      assert_norm (pow2 256 - prime < prime);
+      small_modulo_lemma_1 r prime; 
+      lemma_mod_sub_distr a prime prime
+    end
   else
     small_mod r prime
 
@@ -133,8 +128,8 @@ let reduction_prime_2prime_impl x result =
         let h0 = ST.get() in 
     let c = sub4_il x prime256_buffer tempBuffer in 
     cmovznz4 c tempBuffer x result;
-      let h2 = ST.get() in 
-    lemma_reduction1 (as_nat h0 x) (as_nat h2 result);
+      let h1 = ST.get() in 
+    lemma_reduction1 (as_nat h0 x) (as_nat h1 result);
   pop_frame()  
 
 
@@ -186,7 +181,7 @@ val p256_add: arg1: felem -> arg2: felem ->  out: felem -> Stack unit
    )
   )
   (ensures (fun h0 _ h1 -> modifies (loc out) h0 h1 /\ 
-    as_nat h1 out == (as_nat h0 arg1 + as_nat h0 arg2) % prime /\
+    as_nat h1 out == as_nat_elem h0 arg1 +% as_nat_elem h0 arg2 /\
     as_nat h1 out == toDomain_ ((fromDomain_ (as_nat h0 arg1) + fromDomain_ (as_nat h0 arg2)) % prime)
     )
   )
@@ -200,13 +195,14 @@ let p256_add arg1 arg2 out =
   let h2 = ST.get() in 
     additionInDomain (as_nat h0 arg1) (as_nat h0 arg2);
     inDomain_mod_is_not_mod (fromDomain_ (as_nat h0 arg1) + fromDomain_ (as_nat h0 arg2))
-    (* lemma_eq_funct (as_seq h2 out) (felem_add_seq (as_seq h0 arg1) (as_seq h0 arg2)) *)
 
 
 val p256_double: arg1: felem ->  out: felem -> Stack unit 
   (requires (fun h0 ->  live h0 arg1 /\ live h0 out /\ eq_or_disjoint arg1 out /\ as_nat h0 arg1 < prime))
   (ensures (fun h0 _ h1 -> modifies (loc out) h0 h1 /\ 
-    as_nat h1 out == (2 * as_nat h0 arg1) % prime/\ as_nat h1 out < prime /\
+    as_nat h1 out < prime /\
+    as_nat h1 out == (2 * as_nat h0 arg1) % prime /\ 
+    as_nat_elem h1 out = as_nat_elem h0 arg1 +% as_nat_elem h0 arg1 /\
     as_nat h1 out == toDomain_ (2 * fromDomain_ (as_nat h0 arg1) % prime)
   )
 )
@@ -228,6 +224,7 @@ val p256_sub: arg1: felem -> arg2: felem -> out: felem -> Stack unit
       as_nat h0 arg1 < prime /\ as_nat h0 arg2 < prime))
     (ensures (fun h0 _ h1 -> modifies (loc out) h0 h1 /\ 
       as_nat h1 out == (as_nat h0 arg1 - as_nat h0 arg2) % prime /\
+      as_nat_elem h1 out == as_nat_elem h0 arg1 -% as_nat h0 arg2 /\ 
       as_nat h1 out == toDomain_ ((fromDomain_ (as_nat h0 arg1) - fromDomain_ (as_nat h0 arg2)) % prime)
     )
 )    
