@@ -37,10 +37,7 @@ val reduction_prime256_2prime256_with_carry_impl: cin: uint64 -> x: felem -> res
       (as_nat h x + uint_v cin * pow2 256) < 2 * prime)
     (ensures fun h0 _ h1 -> 
       modifies (loc result) h0 h1 /\ 
-      as_nat h1 result < prime /\ 
-      inField h1 result /\ 
-      as_nat_elem1 h1 result = (as_nat h0 x + uint_v cin * pow2 256) % prime /\
-      as_nat_elem h1 result = (as_nat h0 x + uint_v cin * pow2 256) % prime
+      as_nat h1 result = (as_nat h0 x + uint_v cin * pow2 256) % prime
     )  
 
 
@@ -101,10 +98,10 @@ let reduction_prime256_2prime256_8_with_carry_impl x result =
  pop_frame()
 
 
-val lemma_reduction1: a: nat {a < pow2 256} -> r: nat{if a >= prime then r = a - prime else r = a} ->
+val lemma_reduction: a: nat {a < pow2 256} -> r: nat{if a >= prime then r = a - prime else r = a} ->
   Lemma (r = a % prime)
 
-let lemma_reduction1 a r = 
+let lemma_reduction a r = 
   if a >= prime then 
     begin
       assert_norm (pow2 256 - prime < prime);
@@ -129,7 +126,7 @@ let reduction_prime_2prime_impl x result =
     let c = sub4_il x prime256_buffer tempBuffer in 
     cmovznz4 c tempBuffer x result;
       let h1 = ST.get() in 
-    lemma_reduction1 (as_nat h0 x) (as_nat h1 result);
+    lemma_reduction (as_nat h0 x) (as_nat h1 result);
   pop_frame()  
 
 
@@ -181,7 +178,7 @@ val p256_add: arg1: felem -> arg2: felem ->  out: felem -> Stack unit
    )
   )
   (ensures (fun h0 _ h1 -> modifies (loc out) h0 h1 /\ 
-    as_nat h1 out == as_nat_elem h0 arg1 +% as_nat_elem h0 arg2 /\
+    as_nat h1 out == (as_nat h0 arg1 + as_nat h0 arg2) % prime /\
     as_nat h1 out == toDomain_ ((fromDomain_ (as_nat h0 arg1) + fromDomain_ (as_nat h0 arg2)) % prime)
     )
   )
@@ -202,7 +199,6 @@ val p256_double: arg1: felem ->  out: felem -> Stack unit
   (ensures (fun h0 _ h1 -> modifies (loc out) h0 h1 /\ 
     as_nat h1 out < prime /\
     as_nat h1 out == (2 * as_nat h0 arg1) % prime /\ 
-    as_nat_elem h1 out = as_nat_elem h0 arg1 +% as_nat_elem h0 arg1 /\
     as_nat h1 out == toDomain_ (2 * fromDomain_ (as_nat h0 arg1) % prime)
   )
 )
@@ -224,7 +220,6 @@ val p256_sub: arg1: felem -> arg2: felem -> out: felem -> Stack unit
       as_nat h0 arg1 < prime /\ as_nat h0 arg2 < prime))
     (ensures (fun h0 _ h1 -> modifies (loc out) h0 h1 /\ 
       as_nat h1 out == (as_nat h0 arg1 - as_nat h0 arg2) % prime /\
-      as_nat_elem h1 out == as_nat_elem h0 arg1 -% as_nat h0 arg2 /\ 
       as_nat h1 out == toDomain_ ((fromDomain_ (as_nat h0 arg1) - fromDomain_ (as_nat h0 arg2)) % prime)
     )
 )    
