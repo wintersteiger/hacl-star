@@ -9,15 +9,11 @@ open Lib.Sequence
 open Spec.P256.Definitions
 open Spec.P256.Lemmas
 
+open Spec.P256
 open Spec.P256.Field
 open Spec.P256.Jacobian
 
 #set-options "--fuel 0 --ifuel 0 --z3rlimit 100"
-
-let aCoordinateP256 = -3 
-let bCoordinateP256 : (a: nat {a < prime}) =
-  assert_norm (41058363725152142129326129780047268409114441015993725554835256314039467401291 < prime);
-  41058363725152142129326129780047268409114441015993725554835256314039467401291
 
 noextract
 let basePoint : pointJ =
@@ -98,7 +94,7 @@ let _norm (p:pointJ) : pointJ =
   let z3i = modp_inv2_pow z3 in
   let x3 = (z2i * x) % prime in
   let y3 = (z3i * y) % prime in
-  let z3 = if isPointAtInfinityArbitrary p then 0 else 1 in
+  let z3 = if isPointAtInfinity p then 0 else 1 in
   (*assert(x3 == (x * (pow (z * z) (prime - 2) % prime) % prime));
   assert(y3 == (y * (pow (z * z * z) (prime - 2) % prime) % prime)); *)
   (x3, y3, z3)
@@ -164,7 +160,7 @@ val isPointOnCurve: pointJ -> bool
 let isPointOnCurve p =
   let (x, y, z) = p in
   (y * y) % prime =
-  (x * x * x + aCoordinateP256 * x + bCoordinateP256) % prime
+  (x * x * x + a * x + b) % prime
 
 
 let point_prime_to_coordinates (p:point_seq) =
