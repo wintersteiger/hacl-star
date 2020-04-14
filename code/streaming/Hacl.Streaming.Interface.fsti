@@ -238,6 +238,7 @@ type block (index: Type0) =
   max_input_length: (index -> x:nat { 0 < x /\ x < pow2 64 }) ->
   output_len: (index -> x:U32.t { U32.v x > 0 }) ->
   block_len: (index -> x:U32.t { U32.v x > 0 }) ->
+  n_blocks: U32.t ->
 
   /// An init/update/update_last/finish specification. The long refinements were
   /// previously defined as blocks / small / output.
@@ -255,6 +256,12 @@ type block (index: Type0) =
     output:S.seq uint8 { S.length output == U32.v (output_len i) }) ->
 
   // Required lemmas... clients can enjoy them in their local contexts with the SMT pattern via a let-binding.
+
+  n_blocks_bounds: (i:index -> Lemma
+    (ensures (
+      let buf_size = U32.v n_blocks * U32.v (block_len i) in
+      buf_size <= pow2 32 - 1 /\
+      buf_size <= max_input_length i))) ->
 
   update_multi_zero: (i:index -> h:state.t i -> Lemma
     (ensures (update_multi_s i h S.empty == h))) ->

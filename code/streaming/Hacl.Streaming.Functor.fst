@@ -35,7 +35,7 @@ type state_s #index (c: block index) (i: index)
 =
 | State:
     block_state: t ->
-    buf: B.buffer Lib.IntTypes.uint8 { B.len buf = c.block_len i } ->
+    buf: B.buffer Lib.IntTypes.uint8 { B.length buf = U32.v (c.block_len i) * U32.v c.n_blocks } ->
     total_len: UInt64.t ->
     seen: G.erased (S.seq uint8) ->
     // Stupid name conflict on overloaded projectors leads to inscrutable
