@@ -235,6 +235,8 @@ let add4_with_carry c x y result =
     cc
 
 
+#push-options "--fuel 1 --ifuel 1"
+
 val add8: x: widefelem -> y: widefelem -> result: widefelem -> Stack uint64 
   (requires fun h -> live h x /\ live h y /\ live h result /\ eq_or_disjoint x result /\ eq_or_disjoint y result)
   (ensures fun h0 c h1 -> modifies (loc result) h0 h1 /\ v c <= 1 /\ 
@@ -273,6 +275,8 @@ let add8 x y result =
    };
    
   carry1
+
+#pop-options
 
 
 val add4_variables: x: felem -> cin: uint64 {uint_v cin <=1} ->  y0: uint64 -> y1: uint64 -> y2: uint64 -> y3: uint64 -> 
