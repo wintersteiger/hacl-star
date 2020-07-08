@@ -8,6 +8,16 @@ cmd.exe /C '"C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\A
 set -e
 set -o pipefail
 
+if [[ $OS == "Windows_NT" ]]; then
+  # The usual issue of return codes not being forwarded.
+  .ci/script.bat 2>&1 | tee log
+  if grep "SUCCESS" log; then
+    exit 0
+  else
+    exit 1
+  fi
+fi
+
 # For OSX... seems like the most reliable way to figure out which OpenSSL is
 # installed? We have both 1.1.1d and 1.1.1f and neither can be installed on the
 # other configuration.
