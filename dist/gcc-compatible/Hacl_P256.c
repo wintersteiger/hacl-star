@@ -2186,13 +2186,43 @@ ecdsa_verification_(
   uint64_t *pointU2Q0 = points + (uint32_t)12U;
   secretToPublicWithoutNorm(pointU1G, bufferU1, tempBuffer);
   scalarMultiplicationWithoutNorm(publicKeyBuffer, pointU2Q0, bufferU2, tempBuffer);
+
+
   uint64_t *pointU1G0 = points;
   uint64_t *pointU2Q = points + (uint32_t)12U;
-  point_add(pointU1G0, pointU2Q, pointSum, buff);
+  uint64_t tmp[112U] = { 0U };
+  uint64_t *tmpForNorm = tmp;
+  uint64_t *result0Norm = tmp + (uint32_t)88U;
+  uint64_t *result1Norm = tmp + (uint32_t)100U;
+  uint64_t *pointU1G1 = points;
+  uint64_t *pointU2Q1 = points + (uint32_t)12U;
+  norm(pointU1G1, result0Norm, tmpForNorm);
+  norm(pointU2Q1, result1Norm, tmpForNorm);
+  uint64_t *x0 = result0Norm;
+  uint64_t *y0 = result0Norm + (uint32_t)4U;
+  uint64_t *z0 = result0Norm + (uint32_t)8U;
+  uint64_t *x1 = result1Norm;
+  uint64_t *y1 = result1Norm + (uint32_t)4U;
+  uint64_t *z1 = result1Norm + (uint32_t)8U;
+  bool xEqual = compare_felem_bool(x0, x1);
+  bool yEqual = compare_felem_bool(y0, y1);
+  bool zEqual = compare_felem_bool(z0, z1);
+  bool equalX = xEqual && yEqual && zEqual;
+  bool equalX0 = equalX;
+  if (equalX0)
+  {
+    point_double(pointU1G0, pointSum, buff);
+  }
+  else
+  {
+    point_add(pointU1G0, pointU2Q, pointSum, buff);
+  }
+
   norm(pointSum, pointSum, buff);
   bool resultIsPAI = isPointAtInfinityPublic(pointSum);
   uint64_t *xCoordinateSum = pointSum;
   memcpy(xBuffer, xCoordinateSum, (uint32_t)4U * sizeof (xCoordinateSum[0U]));
+  reduction_prime_2prime_order(xBuffer, xBuffer);
   bool r1 = !resultIsPAI;
   bool state = r1;
   if (state == false)

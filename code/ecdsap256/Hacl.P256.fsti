@@ -22,7 +22,7 @@ open Hacl.Spec.P256.MontgomeryMultiplication
 
 [@ (Comment " Input: result buffer: uint8[64], \n m buffer: uint8 [mLen], \n priv(ate)Key: uint8[32], \n k (nonce): uint32[32]. 
   \n Output: uint64, where 0 stands for the correct signature generation. All the other values mean that an error has occurred. 
-  \n The private key and the nonce are expected to be less than the curve order.")]
+  \n The private key and the nonce are expected to be more than 0 and less than the curve order.")]
 
 val ecdsa_sign_p256_sha2: result: lbuffer uint8 (size 64) 
   -> mLen: size_t 
@@ -35,6 +35,8 @@ val ecdsa_sign_p256_sha2: result: lbuffer uint8 (size 64)
     disjoint result m /\
     disjoint result privKey /\
     disjoint result k /\
+    nat_from_bytes_be (as_seq h privKey) > 0 /\
+    nat_from_bytes_be (as_seq h k) > 0 /\
     nat_from_bytes_be (as_seq h privKey) < prime_p256_order /\
     nat_from_bytes_be (as_seq h k) < prime_p256_order
   )
@@ -53,7 +55,7 @@ val ecdsa_sign_p256_sha2: result: lbuffer uint8 (size 64)
 
 [@ (Comment " Input: result buffer: uint8[64], \n m buffer: uint8 [mLen], \n priv(ate)Key: uint8[32], \n k (nonce): uint32[32]. 
   \n Output: uint64, where 0 stands for the correct signature generation. All the other values mean that an error has occurred. 
-  \n The private key and the nonce are expected to be less than the curve order.")]
+  \n The private key and the nonce are expected to be more than 0 and less than the curve order.")]
 
 val ecdsa_sign_p256_sha384: result: lbuffer uint8 (size 64) -> mLen: size_t -> m: lbuffer uint8 mLen ->
   privKey: lbuffer uint8 (size 32) -> 
@@ -64,6 +66,8 @@ val ecdsa_sign_p256_sha384: result: lbuffer uint8 (size 64) -> mLen: size_t -> m
     disjoint result m /\
     disjoint result privKey /\
     disjoint result k /\
+    nat_from_bytes_be (as_seq h privKey) > 0 /\
+    nat_from_bytes_be (as_seq h k) > 0 /\
     nat_from_bytes_be (as_seq h privKey) < prime_p256_order /\
     nat_from_bytes_be (as_seq h k) < prime_p256_order
   )
@@ -82,7 +86,7 @@ val ecdsa_sign_p256_sha384: result: lbuffer uint8 (size 64) -> mLen: size_t -> m
 
 [@ (Comment " Input: result buffer: uint8[64], \n m buffer: uint8 [mLen], \n priv(ate)Key: uint8[32], \n k (nonce): uint32[32]. 
   \n Output: uint64, where 0 stands for the correct signature generation. All the other values mean that an error has occurred. 
-  \n The private key and the nonce are expected to be less than the curve order.")]
+  \n The private key and the nonce are expected to be more than 0 and less than the curve order.")]
 
 val ecdsa_sign_p256_sha512: result: lbuffer uint8 (size 64) 
   -> mLen: size_t 
@@ -95,6 +99,8 @@ val ecdsa_sign_p256_sha512: result: lbuffer uint8 (size 64)
     disjoint result m /\
     disjoint result privKey /\
     disjoint result k /\
+    nat_from_bytes_be (as_seq h privKey) > 0 /\
+    nat_from_bytes_be (as_seq h k) > 0 /\
     nat_from_bytes_be (as_seq h privKey) < prime_p256_order /\
     nat_from_bytes_be (as_seq h k) < prime_p256_order
   )
@@ -113,7 +119,7 @@ val ecdsa_sign_p256_sha512: result: lbuffer uint8 (size 64)
 
 [@ (Comment " Input: result buffer: uint8[64], \n m buffer: uint8 [mLen], \n priv(ate)Key: uint8[32], \n k (nonce): uint32[32]. 
   \n Output: uint64, where 0 stands for the correct signature generation. All the other values mean that an error has occurred. 
-  \n The private key and the nonce are expected to be less than the curve order. 
+  \n The private key and the nonce are expected to be more than 0 and less than the curve order.
   \n The message m is expected to be hashed by a strong hash function, the lenght of the message is expected to be 32 bytes and more.")]
 
 val ecdsa_sign_p256_without_hash: result: lbuffer uint8 (size 64) 
@@ -127,6 +133,8 @@ val ecdsa_sign_p256_without_hash: result: lbuffer uint8 (size 64)
     disjoint result m /\
     disjoint result privKey /\
     disjoint result k /\
+    nat_from_bytes_be (as_seq h privKey) > 0 /\
+    nat_from_bytes_be (as_seq h k) > 0 /\
     nat_from_bytes_be (as_seq h privKey) < prime_p256_order /\
     nat_from_bytes_be (as_seq h k) < prime_p256_order
   )

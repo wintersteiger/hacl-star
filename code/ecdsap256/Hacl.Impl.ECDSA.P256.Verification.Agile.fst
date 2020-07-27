@@ -23,6 +23,7 @@ open Spec.P256
 (* open Spec.P256.Lemmas *)
 
 open Hacl.Impl.P256.PointAdd
+open Hacl.Impl.P256.PointDouble
 open Hacl.Impl.P256.LowLevel.PrimeSpecific
 open Hacl.Impl.P256.LowLevel.RawCmp
 
@@ -63,7 +64,7 @@ let isZero_uint64_nCT f =
     z0_zero && z1_zero && z2_zero && z3_zero
 
 
-[@ (Comment "  This code is not side channel resistant")]
+(*[@ (Comment "  This code is not side channel resistant")] *)
 
 val isMoreThanZeroLessThanOrderMinusOne: f:felem -> Stack bool
   (requires fun h -> live h f)
@@ -274,8 +275,103 @@ let ecdsa_verification_step5_0 points pubKeyAsPoint u1 u2 tempBuffer =
   scalarMultiplicationWithoutNorm pubKeyAsPoint pointU2Q u2 tempBuffer
 
 
+(* [@ (Comment "  This code is not side channel resistant")] *)
+
+val compare_felem_bool: a: felem -> b: felem -> Stack bool
+  (requires fun h -> live h a /\ live h b)
+  (ensures  fun h0 r h1 -> modifies0 h0 h1 /\ r == (as_nat h0 a = as_nat h0 b))
+
+let compare_felem_bool a b  =
+  assert_norm (pow2 64 * pow2 64 == pow2 128);
+  assert_norm (pow2 128 * pow2 64 == pow2 192);
+  let a_0 = index a (size 0) in
+  let a_1 = index a (size 1) in
+  let a_2 = index a (size 2) in
+  let a_3 = index a (size 3) in
+
+  let b_0 = index b (size 0) in
+  let b_1 = index b (size 1) in
+  let b_2 = index b (size 2) in
+  let b_3 = index b (size 3) in
+
+  eq_u64_nCT a_0 b_0 &&
+  eq_u64_nCT a_1 b_1 &&
+  eq_u64_nCT a_2 b_2 &&
+  eq_u64_nCT a_3 b_3
+
+
+
 inline_for_extraction noextract
-val ecdsa_verification_step5_1:
+val compare_points_bool: a: point -> b: point -> Stack bool
+  (requires fun h -> live h a /\ live h b)
+  (ensures fun h0 r h1 -> modifies0 h0 h1 /\ 
+    (
+      let xP = gsub a (size 0) (size 4) in 
+      let yP = gsub a (size 4) (size 4) in 
+      let zP = gsub a (size 8) (size 4) in 
+
+      let xQ = gsub b (size 0) (size 4) in 
+      let yQ = gsub b (size 4) (size 4) in 
+      let zQ = gsub b (size 8) (size 4) in 
+
+      r == ((as_nat h0 xP = as_nat h0 xQ) && (as_nat h0 yP = as_nat h0 yQ) && (as_nat h0 zP = as_nat h0 zQ))
+    )
+  )
+
+let compare_points_bool a b = 
+  let x0 = sub a (size 0) (size 4) in 
+  let y0 = sub a (size 4) (size 4) in 
+  let z0 = sub a (size 8) (size 4) in 
+
+  let x1 = sub b (size 0) (size 4) in 
+  let y1 = sub b (size 4) (size 4) in 
+  let z1 = sub b (size 8) (size 4) in 
+
+  let xEqual = compare_felem_bool x0 x1 in
+  let yEqual = compare_felem_bool y0 y1 in 
+  let zEqual = compare_felem_bool z0 z1 in 
+  xEqual && yEqual && zEqual
+
+inline_for_extraction noextract
+val ecdsa_verification_step5_1: points:lbuffer uint64 (size 24) -> Stack bool
+  (requires fun h -> live h points /\
+    as_nat h (gsub points (size 0) (size 4)) < prime256 /\
+    as_nat h (gsub points (size 4) (size 4)) < prime256 /\
+    as_nat h (gsub points (size 8) (size 4)) < prime256 /\
+    as_nat h (gsub points (size 12) (size 4)) < prime256 /\
+    as_nat h (gsub points (size 16) (size 4)) < prime256 /\
+    as_nat h (gsub points (size 20) (size 4)) < prime256
+  )
+  (ensures fun h0 r h1 -> modifies0 h0 h1 /\ 
+    (
+      let pointU1G = gsub points (size 0) (size 12) in 
+      let pointU2Q = gsub points (size 12) (size 12) in 
+      r = (
+	_norm (fromDomainPoint (point_prime_to_coordinates (as_seq h0 pointU1G))) =
+	_norm (fromDomainPoint (point_prime_to_coordinates (as_seq h0 pointU2Q))))
+    )
+  )
+
+let ecdsa_verification_step5_1 points = 
+  push_frame();
+    let tmp = create (size 112) (u64 0) in 
+    let tmpForNorm = sub tmp (size 0) (size 88) in 
+    let result0Norm = sub tmp (size 88) (size 12) in 
+    let result1Norm = sub tmp (size 100) (size 12) in 
+
+  let pointU1G = sub points (size 0) (size 12) in
+  let pointU2Q = sub points (size 12) (size 12) in 
+  norm pointU1G result0Norm tmpForNorm;
+  norm pointU2Q result1Norm tmpForNorm;
+  let equalX = compare_points_bool result0Norm result1Norm in 
+
+  pop_frame();
+  equalX
+
+
+
+inline_for_extraction noextract
+val ecdsa_verification_step5_2:
     pointSum: point
   -> pubKeyAsPoint: point
   -> u1: lbuffer uint8 (size 32)
@@ -302,22 +398,34 @@ val ecdsa_verification_step5_1:
         let pointAtInfinity = (0, 0, 0) in
         let u1D, _ = montgomery_ladder_spec (as_seq h0 u1) (pointAtInfinity, basePoint) in
         let u2D, _ = montgomery_ladder_spec (as_seq h0 u2) (pointAtInfinity, point_prime_to_coordinates (as_seq h0 pubKeyAsPoint)) in
-        let sumD = _point_add u1D u2D in
+	let sumD = 
+	  if  _norm u1D =  _norm u2D
+	  then
+	    _point_double u1D
+	  else 
+	    _point_add u1D u2D in 
         let pointNorm = _norm sumD in
         let resultPoint =  point_prime_to_coordinates (as_seq h1 pointSum) in
         pointNorm == resultPoint
       )
    )
 
-let ecdsa_verification_step5_1 pointSum pubKeyAsPoint u1 u2 tempBuffer =
+
+
+let ecdsa_verification_step5_2 pointSum pubKeyAsPoint u1 u2 tempBuffer =
   push_frame();
-  let points = create (size 24) (u64 0) in
+    let points = create (size 24) (u64 0) in 
   let buff = sub tempBuffer (size 12) (size 88) in
   ecdsa_verification_step5_0 points pubKeyAsPoint u1 u2 tempBuffer;
   let pointU1G = sub points (size 0) (size 12) in
-  let pointU2Q = sub points (size 12) (size 12) in
-  point_add pointU1G pointU2Q pointSum buff;
-  norm pointSum pointSum buff;
+  let pointU2Q = sub points (size 12) (size 12) in 
+
+  let equalX = ecdsa_verification_step5_1 points in 
+  begin
+  match equalX with
+  | true -> point_double pointU1G pointSum buff
+  | _ -> point_add pointU1G pointU2Q pointSum buff end;
+  norm pointSum pointSum buff; 
   pop_frame()
 
 
@@ -350,48 +458,29 @@ val ecdsa_verification_step5:
         let pointAtInfinity = (0, 0, 0) in
         let u1D, _ = montgomery_ladder_spec (as_seq h0 u1) (pointAtInfinity, basePoint) in
         let u2D, _ = montgomery_ladder_spec (as_seq h0 u2) (pointAtInfinity, point_prime_to_coordinates (as_seq h0 pubKeyAsPoint)) in
-        let sumD = _point_add u1D u2D in
+        let sumD = 
+	  if  _norm u1D =  _norm u2D
+	  then
+	    _point_double u1D
+	  else 
+	    _point_add u1D u2D in 
         let pointNorm = _norm sumD in
         let (xResult, yResult, zResult) = pointNorm in
         state == not (Spec.P256.isPointAtInfinity pointNorm) /\
-        as_nat h1 x == xResult
+        as_nat h1 x == xResult % prime_p256_order
     )
   )
 
 let ecdsa_verification_step5 x pubKeyAsPoint u1 u2 tempBuffer =
   push_frame();
   let pointSum = create (size 12) (u64 0) in
-  ecdsa_verification_step5_1 pointSum pubKeyAsPoint u1 u2 tempBuffer;
+  ecdsa_verification_step5_2 pointSum pubKeyAsPoint u1 u2 tempBuffer;
   let resultIsPAI = isPointAtInfinityPublic pointSum in
   let xCoordinateSum = sub pointSum (size 0) (size 4) in
   copy x xCoordinateSum;
+  reduction_prime_2prime_order x x;
   pop_frame();
   not resultIsPAI
-
-
-[@ (Comment "  This code is not side channel resistant")]
-
-val compare_felem_bool: a: felem -> b: felem -> Stack bool
-  (requires fun h -> live h a /\ live h b)
-  (ensures  fun h0 r h1 -> modifies0 h0 h1 /\ r == (as_nat h0 a = as_nat h0 b))
-
-let compare_felem_bool a b  =
-  assert_norm (pow2 64 * pow2 64 == pow2 128);
-  assert_norm (pow2 128 * pow2 64 == pow2 192);
-  let a_0 = index a (size 0) in
-  let a_1 = index a (size 1) in
-  let a_2 = index a (size 2) in
-  let a_3 = index a (size 3) in
-
-  let b_0 = index b (size 0) in
-  let b_1 = index b (size 1) in
-  let b_2 = index b (size 2) in
-  let b_3 = index b (size 3) in
-
-  eq_u64_nCT a_0 b_0 &&
-  eq_u64_nCT a_1 b_1 &&
-  eq_u64_nCT a_2 b_2 &&
-  eq_u64_nCT a_3 b_3
 
 
 inline_for_extraction
@@ -444,10 +533,15 @@ val ecdsa_verification_core:
 	 let pointAtInfinity = (0, 0, 0) in
          let u1D, _ = montgomery_ladder_spec bufferU1 (pointAtInfinity, basePoint) in
          let u2D, _ = montgomery_ladder_spec bufferU2 (pointAtInfinity, point_prime_to_coordinates (as_seq h0 publicKeyPoint)) in
-         let sumD = _point_add u1D u2D in
+          let sumD = 
+	  if  _norm u1D =  _norm u2D
+	  then
+	    _point_double u1D
+	  else 
+	    _point_add u1D u2D in 
          let (xResult, yResult, zResult) = _norm sumD in
          state == not (Spec.P256.isPointAtInfinity (_norm sumD)) /\
-         as_nat h1 xBuffer == xResult
+         as_nat h1 xBuffer == xResult % prime_p256_order
       )
   )
 
@@ -465,7 +559,7 @@ let ecdsa_verification_core alg publicKeyBuffer hashAsFelem r s mLen m xBuffer t
   r
 
 
-[@ (Comment "  This code is not side channel resistant")]
+(* [@ (Comment "  This code is not side channel resistant")] *)
 
 val ecdsa_verification_:alg:hash_alg_ecdsa
   -> pubKey:lbuffer uint64 (size 8)
