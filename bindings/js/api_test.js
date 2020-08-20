@@ -110,7 +110,7 @@ async function checkTestVectors(func_sig, func, msg) {
 
 HaclWasm.checkIfInitialized().then(async function() {
   var tests = [];
-  Promise.all(Object.keys(test_vectors).map(function(key_module) {
+  await Promise.all(Object.keys(test_vectors).map(function(key_module) {
     Object.keys(test_vectors[key_module]).map(function(key_func) {
       tests.push([test_vectors[key_module][key_func], HaclWasm[key_module][key_func], key_module + "." + key_func]);
     });
