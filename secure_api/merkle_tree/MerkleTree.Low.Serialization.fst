@@ -520,3 +520,23 @@ let mt_deserialize_path rid input sz =
       else (B.malloc rid (Path hash_size hs) 1ul)
     end 
 #pop-options
+
+#push-options "--z3rlimit 20 --initial_fuel 2 --max_fuel 2 --initial_ifuel 1 --max_ifuel 1"
+private let mt_serialization_test
+  (rid:HST.erid)
+  (cmt:const_mt_p)
+: HST.ST (mt_p)
+  (requires (fun h0 -> mt_safe h0 (CB.cast cmt)))
+  (ensures (fun h0 r h1 -> mt_safe h1 r))
+= let mtv = !*(CB.cast cmt) in
+  let hsz = MT?.hash_size mtv in
+  let bufsz64 = mt_serialize_size cmt in
+  assume (U64.v bufsz64 <= pow2 32);
+  let bufsz = u64_32 bufsz64 in
+  assume (bufsz64 == u32_64 bufsz);
+  let buffer = B.malloc rid 0uy bufsz in
+  let cbuffer = CB.of_buffer buffer in
+  let num_bytes = mt_serialize cmt buffer bufsz64 in
+  let (r:mt_p) = mt_deserialize #hsz rid cbuffer num_bytes (MT?.hash_spec mtv) (MT?.hash_fun mtv) in
+  r
+#pop-options
